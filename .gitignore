@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.delegation/
+
+# The domain-neutrality token list. Never commit it — a committed list of the
+# terms you scrubbed is itself the disclosure. See scripts/check-domain-neutral.py
+.domain-tokens

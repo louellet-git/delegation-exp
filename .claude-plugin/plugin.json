@@ -1,0 +1,20 @@
+{
+  "name": "delegation-framework",
+  "description": "Playbook, roles, and adversarial review machinery for a manager -> implementer -> skeptic operating model. Composes with the superpowers plugin (6.1.x, soft by-name dependency - see README): superpowers owns the loop, parallelism, and code-review mechanics; this plugin owns the residual (always-pair-a-skeptic discipline, review panels, lenses and rubric, reliability rules, commit gate).",
+  "version": "0.1.0",
+  "author": {
+    "name": "Luc Ouellet",
+    "email": "39510648+louellet-git@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/louellet-git/delegation-framework",
+  "repository": "https://github.com/louellet-git/delegation-framework",
+  "license": "MIT",
+  "keywords": [
+    "delegation",
+    "multi-agent",
+    "adversarial-review",
+    "skeptic",
+    "review-panel",
+    "composes-with-superpowers"
+  ]
+}

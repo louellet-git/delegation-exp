@@ -1,0 +1,46 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/session-start-check.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/session-start-check.py\""
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/subagent-reminder.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/subagent-reminder.py\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/stop-reminder.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/stop-reminder.py\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/commit-gate.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/commit-gate.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

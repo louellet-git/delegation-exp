@@ -1,0 +1,14 @@
+{
+  "name": "delegation-framework-source",
+  "owner": {
+    "name": "Luc Ouellet",
+    "email": "39510648+louellet-git@users.noreply.github.com"
+  },
+  "plugins": [
+    {
+      "name": "delegation-framework",
+      "source": "./",
+      "description": "Manager -> implementer -> skeptic operating model as a plugin: skeptic pairing, review panels, lenses/rubric, reliability rules, and a review-artifact commit gate. Composes with superpowers 6.1.x."
+    }
+  ]
+}
