@@ -22,8 +22,10 @@ design, implementation, all of them. No exceptions.
 3. **State the end goal in each dispatch.** Skeptics rate usefulness toward
    the end goal you state; a dispatch without one gets line-coverage noise.
 4. **Review the integrated tree**, only after all slices report DONE.
-5. Parallel dispatch mechanics: `superpowers:dispatching-parallel-agents`
-   (reviewers are read-only, so they are always safe to parallelize).
+5. **Dispatch the whole panel in parallel.** Reviewers are read-only, so they
+   cannot collide; the write-set rules that constrain implementer fan-out
+   ([`../delegating/SKILL.md`](../delegating/SKILL.md#the-loop-mechanics)) do
+   not apply to them.
 
 ## The three modes
 
@@ -70,6 +72,7 @@ review:
   "deliverable": "<what was reviewed, one line>",
   "mode": "swarm | deep | hybrid",
   "rounds": <number of review rounds run>,
+  "head_sha": "<output of `git rev-parse HEAD`, or null if the repo has no commits yet>",
   "reviews": [
     {"reviewer": "<id>", "lens": "<lens name>", "verdict": "PLEASED", "blocking": []}
   ],
@@ -77,17 +80,28 @@ review:
 }
 ```
 
-The PreToolUse commit gate denies `git commit` unless this file exists, is
-valid JSON, has a non-empty `deliverable` string, a valid `mode`, a
-non-empty `reviews` array, and every `verdict` is exactly `"PLEASED"` with
-no non-empty `blocking` list. The gate acts only in repos carrying the
+`head_sha` is **required** and binds the artifact to **one** commit: the
+gate compares it against the repo's current HEAD, so once the reviewed
+commit lands the artifact is spent and the next commit needs a fresh panel.
+Record it when you write the artifact. An artifact written without the
+field fails closed with an explicit message — re-run the panel rather than
+patching the SHA in.
+
+The PreToolUse commit gate denies commit-creating git commands (`commit`,
+`merge`, `rebase`, `cherry-pick`, `revert`, `pull`, `am`) unless this file
+exists, is valid JSON, has a non-empty `deliverable` string, a valid `mode`,
+a `head_sha` matching current HEAD, a non-empty `reviews` array, and every
+`verdict` is exactly `"PLEASED"` with no non-empty `blocking` list. The
+gate acts only in repos carrying the
 `.delegation/` **opt-in marker** directory (created by the `delegating`
 skill at loop start). Honest framing — the gate has five limits: it
 verifies the artifact, not the review's rigor; it only fires where hooks
 are enabled with Python on PATH; it gates only the local tree;
-matcher/parse evasion and wrong-repo mis-resolution are possible; and being
+matcher evasion is possible and an unresolvable path falls back to gating
+the hook's own repo; and being
 session-global it is scoped by the opt-in marker yet can still
-false-positive on exotic compound commands (escape: write the artifact,
+false-positive on compound commands, quoted separators, and heredocs
+(escape: write the artifact,
 remove `.delegation/`, or disable the hook — all five limits in the
 [README](../../README.md)). After the manager commits, archive the artifact
 to `.delegation/history/`.

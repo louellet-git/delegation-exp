@@ -1,65 +1,135 @@
 ---
 name: delegating
-description: Use when running a substantial multi-part build as a manager delegating to implementation agents with skeptic review - routes loop/parallelism/review mechanics to superpowers skills by name and owns only the residual (skeptic pairing, panels, reliability rules, conflict checklist, commit gate)
+description: Use when running a substantial multi-part build as a manager delegating to implementation agents with skeptic review - covers the fresh-subagent-per-task loop, fan-out by disjoint write sets, test-first and evidence-before-claims postures, skeptic pairing, panels, reliability rules, conflict checklist, and the commit gate
 ---
 
 # Delegating
 
-You are the **manager**. This skill is deliberately **thin**: every mechanic
-that `superpowers` already ships is invoked from `superpowers` **by name**,
-never re-described here. This skill owns only the residual. If you find
-yourself re-implementing something in the seam table below, stop — that is a
-scope defect.
+You are the manager. This skill carries both halves of the job: the mechanics
+of the loop you run, and the rules this framework adds on top of it. There is
+no companion plugin to install and no mechanic routed away by name. If a
+mechanic is not written down here or in a file this skill links to, it is not
+part of the framework.
 
 **First: the trivial-edit gate.** Do NOT delegate a trivial edit or a
-single-file fix — the overhead isn't worth it; just do it. Use this loop for
+single-file fix; the overhead isn't worth it, so just do it. Use this loop for
 substantial, multi-part builds where independent review adds real safety.
 
-## The seam table — route these mechanics to superpowers
+## The loop mechanics
 
-| Mechanic | Use this superpowers skill (by name) |
-|----------|--------------------------------------|
-| The implement → review → fix loop, fresh subagent per task | `superpowers:subagent-driven-development` |
-| Disjoint-parallel / shared-sequential fan-out | `superpowers:dispatching-parallel-agents` |
-| Requesting / receiving code review | `superpowers:requesting-code-review`, `superpowers:receiving-code-review` |
-| Test-first implementation | `superpowers:test-driven-development` |
-| Evidence-before-claims gating | `superpowers:verification-before-completion` |
-| Turning an idea into a spec | `superpowers:brainstorming`, `superpowers:writing-plans` |
-| Plan execution in a separate session; branch completion | `superpowers:executing-plans`, `superpowers:finishing-a-development-branch` |
+### One scoped task per fresh subagent
 
-This composition is a **soft, by-name dependency** validated against
-`superpowers` 6.1.x. If those skills are not discoverable, warn the user and
-stop — the loop mechanics live there (the SessionStart hook also checks
-this, best-effort).
+Decompose the work into scoped tasks and spawn **one implementation agent per
+task**. Give each agent a brief that names four things:
 
-## The sibling seam table — route these deliverable kinds to a sibling framework
+1. **The one task**, stated as an outcome, not as a direction to explore.
+2. **An explicit file-ownership allowlist**: the files and directories this
+   agent may create or modify, and nothing else.
+3. **The exact test command** for its slice, copy-pasteable.
+4. **The acceptance condition**: what has to be true for the task to be done.
 
-Several **companion frameworks** own one kind of deliverable each: security
-review of a repo where agents act; documenting a codebase and measuring doc
-drift; producing and quality-gating non-code deliverables (.docx / .pptx).
+The agent then opens whatever files it needs, does the work, runs its own
+tests, and reports back with a status of **DONE**, **BLOCKED**, or
+**NEEDS_CONTEXT**, plus the evidence behind it (what it ran and what came
+back). Then it is finished. The next task gets a **new** agent, briefed from
+scratch, not the same agent carrying the last task's residue. A BLOCKED report
+comes back to you for a decision; a NEEDS_CONTEXT report comes back for a
+fuller brief, and you answer it by extending the brief rather than by taking
+the task over.
 
-**None of them is public, and none is installable.** They are named here only so
-you understand why this framework has no security lenses and no documenter role —
-those were deliberate hand-offs, not omissions. When you hold one of those
-deliverables, you are on your own machinery; there is no specialist to route to.
+**You do not do the reading.** The whole point of the brief is that the
+subagent, not you, opens the files. If you find yourself reading a module in
+order to decide how a slice should be written, you have quietly taken the
+implementer's job: write the brief and hand it over instead. The exceptions
+are narrow and named elsewhere in this skill (you own the reserved index files
+and you inspect the integrated tree before committing).
 
-- **Nothing auto-discovers a companion.** There is no registry, no registration
-  step, no manifest field, and no code path in this repo that reads a companion's
-  files. If one were present, a manager would read a table and name a skill in a
-  dispatch — that is the whole mechanism.
-- **Nothing is pinned**, because there is nothing public to pin to. Treat any
-  companion name in this tree as design rationale, not as a routing instruction.
-- **The SessionStart hook does not probe for them**
-  ([`../../scripts/session-start-check.py`](../../scripts/session-start-check.py)).
-  Probing for something a consumer cannot install would open every session with a
-  warning about a plugin that does not exist for them. Only `superpowers` — which
-  is real, public, and required — is probed, and that probe **warns, never
-  blocks**.
+**Why this preserves your coherence over a long run.** You and each subagent
+have separate, finite context windows. The subagent spends its own window on
+the files: it opens them, holds them, reasons over them, and returns you a
+report. Your window receives the report and never the file contents. So across
+a long run your window accumulates summaries rather than files, and you can
+still hold the shape of the whole job at task forty because you never paid
+full price for tasks one through thirty-nine. Be accurate about what that is.
+It is an ordinary consequence of delegating well, available to anyone who
+delegates the same way, and this framework ships no compaction engine and no
+context management of its own. What the framework contributes is organizing
+the practice (one scoped task per agent, a brief complete enough that the
+agent never has to come back, a status contract that closes the task) and
+pressing you not to abandon it, because the failure mode is not that the
+technique stops working. It is that a manager under time pressure starts
+reading files itself, and spends the window it was protecting.
 
-Background on where the boundaries were drawn:
-[`../../docs/family.md`](../../docs/family.md).
+### Fan-out: disjoint-parallel, shared-sequential
 
-## The residual — what THIS skill owns
+Two agents that write the same file clobber each other, and the loser's work
+disappears without an error. So parallelism is decided by **write sets**, not
+by how independent the tasks feel:
+
+- **Disjoint write sets run in parallel.** Two tasks in unrelated directories,
+  with no file in common, dispatch together.
+- **Overlapping write sets serialize.** Two tasks touching the same file, the
+  same package, or the same shared index run one after the other, and the
+  second is briefed on what the first changed.
+- **Shared reads are fine.** Agents may read the same files freely. It is the
+  writes that collide.
+- **Reviewers always parallelize safely**, because a skeptic never modifies
+  what it reviews.
+- **Shared index files (ADR indexes, front-door routing docs, capability maps)
+  belong to you**, not to any agent, and you wire them at integration.
+
+Before any parallel dispatch, fill the conflict-avoidance checklist. It is a
+forced artifact rather than advice, and the rules and rationale live there, so
+they are not restated here: see section 4 below and
+[`../../docs/conflict-avoidance-checklist.md`](../../docs/conflict-avoidance-checklist.md).
+
+### Requesting and receiving review
+
+Review is not something an implementer performs on its own work. When a task
+reports DONE, you request review separately, from agents that did not build
+the thing. The panel machinery itself is
+[`../skeptical-review/SKILL.md`](../skeptical-review/SKILL.md); what belongs
+here is the connective tissue around it:
+
+- **Request review of the integrated tree**, and only after every parallel
+  slice has reported DONE. A tree with a half-written slice in it produces
+  noise instead of findings.
+- **Give each reviewer what it needs to be adversarial**: the deliverable, the
+  end goal the work was supposed to move, and the claim the work makes. A
+  reviewer with no stated end goal returns line-coverage nitpicking.
+- **Receiving a finding is not the same as accepting it.** You adjudicate.
+  A numbered BLOCKING item either enters the fix round or gets an explicit,
+  recorded reason for rejection. Two lenses demanding opposite fixes get
+  resolved by you *before* dispatch, or the fix agent will thrash.
+- **The fix round is dispatched, not performed by you**, and the fix agent is
+  bound by the same posture rules as any implementer.
+- **Re-review the dissenters** against the revision, briefed to attack it as
+  fresh work rather than to tick off their old list.
+
+### Test-first implementation
+
+Where the deliverable is code, the brief says test-first: write the failing
+test, watch it fail for the reason you expected, then write the code that
+makes it pass. A test written after the code tends to encode what the code
+does rather than what it was supposed to do, and it has never been observed
+failing, so nothing establishes that it *can* fail. Where the deliverable is
+not code, the equivalent is to write down the acceptance condition before
+building, so there is something to check against that was not chosen after the
+fact. This is a posture in the brief, not a system: the framework has no way to
+verify a test was written first.
+
+### Evidence before claims
+
+An agent reports what it ran and what came back, not what it concluded.
+"Tests pass" is not a report; the command and its output are. The same holds
+one level up: when you tell the owner a slice is done, you are relaying
+evidence you actually saw, and where you did not see it, say so rather than
+smoothing it over. The `evidence-vs-claim` lens in
+[`../../docs/lenses.md`](../../docs/lenses.md) exists because this is the
+posture that decays first under time pressure, in agents and in managers
+alike.
+
+## What this framework adds on top of the loop
 
 ### 1. The law
 
@@ -67,8 +137,8 @@ Background on where the boundaries were drawn:
 > trusted — **research, design, implementation — all of them. The floor is
 > one. No exceptions.**
 
-`superpowers` reviews code; this law covers *every* deliverable kind. Attach
-skeptics via the `skeptical-review` skill; the reviewer definition is
+A code review after each task covers code. This law covers *every* deliverable
+kind. Attach skeptics via the `skeptical-review` skill; the reviewer definition is
 `agents/skeptic.md` (spawn as `subagent_type: "skeptic"`).
 
 ### 2. Panel sizing
@@ -77,28 +147,28 @@ skeptics via the `skeptical-review` skill; the reviewer definition is
 not habit. Lens choice: [`../../docs/lenses.md`](../../docs/lenses.md).
 Verdict format: [`../../docs/rubric.md`](../../docs/rubric.md).
 
-### 3. TWO deliberate posture overrides of `superpowers:subagent-driven-development`
+### 3. TWO standing posture rules
 
-Both are load-bearing; wire both or you get an unguided contradiction:
+Both are load-bearing; hold both or the commit gate gates nothing:
 
-- **Override 1 — no auto-commit on DONE.** The "don't stop between tasks"
-  default still governs *within* a slice: an implementation agent runs to
-  DONE without check-ins. But the manager does **not** auto-commit on a DONE
-  report. Between "slice DONE" and "commit" sits the panel gate: attach ≥1
-  skeptic → consolidate BLOCKING → fix round → re-review dissenters →
-  manager inspects the integrated tree → *then* commit.
-- **Override 2 — the implementer does not self-commit (the commit gate
-  depends on this).** The stock `superpowers` implementer template says
-  "Commit your work." Here the implementation agent does **NOT** commit or
-  push — it leaves work in the tree and **only the manager commits**, after
-  the panel. **You must re-brief every implementation agent explicitly:**
-  *"You do not commit or push. Leave your work in the tree; the manager
-  commits after review."* Without this re-brief, the slice self-commits
-  mid-work and the PreToolUse commit gate gates nothing.
+- **Rule 1, no auto-commit on DONE.** "Don't stop between tasks" still governs
+  *within* a slice: an implementation agent runs to DONE without check-ins.
+  But the manager does **not** commit on a DONE report. Between "slice DONE"
+  and "commit" sits the panel gate: attach ≥1 skeptic → consolidate BLOCKING →
+  fix round → re-review dissenters → manager inspects the integrated tree →
+  *then* commit.
+- **Rule 2, the implementer does not self-commit (the commit gate depends on
+  this).** The implementation agent does NOT commit or push. It leaves work in
+  the tree and **only the manager commits**, after the panel. General-purpose
+  implementer briefs commonly default to "commit your work," so this cannot be
+  assumed: **you must re-brief every implementation agent explicitly:** *"You
+  do not commit or push. Leave your work in the tree; the manager commits
+  after review."* Without this re-brief, the slice self-commits mid-work and
+  the PreToolUse commit gate gates nothing.
 
 ### 4. The forced conflict-avoidance checklist (before ANY fan-out)
 
-Before dispatching agents in parallel, **copy and fill**
+Before dispatching agents in parallel, copy and fill
 [`../../docs/conflict-avoidance-checklist.md`](../../docs/conflict-avoidance-checklist.md)
 into the working repo (suggested: `.delegation/conflict-checklist.md`). This
 is a forced artifact, not advice: **no parallel dispatch until every line is
@@ -113,13 +183,13 @@ The panel governs deliverables; nothing in the loop governs *you*, the manager.
 You drift in two ways you cannot see: **losing the prize** (commissioning
 locally-satisfying motion that does not move the end goal) and **failing to
 delegate** (doing implementer work yourself, over-spawning make-work, or
-under-delegating the substantive builds). Pair a **standing steward**
+under-delegating the substantive builds). Pair a standing steward
 ([`../../agents/steward.md`](../../agents/steward.md), spawn as
-`subagent_type: "steward"`) and consult it repeatedly — at checkpoints and
-before big fan-outs — sized to the run: skip it for a short, low-stakes loop;
+`subagent_type: "steward"`) and consult it repeatedly, at checkpoints and
+before big fan-outs, sized to the run: skip it for a short, low-stakes loop;
 consult it often on a long or high-stakes one where drift would go unnoticed.
 It returns a MANAGER SCORECARD (VISION + DELEGATION) with cited evidence. It is
-**disciplined accountability, not a gate** — no hook enforces its verdict, you
+disciplined accountability, not a gate. No hook enforces its verdict, you
 can ignore it, and your judgment stays yours; it only raises the cost of
 self-deception. Role detail: [`../../docs/roles.md`](../../docs/roles.md#steward).
 
@@ -128,25 +198,25 @@ self-deception. Role detail: [`../../docs/roles.md`](../../docs/roles.md#steward
 - **Silence ≠ progress.** Watch file-write activity (mtimes / `git status`),
   not completion notifications. An agent with *no* output after several
   minutes is stalled: stop it (`TaskStop`) and **re-brief with a concrete
-  design decided for it** — never an open-ended "figure out whether this is
+  design decided for it**, never an open-ended "figure out whether this is
   solvable" (that framing once caused a 26-minute no-output stall; the
   concrete re-brief finished in ~2 minutes).
-- **Commit disjoint slices as they land**, staging explicit paths. **Never
+- Commit disjoint slices as they land, staging explicit paths. **Never
   `git add -A` while another agent writes.**
 - Full detail: [`../../docs/operating-model.md`](../../docs/operating-model.md).
 
 ### 7. The loop and the commit gate
 
 ```
-DECOMPOSE → IMPLEMENT (superpowers, parallel where safe)
+DECOMPOSE → IMPLEMENT (fresh subagent per task, parallel where safe)
           → REVIEW PANEL (skeptical-review: 2–7 skeptics, swarm/deep/hybrid)
           → CONSOLIDATE BLOCKING (consolidating-review) → FIX ROUND
           → RE-REVIEW dissenters → until every reviewer is PLEASED
           → MANAGER INSPECTS → COMMIT (gate checks the artifact)
 ```
 
-- Review the **whole integrated tree**, never half-written slices.
-- Convergence stop-rule: each re-review must find **strictly less**; if only
+- Review the whole integrated tree, never half-written slices.
+- Convergence stop-rule: each re-review must find strictly less; if only
   new one-line nits keep appearing, fix them and close on an exhaustive
   manager check.
 - **Read convergence by severity and region, not by count.** A fix round can
@@ -166,27 +236,35 @@ DECOMPOSE → IMPLEMENT (superpowers, parallel where safe)
   or algorithm each yield a *new* contradiction, stop specifying and build it,
   with the reviewers' findings as test cases. Then have the prose point at the
   code as normative rather than restate it. Building surfaces defects prose
-  review structurally cannot reach — and the tests keep them fixed.
+  review structurally cannot reach, and the tests keep them fixed.
 - **Arm the gate at loop start:** create a `.delegation/` directory at the
   repo root when you begin the loop (it also holds the filled conflict
   checklist and, later, the review artifact). This directory is the
-  **opt-in marker** — the commit gate and reminder hooks act only in repos
+  **opt-in marker**: the commit gate and reminder hooks act only in repos
   that carry it, because plugin hooks are session-global and must not wall
   off unrelated repos.
+- **In the same step, add `.delegation/` to that repo's `.gitignore`** if it is
+  not already there. This is not tidiness, it is required, and it closes two
+  real failure modes at once. If the marker gets committed, every contributor
+  who has this plugin installed starts getting their commits denied by a
+  framework they never installed, since the marker carries no ownership or
+  provenance, so its mere presence is the entire authorization model. And if a
+  review artifact gets committed while all-PLEASED, every clone carries a
+  permanent waiver and the gate enforces nothing while still reporting that it
+  is on. Both are one `git add .` away by default.
 - When the panel is all-PLEASED, ensure the review artifact exists at
   `.delegation/review-artifact.json` (written per the `skeptical-review`
-  skill) — the PreToolUse commit gate denies `git commit` without it. After
-  committing, **archive the artifact** to `.delegation/history/` so it
-  cannot waive the next slice. The gate has five honest limits (hooks +
-  Python-on-PATH enabled only; artifact fabricable; local tree only;
-  matcher/parse evasion and wrong-repo mis-resolution possible; over-reach:
-  session-global hook scoped by the `.delegation/` marker, rare false
-  positives on exotic compound commands — escape: write the artifact,
-  remove `.delegation/`, or disable the hook) — see the
-  [README](../../README.md).
+  skill). The PreToolUse commit gate denies `git commit` without it. After
+  committing, archive the artifact to `.delegation/history/` so it
+  cannot waive the next slice. The gate has five honest limits, and they are
+  stated in full in the
+  [README](../../README.md#enforcement-honestly-one-structural-slice-the-rest-is-discipline):
+  it needs hooks enabled and Python on PATH, the artifact is fabricable, it
+  reaches the local tree only, it can be evaded or mis-resolved by parsing,
+  and it can rarely over-reach.
 
 ## References (skill-referenced data, read on demand)
 
-- [`../../docs/operating-model.md`](../../docs/operating-model.md) — the full playbook
-- [`../../docs/roles.md`](../../docs/roles.md) — manager / implementer / skeptic
-- [`../../docs/example-run.md`](../../docs/example-run.md) — one worked run, end to end
+- [`../../docs/operating-model.md`](../../docs/operating-model.md): the full playbook
+- [`../../docs/roles.md`](../../docs/roles.md): manager / implementer / skeptic
+- [`../../docs/example-run.md`](../../docs/example-run.md): one worked run, end to end

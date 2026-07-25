@@ -1,4 +1,4 @@
-# The verdict rubric — PLEASED | NOT PLEASED
+# The verdict rubric: PLEASED | NOT PLEASED
 
 Every skeptic, whatever its lens, reports in this format. The format is the
 contract that lets a manager consolidate a panel mechanically and lets the
@@ -41,10 +41,10 @@ Rules:
 
 - **NOT PLEASED whenever the BLOCKING list is non-empty.** No "PLEASED with
   reservations." Non-blocking findings go in the body, not the list.
-- Number the BLOCKING items — the consolidation step
+- Number the BLOCKING items, because the consolidation step
   ([`../skills/consolidating-review/SKILL.md`](../skills/consolidating-review/SKILL.md))
   reconciles panels by number.
-- **Rate usefulness toward the end goal** stated in the dispatch, never
+- Rate usefulness toward the end goal stated in the dispatch, never
   toward line coverage. A test can be correct, useful for regression safety,
   and still score low because it does not move the stated goal — say so
   plainly.
@@ -67,6 +67,6 @@ Rules:
   [`../skills/skeptical-review/SKILL.md`](../skills/skeptical-review/SKILL.md)),
   then the manager still inspects before committing. A unanimous panel is
   necessary, not sufficient.
-- An ESCALATE output is not a verdict — it is a routing instruction: dispatch
+- An ESCALATE output is not a verdict. It is a routing instruction: dispatch
   the named thread as a deep review before trusting the swarm's PLEASED on
   that thread.

@@ -8,9 +8,10 @@ Checks (all must pass):
      name + description.
   3. agents/manager.md, agents/steward.md and agents/skeptic.md each exist
      with frontmatter (name, description, tools); agents/implementation-agent.md
-     must NOT exist (the implementer template is owned by the superpowers
-     plugin, by design); agents/director.md must NOT exist (the Director role
-     was removed — the manager is the sole top-level orchestrator/spawner).
+     must NOT exist (implementers are briefed inline, one per slice, rather
+     than defined as a reusable agent file); agents/director.md must NOT exist
+     (the Director role was removed, the manager is the sole top-level
+     orchestrator/spawner).
   4. The three command files exist with frontmatter carrying a description.
   5. hooks/hooks.json is valid JSON with a non-empty "hooks" object, and
      every script referenced via ${CLAUDE_PLUGIN_ROOT}/... exists in-repo.
@@ -128,7 +129,8 @@ def main() -> int:
     if (root / "agents" / "implementation-agent.md").exists():
         err(
             "agents/implementation-agent.md must not exist "
-            "(the implementer template is owned by superpowers, per the design spec)"
+            "(implementers are briefed inline, one per slice, not defined as a "
+            "reusable agent file)"
         )
     if (root / "agents" / "director.md").exists():
         err(

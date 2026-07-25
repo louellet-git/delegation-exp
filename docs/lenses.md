@@ -5,8 +5,8 @@ diversifies lenses; five reviewers with the same lens are one reviewer. Each
 lens below lists what it attacks and the questions it asks. The verdict
 format every lens reports in is [`rubric.md`](rubric.md).
 
-Lenses are deliberately **domain-neutral**. Where a lens needs an "end goal"
-to measure against, the manager's dispatch supplies it — the lens never
+Lenses are deliberately domain-neutral. Where a lens needs an "end goal"
+to measure against, the manager's dispatch supplies it; the lens never
 assumes one.
 
 ## Code lenses
@@ -33,7 +33,7 @@ two layers.
 Attacks work tuned to the surface it was developed on. Questions: Does this
 pass because it is right, or because it was tuned to *this* fixture, *this*
 benchmark, *this* dev environment? Distinguish **the real target from a
-proxy you built** — does it generalize beyond the surface it was tuned on?
+proxy you built**. Does it generalize beyond the surface it was tuned on?
 Would a slightly harder-but-still-realistic input flip the result? Smells:
 constants that happen to match the test data; assertions that hold only
 under a generously chosen parameter; green on a clean synthetic fixture when
@@ -62,10 +62,10 @@ built one.
 ### derived-output / ranking
 
 For anything that scores, ranks, classifies, prioritizes, or derives a verdict
-— a risk model, a triage signal, a scoring rubric, a health check. Attacks
+(a risk model, a triage signal, a scoring rubric, a health check). Attacks
 whether the output *orders reality correctly*. Questions: Does something
 genuinely dangerous score low, and something benign score high? Check both
-directions — a signal that fires on everything and a signal that fires on
+directions: a signal that fires on everything and a signal that fires on
 nothing are the same failure, and they hide each other. Is every ordering the
 prose appeals to ("at minimum", "ranks with", "the minimum over") actually
 published and total? Does declaring *nothing* score better than declaring
@@ -79,7 +79,7 @@ against the default path.
 an attack surface, and the attack is always one word in a diff. For each such
 field ask: what cross-check binds it to reality, and if none, does setting it
 at least emit a warning? Silence plus a discount is the defect. Expect this to
-recur — closing it for one field tends to move it to the next one, so enumerate
+recur, since closing it for one field tends to move it to the next one, so enumerate
 every field that can lower the output and check them as a set, not one at a
 time.
 
@@ -93,8 +93,8 @@ a slice is risky enough to deserve a dedicated adversary.
 
 ### design-review
 
-For design docs and specs. Questions: Does the design **close its stated
-invariants**, or route around them? Where does it overclaim — promising
+For design docs and specs. Questions: Does the design close its stated
+invariants, or route around them? Where does it overclaim, promising
 behaviour its mechanisms cannot enforce? Are its open decisions labelled as
 open, or silently assumed settled? Does each component own one thing, or do
 two components own the same thing? What failure mode has no owner? Smells: a
@@ -105,7 +105,7 @@ stated as hard when nothing declares it.
 
 For research memos, comparisons, and recommendations. Questions: Is **each
 claim traced to a source** that actually says it? Is any assertion asserted
-beyond its evidence — an n=1 anecdote generalized, a benchmark from a
+beyond its evidence, whether an n=1 anecdote generalized, a benchmark from a
 different context, a version-specific fact stated timelessly? Were
 disconfirming sources looked for, or only confirming ones? Smells:
 citations that don't contain the claim; "it is well known"; measurements
@@ -121,9 +121,9 @@ without their conditions.
 - Non-code deliverables: design-review or research/claim-verification is the
   anchor; add honesty/overclaim as the second.
 - Anything that scores, ranks, or derives a verdict: **derived-output/ranking**
-  is mandatory, and it must be run in **deep** mode — the inversion and
+  is mandatory, and it must be run in **deep** mode: the inversion and
   fail-open findings it exists to catch are only reachable by executing the
   thing, never by reading it.
 
-Mode selection (swarm / deep / hybrid) is a separate dimension from lens choice —
+Mode selection (swarm / deep / hybrid) is a separate dimension from lens choice;
 see [`../skills/skeptical-review/SKILL.md`](../skills/skeptical-review/SKILL.md).

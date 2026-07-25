@@ -1,14 +1,14 @@
-# Conflict-avoidance checklist — fill BEFORE you fan out
+# Conflict-avoidance checklist: fill BEFORE you fan out
 
 Parallel agents that write the same files clobber each other. This checklist
 is a **forced artifact**: the `delegating` skill requires the manager to copy
 this template into the working repo (suggested path:
 `.delegation/conflict-checklist.md`), fill in every line, and only then
 dispatch agents in parallel. An unfilled or partially filled checklist means
-**serialize instead**.
+serialize instead.
 
 (Creating the `.delegation/` directory for this copy is also what **opts the
-repo in** to the commit gate and reminder hooks — the marker they check
+repo in** to the commit gate and reminder hooks, the marker they check
 before acting.)
 
 Rationale and the hard-won rules behind each item:
@@ -51,8 +51,8 @@ Rationale and the hard-won rules behind each item:
 
 ## Notes
 
-- The checklist is per fan-out, not per project — a new parallel dispatch
+- The checklist is per fan-out, not per project; a new parallel dispatch
   gets a fresh copy.
-- "Disjoint" means disjoint **write** sets; shared read-only inputs are fine.
+- "Disjoint" means disjoint write sets; shared read-only inputs are fine.
 - If filling the table honestly shows overlap you cannot remove, that is the
   checklist working: run those slices sequentially.

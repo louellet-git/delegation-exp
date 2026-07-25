@@ -10,10 +10,10 @@ $ARGUMENTS
 1. Use the **delegation-framework:skeptical-review** skill: size the panel
    (2–3 for a small change, 5–7 for a feature batch), diversify lenses,
    triage the mode (swarm / deep / hybrid by breadth-vs-depth × risk), and
-   dispatch — reviewing the whole integrated tree, not half-written slices.
+   dispatch, reviewing the whole integrated tree, not half-written slices.
 2. If any reviewer is NOT PLEASED, use the
    **delegation-framework:consolidating-review** skill: batch all BLOCKING
    findings into one reconciled fix round, then re-review only the
    dissenters, converging (each round finds strictly less).
 3. When every reviewer is PLEASED, write the review artifact so the commit
-   gate will pass — then inspect the tree yourself before committing.
+   gate will pass, then inspect the tree yourself before committing.
