@@ -84,11 +84,23 @@ owner starts and coordinates, not something an agent nests below itself.
 ## Manager
 
 The single top-level orchestrator, the owner-facing agent, and the **only
-agent that can spawn**. Full definition: [`../agents/manager.md`](../agents/manager.md)
-(the manager is the top-level session agent; it spawns the others). It:
+agent that can spawn**. Full definition:
+[`../agents/manager.md`](../agents/manager.md).
 
-- Decomposes a task into scoped, disjoint slices and spawns one
-  implementation agent per slice, after filling the
+**How you become the manager: you read that file and hold the role in your own
+top-level session. You never spawn it.** It lives in `agents/` because that is
+where this plugin keeps role definitions, but nothing in the repo loads it, and
+spawning it as a subagent would put the manager one level deep and everything
+it spawns two levels deep, breaking the one-level-deep invariant this whole
+model rests on. `/delegate` is the shortcut: it runs the `delegating` skill in
+the session you typed it in, which *is* the top-level session. See
+[`../agents/manager.md`](../agents/manager.md#how-to-use-this-file-do-not-spawn-it).
+
+The manager:
+
+- Decomposes a task into scoped, disjoint slices
+  ([the DECOMPOSE procedure](../skills/delegating/SKILL.md#decompose-the-procedure))
+  and spawns one implementation agent per slice, after filling the
   [conflict-avoidance checklist](conflict-avoidance-checklist.md).
 - Spawns the skeptic panel (sizing it 2–3 small / 5–7 batch; choosing
   swarm / deep / hybrid per
@@ -99,9 +111,13 @@ agent that can spawn**. Full definition: [`../agents/manager.md`](../agents/mana
   that keeps it on track, and auto-consults it at execution checkpoints.
 - Integrates the results and reviews the whole integrated tree, never a
   half-written slice.
-- **Commits.** Only the manager commits, after the panel is all-PLEASED and
-  after its own inspection. A green panel is necessary, not sufficient; the
-  manager owns final judgment.
+- **Commits, once per panel.** Only the manager commits, after the panel is
+  all-PLEASED and after
+  [its own inspection](../skills/delegating/SKILL.md#manager-inspects-the-procedure).
+  A green panel is necessary, not sufficient; the manager owns final judgment.
+  The review artifact binds to a single HEAD, so one panel waives exactly one
+  commit: the batch is integrated, reviewed as a whole, and landed in one
+  commit rather than slice by slice.
 - Owns the reserved shared files (indexes, front-door routing docs,
   capability maps) and wires them at integration.
 - Writes little content directly. It *directs*, watching file-write activity
@@ -145,8 +161,9 @@ Three things sharpen the role:
 - **A minor hurdle-anticipation faculty.** Keeping the manager on track includes
   seeing an obstacle coming; when a window surfaces a foreseeable hurdle, the
   steward names it in its recommendation with a concrete observable trigger.
-  A vibe with no trigger is dropped, not raised. This is a light instinct folded
-  in from the removed vision role, not a graded ledger or a second job.
+  A vibe with no trigger is dropped, not raised. This is a light instinct, not
+  a graded ledger and not a second job: the steward is not a forecasting
+  function and keeps no separate hurdle scorecard.
 
 The framework governs *deliverables* (the skeptic) and *decomposition* (the
 manager); nothing else governs the manager, and a manager drifts in two
@@ -168,6 +185,13 @@ only to the stated end goal. It:
 - Is read-only on the tree: it observes the record (`git log`, diffs,
   dispatch briefs, `.delegation/` artifacts) and judges; it never edits,
   dispatches, decomposes, or spawns.
+- Depends on the manager having **persisted** that record. It reconciles what
+  landed against the dispatch briefs saved under `.delegation/briefs/`, and it
+  compares each checkpoint against its own earlier scorecards saved under
+  `.delegation/steward/`. With no briefs on disk its DELEGATION line is
+  unrecoverable for that window, and it says so rather than inventing one from
+  authorship (in this model only the manager commits, so authorship attributes
+  everything to the manager and proves nothing).
 
 It does **NOT** review deliverables. That is the skeptic's job, on its lenses;
 a weak deliverable is a finding *for a skeptic*, not the steward. It does
@@ -189,10 +213,20 @@ drift would go unnoticed.
 
 Builds exactly one scoped slice, test-first where the deliverable is
 code, updates the docs that live near what it changed, and reports what it
-did plus test evidence. Its brief comes from the manager with an explicit
-file-ownership allowlist and the exact test command. It is a flat-sibling
-worker and it cannot spawn; if it needs a helper it asks the manager, and
-coordinates with siblings via `SendMessage`.
+did plus test evidence. It is a flat-sibling worker and it cannot spawn; if it
+needs a helper it asks the manager, and coordinates with siblings via
+`SendMessage`.
+
+**There is no `agents/implementer.md`, and that is deliberate**: an implementer
+is defined entirely by its brief, one per slice, so there is nothing reusable to
+put in a file (`validate-structure.py` actively fails if such a file appears).
+Spawn implementers as the runtime's **general-purpose worker subagent** (in
+Claude Code, `subagent_type: "general-purpose"`) with the whole brief in the
+prompt. Never grant a worker a spawn tool. The brief itself is written from the
+canonical template, which carries the allowlist, the reserved files, the exact
+test command, the acceptance condition, the postures, the no-self-commit
+re-brief, and the status contract:
+[`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#the-brief-template).
 
 It does **NOT commit or push**. It leaves changes in the working tree for
 the manager. General-purpose implementer briefs commonly default to "commit
@@ -200,9 +234,9 @@ your work," so the manager must re-brief every implementation agent with this
 rule explicitly rather than assume it. The commit gate depends on it: a
 self-committed slice would land before any panel ran.
 
-The dispatch mechanics (one scoped task per fresh subagent, the four things
-every brief names, and the status contract of DONE / BLOCKED / NEEDS_CONTEXT)
-are in
+The dispatch mechanics (one scoped task per fresh subagent, the brief template,
+and the status contract of DONE / BLOCKED / NEEDS_CONTEXT, including what the
+manager does with a BLOCKED report) are in
 [`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#the-loop-mechanics).
 
 ## Skeptical reviewer
@@ -212,8 +246,11 @@ flat-sibling worker the manager spawns; it cannot spawn. It:
 
 - Reviews through an assigned lens from [`lenses.md`](lenses.md):
   code lenses (correctness, coupling/boundary integrity,
-  overfit/generalization, evidence-vs-claim, honesty/overclaim, per-feature)
-  or non-code lenses (design-review, research/claim-verification).
+  overfit/generalization, evidence-vs-claim, honesty/overclaim,
+  derived-output/ranking, per-feature) or non-code lenses (design-review,
+  research/claim-verification). `derived-output/ranking` is **mandatory**, in
+  deep mode, for anything that scores, ranks, classifies, prioritizes, or
+  derives a verdict.
 - Rates each finding's usefulness toward the end goal, not line coverage.
 - Returns `VERDICT: PLEASED | NOT PLEASED` and a numbered `BLOCKING` list per
   [`rubric.md`](rubric.md).
@@ -224,5 +261,7 @@ flat-sibling worker the manager spawns; it cannot spawn. It:
 
 The reusable definition is [`../agents/skeptic.md`](../agents/skeptic.md);
 spawn it with `subagent_type: "skeptic"`, or spawn general-purpose agents
-told to adopt it. Diversify lenses across a panel; five copies of the same
+told to adopt it. Unlike the manager, this one *is* meant to be spawned: it is
+a flat sibling one level below the manager, which is exactly where a subagent
+definition belongs. Diversify lenses across a panel; five copies of the same
 lens is one reviewer, not five.

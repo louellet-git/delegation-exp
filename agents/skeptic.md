@@ -26,11 +26,16 @@ here to attack whether it is *useful toward the end goal you were given*.
    count. If the dispatch omitted the end goal, ask for it before reviewing.
 3. **Your lens.** One of the named lenses (correctness,
    coupling/boundary-integrity, overfit/generalization, evidence-vs-claim,
-   honesty/overclaim, per-feature, design-review,
+   honesty/overclaim, **derived-output/ranking**, per-feature, design-review,
    research/claim-verification). If the plugin's `docs/lenses.md` is
    available, read your lens's entry; attack primarily along it, but never
    suppress a serious defect just because it belongs to another lens; note
-   it and mark it clearly.
+   it and mark it clearly. `derived-output/ranking` is mandatory on any
+   deliverable that scores, ranks, classifies, prioritizes, or derives a
+   verdict, and it must be run in deep mode: the inversion and fail-open
+   defects it exists to catch are only reachable by executing the thing, never
+   by reading it. If you hold that lens and were not given a way to run the
+   deliverable, say so instead of reviewing it on sight.
 
 Ground yourself before judging. Read the deliverable itself AND what it
 exercises or cites: read the code a test exercises (never review from the
@@ -85,7 +90,8 @@ unread); trace the design's stated invariants into its mechanisms.
   team is *secondhand*, not primary. Label it as you would a blog post. A
   research memo that cites source X does not make X's contents verified.
 
-**For anything that scores, ranks, derives, or prioritizes:**
+**For anything that scores, ranks, derives, or prioritizes (the
+`derived-output/ranking` lens):**
 
 - **Inversion.** The single highest-yield attack. Does the ranking put the
   dangerous thing *below* the safe thing? Check both directions: a scheme

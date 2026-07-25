@@ -34,11 +34,26 @@ DECOMPOSE → IMPLEMENT (parallel where safe) → REVIEW PANEL (2–7 skeptics, 
           → until every reviewer is PLEASED → MANAGER INSPECTS → COMMIT
 ```
 
+- The **DECOMPOSE** step has its own procedure, including how to get an
+  allowlist and an exact test command out of a repo the manager is not supposed
+  to be reading (a delegated scouting slice, or a bounded structural pass):
+  [`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#decompose-the-procedure).
 - The **IMPLEMENT** step is **one scoped task per fresh subagent.** The
-  manager writes a brief naming the single task, an explicit file-ownership
-  allowlist, the exact test command, and the acceptance condition. The
+  manager writes the brief from the canonical template
+  ([`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#the-brief-template)),
+  which carries the single task, the explicit file-ownership allowlist, the
+  reserved files, the exact test command, the acceptance condition, the
+  test-first and evidence-before-claims postures, the re-brief that the agent
+  does not commit or push, and the status contract itself. Build briefs from
+  that template rather than from a partial list; the items an ad-hoc brief
+  drops are the ones other parts of this model depend on. Save each brief to
+  `.delegation/briefs/` so a steward checkpoint has something to reconcile
+  against. The
   subagent reads whatever files it needs, does the work, runs its tests, and
-  reports DONE / BLOCKED / NEEDS_CONTEXT with the evidence behind it. The next
+  reports DONE / BLOCKED / NEEDS_CONTEXT with the evidence behind it. A BLOCKED
+  report is a decision request with its own procedure
+  ([`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#blocked-the-procedure)),
+  never a signal to take the task over. The next
   task gets a new agent, not the same one carrying the last task's residue.
   **The manager does not do the reading**, and that is not an efficiency
   preference: the subagent spends its own context window on the files and
@@ -73,6 +88,15 @@ DECOMPOSE → IMPLEMENT (parallel where safe) → REVIEW PANEL (2–7 skeptics, 
   should find strictly less than the round before. If it keeps finding
   new one-line nits, fix them and close on an exhaustive manager check
   instead of another full round.
+- **MANAGER INSPECTS** is a procedure, not a glance: reconcile the integrated
+  diff against the dispatched allowlists, run the full test command yourself,
+  check the artifact's fields including `head_sha`, then stage explicit paths.
+  The steps are in
+  [`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#manager-inspects-the-procedure).
+- **One panel, one commit.** The batch is integrated, reviewed once as a whole,
+  and landed in a single commit. The review artifact is bound to one HEAD, so
+  it waives exactly one commit; and reviewing the integrated tree rather than
+  half-written slices is what this model already asked for.
 
 ## The spawn topology: one level deep, the manager is the sole spawner
 
@@ -181,6 +205,14 @@ real safety: a feature batch, a hardening pass, a migration.
 **Do NOT delegate a trivial edit or a single-file fix.** The overhead isn't
 worth it; just do it. (The `/delegate` command states this gate up front.)
 
+One consequence to know before the first run: the opt-in persists. Once a loop
+has armed a repo, the `.delegation/` marker stays, and every later commit there
+needs a current all-PLEASED artifact, trivial edits included. That is the gate
+working, not a bug, but it is reversible: **deleting `.delegation/` un-arms the
+repo**, and the gate plus both reminder hooks go silent in it immediately. The
+marker holds no state the framework needs afterwards, so re-arming is just
+running the loop again.
+
 **Panel-sizing heuristic:** **2–3 skeptics for a small change, 5–7 for a
 feature batch.** Scale the panel to the risk, not to habit.
 
@@ -193,9 +225,16 @@ feature batch.** Scale the panel to the risk, not to habit.
   an open-ended "figure out whether this is solvable." *(In one recorded run
   that open-ended framing caused a **26-minute** no-output stall; the
   re-brief with a concrete spec finished in **~2 minutes**.)*
-- Commit disjoint slices as they land, staging explicit paths. **Never
-  `git add -A` while another agent writes.** This protects completed work and
-  satisfies any commit-time hooks without racing.
+- **Integrate the slices, run one panel over the integrated tree, then make one
+  commit**, staging explicit paths. **Never `git add -A` while another agent
+  writes.** Do not land disjoint slices as they finish: the review artifact
+  binds to a single HEAD, so one panel waives one commit, and reviewing the
+  integrated tree rather than half-written slices is the rule this model
+  already holds. The reliability concern behind the older per-slice advice
+  stands and is worth naming: unreviewed work should not pile up in the tree,
+  because a diff too large to read is a panel that reviews nothing. The way to
+  honour it is a **smaller batch**, fewer slices per panel and panels more
+  often, not more commits per panel.
 - **The implementation agent does NOT commit or push.** It leaves work in the
   tree; the manager commits, after the panel gate. (This is also what
   makes the commit gate meaningful: the gate fires on the manager's commit,
@@ -233,14 +272,26 @@ without it.
 The panel produces a review artifact
 (`.delegation/review-artifact.json`; format in
 [`../skills/skeptical-review/SKILL.md`](../skills/skeptical-review/SKILL.md)).
-A PreToolUse hook denies `git commit` unless a well-formed, all-PLEASED
-artifact exists, in repos that have opted in by carrying a
-`.delegation/` directory at the repo root (the `delegating` skill creates it
-when a loop starts). Within its reach, skipping review takes a *visible
+A PreToolUse hook denies the git subcommands that introduce newly authored work
+(`commit`, `cherry-pick`, `revert`, `am`) unless a well-formed, all-PLEASED
+artifact bound to the current HEAD exists, in repos that have opted in by
+carrying a `.delegation/` directory at the repo root (the `delegating` skill
+creates it when a loop starts, and adds it to that repo's `.gitignore` in the
+same step). Within its reach, skipping review takes a *visible
 act*, not a lapse of memory.
 
+`pull`, `merge` and `rebase` are **not** gated. They integrate or replay
+commits that were already gated when they were authored, so re-gating them
+would demand a fresh panel for reviewed work and would deny routine integration
+in every armed repo. The residual, stated plainly: landing a branch with
+`git merge --no-ff` produces a merge commit no artifact covers, because the
+review happened at the commits inside the branch rather than at the merge.
+
+Because the artifact binds to a single HEAD, **one panel waives exactly one
+commit**: integrate, review once, commit once.
+
 Five honest limits travel with it: it fires only where this plugin's hooks are
-installed and enabled and `python`/`python3` is on PATH; it checks that the
+installed and enabled and `python3` is on PATH; it checks that the
 artifact exists, is well-formed, and is all-PLEASED, never that the review was
 rigorous, so it walls off forgetting rather than bad faith; it gates the local
 commit only; commits the matcher never sees (aliases, subprocesses, IDE

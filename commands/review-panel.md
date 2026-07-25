@@ -16,4 +16,9 @@ $ARGUMENTS
    findings into one reconciled fix round, then re-review only the
    dissenters, converging (each round finds strictly less).
 3. When every reviewer is PLEASED, write the review artifact so the commit
-   gate will pass, then inspect the tree yourself before committing.
+   gate will pass, filling `head_sha` from `git rev-parse HEAD` **last**, once
+   the tree has stopped changing. Then inspect the tree yourself before
+   committing (reconcile the integrated diff against the dispatched
+   allowlists, re-run the full test command, check the artifact's fields). The
+   artifact binds to that one HEAD, so this panel waives exactly **one**
+   commit: land the whole batch in a single commit, not one per slice.

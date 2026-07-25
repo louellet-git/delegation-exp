@@ -87,22 +87,31 @@ Record it when you write the artifact. An artifact written without the
 field fails closed with an explicit message — re-run the panel rather than
 patching the SHA in.
 
-The PreToolUse commit gate denies commit-creating git commands (`commit`,
-`merge`, `rebase`, `cherry-pick`, `revert`, `pull`, `am`) unless this file
-exists, is valid JSON, has a non-empty `deliverable` string, a valid `mode`,
-a `head_sha` matching current HEAD, a non-empty `reviews` array, and every
-`verdict` is exactly `"PLEASED"` with no non-empty `blocking` list. The
-gate acts only in repos carrying the
-`.delegation/` **opt-in marker** directory (created by the `delegating`
-skill at loop start). Honest framing — the gate has five limits: it
-verifies the artifact, not the review's rigor; it only fires where hooks
-are enabled with Python on PATH; it gates only the local tree;
-matcher evasion is possible and an unresolvable path falls back to gating
-the hook's own repo; and being
+The PreToolUse commit gate denies the git commands that **author a new
+commit** (`commit`, `cherry-pick`, `revert`, `am`) unless this file exists,
+is valid JSON, has a non-empty `deliverable` string, a valid `mode`, a
+`head_sha` matching current HEAD, a non-empty `reviews` array, and every
+`verdict` is exactly `"PLEASED"` with no non-empty `blocking` list.
+
+Deliberately **not** gated: `merge`, `rebase` and `pull`, which integrate or
+replay commits that were already gated when they were authored; and any
+command carrying `--abort`, `--skip`, `--quit` or `--dry-run`, none of which
+can create a commit (`git rebase --abort` must always work, especially
+mid-conflict). `--continue` **is** gated on the subcommands above, because
+it writes the commit the conflicted operation stopped short of.
+
+The gate acts only in repos carrying the `.delegation/` **opt-in marker**
+directory (created by the `delegating` skill at loop start). A marker that
+is **tracked in git** is not an opt-in: it arrived with the clone rather
+than from anyone in that working copy choosing it, so the gate warns once
+and allows. Honest framing, the gate has five limits: it verifies the
+artifact, not the review's rigor; it only fires where hooks are enabled with
+`python3` on PATH; it gates only the local tree; matcher evasion is possible
+and an unresolvable path falls back to gating the hook's own repo; and being
 session-global it is scoped by the opt-in marker yet can still
-false-positive on compound commands, quoted separators, and heredocs
-(escape: write the artifact,
-remove `.delegation/`, or disable the hook — all five limits in the
+false-positive on compound commands, quoted separators, and heredocs. Every
+deny prints the three escape hatches and this schema: write the artifact,
+remove `.delegation/`, or disable the hook (all five limits in the
 [README](../../README.md)). After the manager commits, archive the artifact
 to `.delegation/history/`.
 

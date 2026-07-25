@@ -9,7 +9,10 @@ serialize instead.
 
 (Creating the `.delegation/` directory for this copy is also what **opts the
 repo in** to the commit gate and reminder hooks, the marker they check
-before acting.)
+before acting. Add `.delegation/` to that repo's `.gitignore` in the same
+step. A committed marker arrives in every clone and blocks contributors who
+never opted in, and a committed all-PLEASED artifact would waive review for
+all of them.)
 
 Rationale and the hard-won rules behind each item:
 [`operating-model.md`](operating-model.md#conflict-avoidance-hard-won).

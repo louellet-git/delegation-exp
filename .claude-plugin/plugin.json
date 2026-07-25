@@ -1,6 +1,6 @@
 {
   "name": "delegation-framework",
-  "description": "Standalone playbook, roles, and adversarial review machinery for a manager -> implementer -> skeptic operating model: the fresh-subagent-per-task loop, fan-out by disjoint write sets, test-first and evidence-before-claims postures, the always-pair-a-skeptic discipline, scaled review panels, lenses and rubric, reliability rules, and a review-artifact commit gate.",
+  "description": "Standalone playbook, roles, and adversarial review machinery for a manager -> implementer -> skeptic operating model: the fresh-subagent-per-task loop, fan-out by disjoint write sets, test-first and evidence-before-claims postures, the always-pair-a-skeptic discipline, scaled review panels, lenses and rubric, reliability rules, and a review-artifact commit gate. Hook scripts are stdlib-only Python and require Python 3.7 or newer, invoked as `python3` on PATH; without it the hooks degrade to silence.",
   "version": "0.1.0",
   "author": {
     "name": "Luc Ouellet",

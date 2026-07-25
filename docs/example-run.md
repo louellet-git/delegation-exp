@@ -13,7 +13,30 @@ describing both.
 ## 1. DECOMPOSE (manager)
 
 Trivial-edit gate: this is a three-part build touching separate modules,
-substantial enough to delegate. Three slices:
+substantial enough to delegate.
+
+**Arm the repo, and gitignore the marker in the same step.** Before anything
+else the manager runs:
+
+```
+mkdir -p .delegation/briefs .delegation/steward
+grep -qxF '.delegation/' .gitignore || echo '.delegation/' >> .gitignore
+```
+
+`.delegation/` is the opt-in marker that arms the commit gate and the reminder
+hooks for *this* repo, and it is the home of the checklist, the dispatch briefs
+and the review artifact. The `.gitignore` line is required, not tidiness: a
+committed marker would arm every contributor who has the plugin and never opted
+in, and a committed all-PLEASED artifact would waive the gate in every clone.
+
+**Scouting.** `reports-service` is a repo this manager already knows, so the
+bounded structural pass applies: `git ls-files`, the `pyproject.toml` test
+config, nothing else. The manager reads no module bodies. On an unfamiliar repo
+this step would instead be a delegated read-only scouting slice, because the
+allowlists and the exact test commands below cannot be invented
+([the DECOMPOSE procedure](../skills/delegating/SKILL.md#decompose-the-procedure)).
+
+Three slices:
 
 | Slice | Scope | Risk |
 |-------|-------|------|
@@ -35,9 +58,15 @@ Fill the [conflict-avoidance checklist](conflict-avoidance-checklist.md)
 ```
 
 All disjoint → the three slices may run in parallel: one fresh implementer
-per slice, each briefed with its allowlist, its exact test command, and its
-acceptance condition, and each re-briefed with the standing posture rule
-**"You do not commit. Leave work in the tree; the manager commits."**
+per slice, spawned as a general-purpose worker subagent with the whole brief in
+its prompt, each brief written from
+[the template](../skills/delegating/SKILL.md#the-brief-template) and saved to
+`.delegation/briefs/A.md`, `B.md`, `C.md` **before** dispatch (the steward
+reconciles against those files later; without them its DELEGATION line is
+unrecoverable). Every brief carries the allowlist, the exact test command, the
+acceptance condition, the test-first and evidence-before-claims postures, the
+status contract, and the standing re-brief **"You do not commit or push. Leave
+work in the tree; the manager commits once, after review."**
 
 ## 2. IMPLEMENT
 
@@ -81,13 +110,24 @@ found than round 1 → the loop converged; no further rounds.
 
 ## 6. ARTIFACT → MANAGER INSPECTS → COMMIT
 
-The manager writes the review artifact the commit gate reads:
+The gate binds a review artifact to **one** commit, so this batch is landed by
+a single commit over the integrated tree, not one commit per slice. The manager
+reads the SHA the artifact must be bound to, which is the current HEAD, the
+parent of the commit it is about to make:
+
+```
+$ git rev-parse HEAD
+7c1d9ab4f2e08d3c5b6a1907e4d2f83c9a0b5e61
+```
+
+then writes `.delegation/review-artifact.json`:
 
 ```json
 {
   "deliverable": "reports-service batch: CSV export, rate limiter, API docs",
   "mode": "swarm",
   "rounds": 2,
+  "head_sha": "7c1d9ab4f2e08d3c5b6a1907e4d2f83c9a0b5e61",
   "reviews": [
     {"reviewer": "skeptic-A", "lens": "correctness", "verdict": "PLEASED", "blocking": []},
     {"reviewer": "skeptic-B", "lens": "evidence-vs-claim", "verdict": "PLEASED", "blocking": []},
@@ -97,14 +137,25 @@ The manager writes the review artifact the commit gate reads:
 }
 ```
 
-The manager inspects the integrated tree itself (unanimous panel is
-necessary, not sufficient), then commits explicit paths per slice,
-never `git add -A`, as `.delegation/review-artifact.json` satisfies the
-PreToolUse gate (the repo opted in when the manager created `.delegation/`
-for the checklist in step 1; the gate's five honest limits are in the
+`head_sha` is required, and it is what makes one artifact waive exactly one
+commit: the gate compares it against HEAD at commit time, and once this batch
+lands, HEAD moves and the artifact is spent. Fill it **last**, after the tree
+has stopped changing. In a repo with no commits at all, `git rev-parse HEAD`
+fails and the field is `null`.
+
+The manager then works
+[the MANAGER INSPECTS list](../skills/delegating/SKILL.md#manager-inspects-the-procedure)
+itself, because a unanimous panel is necessary and not sufficient: it reads
+`git diff` over the integrated tree, reconciles every changed path against the
+three saved briefs plus the reserved index set, re-runs the full test command
+and keeps the output, and checks `.delegation/` is gitignored and unstaged.
+Then **one** commit, staging explicit paths, never `git add -A`, which
+`.delegation/review-artifact.json` satisfies for the PreToolUse gate (the repo
+opted in when the manager created `.delegation/` in step 1; the gate's five
+honest limits are in the
 [README](../README.md#enforcement-honestly-one-structural-slice-the-rest-is-discipline)).
-Afterwards it archives the artifact to `.delegation/history/` so the stale
-PLEASED cannot waive the next slice.
+Afterwards it archives the artifact to `.delegation/history/` so the spent
+PLEASED cannot waive the next batch.
 
 ## A steward checkpoint on this run
 
@@ -119,24 +170,31 @@ unicode inputs."* SHAs below are illustrative for this walkthrough.
 
 **Building the allowlist set (the mechanical detector).** Only the manager
 commits, so authorship is useless; the steward reconciles against the briefs
-instead. From the checklist in step 1: agent allowlists are `export/` +
-`tests/export/` (A), `middleware/` + `tests/middleware/` (B), `docs/api.md`
-(C); the reserved-index set is `docs/README.md`. Anything committed outside
-that union is the **unexplained delta** = direct manager work.
+saved in `.delegation/briefs/` instead. From those briefs and the checklist in
+step 1: agent allowlists are `export/` + `tests/export/` (A), `middleware/` +
+`tests/middleware/` (B), `docs/api.md` (C); the reserved-index set is
+`docs/README.md`. Anything outside that union is the **unexplained delta** =
+direct manager work. Each scorecard below is saved to
+`.delegation/steward/checkpoint-1.md` and `checkpoint-2.md`, so the next
+checkpoint can compare against it and catch slow directional drift.
 
-**Checkpoint 1 (taken just before commit, step 6).** Commits this window:
-`a1f30c2` (A, in `export/`), `b7e2d41` (B, in `middleware/`), `c4a8f09` (C, in
-`docs/api.md`), `4f2a1c9` (fix round on A, in `export/`), plus a `docs/README.md`
-index touch. Reconciliation: every change lands inside an allowlist except
-`docs/README.md`, which is in the reserved set (legitimate integration wiring).
-**Unexplained delta: empty.**
+**Checkpoint 1 (taken just before the commit in step 6).** This batch has not
+been committed yet, which is the normal state at this checkpoint: one panel
+waives one commit, so nothing lands until step 6. The window is therefore
+reconciled against the **working tree**, not against commits. `git status`
+shows changes in `export/` + `tests/export/` (A, including the fix round from
+brief `A-fix`), `middleware/` + `tests/middleware/` (B), `docs/api.md` (C), and
+`docs/README.md`. Reconciliation: every path lies inside an agent allowlist
+except `docs/README.md`, which is in the reserved set (legitimate integration
+wiring). **Unexplained delta: empty.**
 
 ```
 MANAGER SCORECARD (window: decompose → re-review, pre-commit)
 
 VISION: on-prize
-  Prize-movement (MANDATORY): 4f2a1c9 — the empty-dataset guard closed the last
-    open correctness gap; the claim now holds for empty / single-row / unicode.
+  Prize-movement (MANDATORY): brief A-fix (uncommitted, in export/csv.py) — the
+    empty-dataset guard closed the last open correctness gap; the claim now
+    holds for empty / single-row / unicode.
   Evidence: A, B, C each moved a conjunct of the stated claim (export, limiter,
             docs); no slice was off-claim polish.
 
@@ -153,7 +211,8 @@ RECOMMENDATION: stay the course — write the artifact, inspect, ship.
 ```
 
 **Checkpoint 2: a counterfactual drift.** Suppose the manager does *not* stop
-at step 6. Over the next three checkpoints it spawns **5** thin agents on polish
+at step 6. Over the next three checkpoints, three further batches each panelled
+and landed as one commit, it spawns **5** thin agents on polish
 (rename variables in `export/`, reword `docs/api.md`, split it into two pages,
 tidy imports, reformat), all inside allowlists and none moving any claim, while
 **hand-writing a new `auth/session.py` module itself** and committing it as
@@ -193,7 +252,10 @@ brief-id exposes.
 
 ## What this run demonstrates
 
-- The trivial-edit gate, checklist-forced fan-out, and disjoint parallelism.
+- The trivial-edit gate, arming the repo and gitignoring the marker in one
+  step, checklist-forced fan-out, and disjoint parallelism.
+- Briefs written from the template and persisted to `.delegation/briefs/`
+  before dispatch, which is what makes the steward's reconciliation possible.
 - The skeptic law: every slice (including the docs slice) faced at least one
   adversarial reviewer.
 - A green suite hiding a real bug (empty dataset) that an adversarial
@@ -201,6 +263,8 @@ brief-id exposes.
 - One consolidated fix round, dissenter-only re-review, convergence.
 - Both posture rules: no auto-commit on DONE; implementers never
   self-commit; the manager committed once, after the gate.
+- One panel, one commit: the whole batch integrated, reviewed as a tree, and
+  landed in a single commit whose parent SHA is the artifact's `head_sha`.
 - The steward run twice against the same scenario (a mechanical allowlist
   reconciliation, mandatory falsifiable slots, and both a `stay-the-course` and
   a `drifting` scorecard), governing the manager, not the deliverable.

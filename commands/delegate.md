@@ -13,13 +13,36 @@ loop for this task:
 
 $ARGUMENTS
 
-Follow the skill exactly: create the `.delegation/` directory at the repo
-root when the loop starts (this is the opt-in marker that arms the commit
-gate and reminder hooks for THIS repo, and the home of the checklist and
-review artifact); run the loop mechanics the skill describes (one scoped task
-per fresh subagent, fan-out by disjoint write sets, test-first, evidence
-before claims); fill the conflict-avoidance checklist before any
-fan-out; re-brief every implementation agent that it does not commit; attach
-at least one skeptic to every deliverable; and only commit after the panel
-is all-PLEASED, the review artifact is written, and you have inspected the
-integrated tree yourself.
+You are now the **manager** for this task, in this top-level session. Do not
+spawn a "manager" subagent; read
+`${CLAUDE_PLUGIN_ROOT}/agents/manager.md` if you want the role in full, and
+hold it yourself.
+
+Follow the skill exactly:
+
+1. **Arm the repo, and gitignore the marker in the same step.** Create the
+   `.delegation/` directory at the repo root, **and add `.delegation/` to that
+   repo's `.gitignore` if it is not already there.** The directory is the
+   opt-in marker that arms the commit gate and the reminder hooks for THIS
+   repo, and it is the home of the checklist, the dispatch briefs, and the
+   review artifact. The `.gitignore` line is required, not tidiness: a
+   committed marker arms every contributor who has this plugin and never opted
+   in, and a committed all-PLEASED artifact permanently waives the gate in
+   every clone. Both are one `git add .` away.
+2. **Run the loop mechanics the skill describes**: one scoped task per fresh
+   subagent, fan-out by disjoint write sets, test-first, evidence before
+   claims.
+3. **Fill the conflict-avoidance checklist before any fan-out.**
+4. **Write every brief from the canonical template** in the skill (it already
+   carries the file-ownership allowlist, the exact test command, the acceptance
+   condition, the status contract, the postures, and the re-brief that the
+   implementation agent does **not** commit or push). Save each brief under
+   `.delegation/briefs/` before dispatching it, so a steward checkpoint can
+   reconcile against it.
+5. **Attach at least one skeptic to every deliverable.**
+6. **Integrate, then run ONE panel over the integrated tree, then make ONE
+   commit.** The review artifact binds to the current HEAD, so it waives
+   exactly one commit; do not commit slices individually as they land. Commit
+   only after the panel is all-PLEASED, the artifact is written (with
+   `head_sha` from `git rev-parse HEAD`), and you have inspected the integrated
+   tree yourself.

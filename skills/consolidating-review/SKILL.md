@@ -47,7 +47,10 @@ unless the fix touched what they reviewed.
 - If late rounds only surface new one-line nits, fix them directly and close
   on an exhaustive manager check instead of another panel round.
 - Only when **every** reviewer is PLEASED does the artifact get written
-  ([`../skeptical-review/SKILL.md`](../skeptical-review/SKILL.md)) and the
-  manager inspect + commit.
+  ([`../skeptical-review/SKILL.md`](../skeptical-review/SKILL.md)), followed by
+  [the manager's own inspection](../delegating/SKILL.md#manager-inspects-the-procedure)
+  and **one** commit for the whole batch: the artifact is bound to a single
+  HEAD, so a panel waives one commit, not one per slice. Fill the artifact's
+  `head_sha` after the last fix round, not before it.
 
 Verdict format being consolidated: [`../../docs/rubric.md`](../../docs/rubric.md).

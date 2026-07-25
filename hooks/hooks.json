@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/subagent-reminder.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/subagent-reminder.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/subagent-reminder.py\" || exit 0",
             "timeout": 10
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/stop-reminder.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/stop-reminder.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/stop-reminder.py\" || exit 0",
             "timeout": 10
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/commit-gate.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/commit-gate.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/commit-gate.py\" || exit 0",
             "timeout": 10
           }
         ]
