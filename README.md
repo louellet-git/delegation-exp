@@ -5,6 +5,75 @@ implementer → skeptic operating model, packaged as a Claude Code plugin.**
 
 ---
 
+## Quickstart
+
+In a repo you want to build in, type one command:
+
+```
+/delegate add a CSV export endpoint to the reports service, with tests and a docs update
+```
+
+That puts you in the manager role: the task gets decomposed into scoped slices,
+one fresh implementation agent builds each slice, an adversarial skeptic panel
+reviews the integrated result, fix rounds run to convergence, and only then does
+anything get committed.
+
+**The four words you will have to type or recognise:**
+
+| Word | What it means |
+|------|---------------|
+| `PLEASED` / `NOT PLEASED` | The only two verdicts a skeptic returns. There is no "PLEASED with reservations", and every reviewer must be `PLEASED` before the commit. Format: [`docs/rubric.md`](docs/rubric.md). |
+| `BLOCKING` | A numbered finding that must be fixed before that commit. Everything else is non-blocking and does not gate. Format: [`docs/rubric.md`](docs/rubric.md). |
+| `swarm` \| `deep` \| `hybrid` | The three panel modes: many reviewers skimming broadly, one or a few tracing deeply, or both. You pick one per panel and it is recorded in the review artifact. |
+| `lens` | The adversarial angle one skeptic is assigned (`correctness`, `evidence-vs-claim`, `honesty/overclaim`, `derived-output/ranking`, and the rest). A panel diversifies them. Catalogue: [`docs/lenses.md`](docs/lenses.md). |
+
+> ⚠️ **Running the loop arms this repo, and arming is what turns the gate on.**
+> `/delegate` first checks whether the change is trivial enough to just do
+> directly, and stops there if it is. Once it does start a loop it creates a
+> `.delegation/` directory at the repo root, and that directory is the opt-in
+> marker: from that point on, **every commit in this
+> repo**, including a one-line typo fix, is denied unless a current
+> all-PLEASED review artifact sits in `.delegation/`.
+>
+> **Add `.delegation/` to that repo's `.gitignore` in the same breath**, before
+> you commit anything. The opt-in should stay local to whoever wants it. A
+> marker that is tracked in git is **not** treated as an opt-in: it arrived
+> with the clone rather than from anyone in that working copy choosing it, so
+> the gate warns and allows rather than arming a repo nobody opted into. The
+> warning repeats on each gated command, which is deliberate noise: it should
+> be fixed by gitignoring the marker, not tuned out.
+> The same rule disposes of a committed artifact: if `.delegation/` is tracked,
+> the gate is off and says so, instead of silently honouring a waiver that
+> shipped over the network. Gitignoring it keeps the marker meaning what it
+> should, which is that someone here chose this.
+>
+> To un-arm a repo, delete its `.delegation/` directory (`rm -rf .delegation`).
+> If the marker is tracked in git the gate is already inert there, so there is
+> nothing to un-arm and you should leave it alone. Note that `git rm -r
+> --cached .delegation` does the opposite of un-arming: it leaves the directory
+> on disk untracked, which is precisely the armed state. That command is how
+> you deliberately adopt an inherited marker as your own opt-in. See
+> [When not to delegate, and how to un-arm a repo](#when-not-to-delegate-and-how-to-un-arm-a-repo).
+
+**Check the gate is actually live before you trust it.** A misconfigured
+install fails silently by design, because a hook that cannot run must not block
+your commits. That means a dead gate and a working one look identical from the
+outside. To tell them apart, in a repo you do not mind dirtying:
+
+```
+mkdir -p .delegation && echo ".delegation/" >> .gitignore
+git commit --allow-empty -m "gate check"
+```
+
+An armed gate denies that commit and prints the artifact schema. Silence means
+the hooks are not running, whatever the install said. Remove `.delegation/`
+afterwards if you were only testing.
+
+**The worked example.** [`docs/example-run.md`](docs/example-run.md) is one
+delegation start to finish: decompose, fan out, panel, consolidate, fix,
+re-review, artifact, commit, plus two steward scorecards on the same run. If you
+read one more thing before your first `/delegate`, read that.
+
 ## Who this is for (read this before you install)
 
 This framework is tuned for **fixed-cost personal accounts**, where you pay a flat
@@ -184,7 +253,7 @@ Two entries in that list are easy to drop and are not optional.
 markdown, not an installable plugin. `README.md` is the canonical text of the
 commit gate's five honest limits, and seven files in the other directories link
 to it by relative path, so a copy without it ships seven broken links. Run
-`python scripts/validate-structure.py <your-copy-root>` after vendoring: it
+`python3 scripts/validate-structure.py <your-copy-root>` after vendoring: it
 checks the manifest, the frontmatter, the hook script paths, the required docs,
 and every relative link, so a wrong list fails there rather than in a session.
 
@@ -195,7 +264,7 @@ So the update story is explicit and minimal:
 1. `git fetch` the upstream repo.
 2. `git diff <vendored-commit>..<target-tag> -- .claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ docs/ README.md LICENSE`
 3. Re-apply the diff to your copy.
-4. Re-run `python scripts/validate-structure.py <your-copy-root>`.
+4. Re-run `python3 scripts/validate-structure.py <your-copy-root>`.
 5. Record the new commit in your README.
 
 Vendored copies do **not** stay current on their own.
@@ -207,54 +276,6 @@ not something you can do today. Cross-consumer propagation is conditional on
 marketplace tooling that is not yet in place; until it lands, upgrades are
 per-consumer (re-install or re-vendor). We do not state one-shot propagation as
 a current capability.
-
-## Quickstart
-
-In a repo you want to build in, type one command:
-
-```
-/delegate add a CSV export endpoint to the reports service, with tests and a docs update
-```
-
-That puts you in the manager role: the task gets decomposed into scoped slices,
-one fresh implementation agent builds each slice, an adversarial skeptic panel
-reviews the integrated result, fix rounds run to convergence, and only then does
-anything get committed.
-
-**The four words you will have to type or recognise:**
-
-| Word | What it means |
-|------|---------------|
-| `PLEASED` / `NOT PLEASED` | The only two verdicts a skeptic returns. There is no "PLEASED with reservations", and every reviewer must be `PLEASED` before the commit. Format: [`docs/rubric.md`](docs/rubric.md). |
-| `BLOCKING` | A numbered finding that must be fixed before that commit. Everything else is non-blocking and does not gate. Format: [`docs/rubric.md`](docs/rubric.md). |
-| `swarm` \| `deep` \| `hybrid` | The three panel modes: many reviewers skimming broadly, one or a few tracing deeply, or both. You pick one per panel and it is recorded in the review artifact. |
-| `lens` | The adversarial angle one skeptic is assigned (`correctness`, `evidence-vs-claim`, `honesty/overclaim`, `derived-output/ranking`, and the rest). A panel diversifies them. Catalogue: [`docs/lenses.md`](docs/lenses.md). |
-
-> ⚠️ **`/delegate` arms this repo, and arming is what turns the gate on.**
-> The loop creates a `.delegation/` directory at the repo root, and that
-> directory is the opt-in marker: from that point on, **every commit in this
-> repo**, including a one-line typo fix, is denied unless a current
-> all-PLEASED review artifact sits in `.delegation/`.
->
-> **Add `.delegation/` to that repo's `.gitignore` in the same breath**, before
-> you commit anything. The opt-in should stay local to whoever wants it. A
-> marker that is tracked in git is **not** treated as an opt-in: it arrived
-> with the clone rather than from anyone in that working copy choosing it, so
-> the gate warns once and allows rather than arming a repo nobody opted into.
-> The same rule disposes of a committed artifact: if `.delegation/` is tracked,
-> the gate is off and says so, instead of silently honouring a waiver that
-> shipped over the network. Gitignoring it keeps the marker meaning what it
-> should, which is that someone here chose this.
->
-> To un-arm a repo, delete its `.delegation/` directory. If it is tracked in
-> git it is already inert, so untrack it (`git rm -r --cached .delegation`)
-> rather than deleting it out of a shared repo. See
-> [When not to delegate, and how to un-arm a repo](#when-not-to-delegate-and-how-to-un-arm-a-repo).
-
-**The worked example.** [`docs/example-run.md`](docs/example-run.md) is one
-delegation start to finish: decompose, fan out, panel, consolidate, fix,
-re-review, artifact, commit, plus two steward scorecards on the same run. If you
-read one more thing before your first `/delegate`, read that.
 
 ## When not to delegate, and how to un-arm a repo
 
@@ -436,13 +457,22 @@ plugin surfaces.
 
 ## Validation
 
-Two mechanical checks keep the repo honest. They are not the same kind of
-thing, and only one of them does anything on a fresh clone:
+Two mechanical checks and a test suite. The three are not the same kind of
+thing, and only two of them do anything on a fresh clone:
 
 ```
-python scripts/validate-structure.py      # manifest, frontmatter, hooks, links
-python scripts/check-domain-neutral.py    # denylist grep: no source-domain vocabulary
+python3 -m unittest discover test         # the commit gate, exercised
+python3 scripts/validate-structure.py     # manifest, frontmatter, hooks, links
+python3 scripts/check-domain-neutral.py   # denylist grep: no source-domain vocabulary
 ```
+
+**The test suite is the only one that exercises behaviour.** It covers the
+commit gate, which is the one structural slice: what it gates and what it
+deliberately does not, repo resolution through `cd` chains and `git -C`, the
+artifact-to-HEAD binding, malformed and hostile artifacts, the tracked-marker
+rule, and that a repo which never opted in stays silent. If you are deciding
+whether to trust this thing, run that first. It needs no network, no fixtures
+you have to build, and no `git` binary.
 
 **`validate-structure.py` must be green**, here and on any vendored copy. It
 checks the manifest, the frontmatter on every skill / agent / command, that
