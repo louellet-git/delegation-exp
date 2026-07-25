@@ -34,7 +34,8 @@ anything get committed.
 > marker: from that point on, **every git command in this repo that authors a
 > new commit** (`commit`, `cherry-pick`, `revert`, `am`, their `--continue`,
 > and `--amend`), including a one-line typo fix, is denied unless a current
-> all-PLEASED review artifact sits in `.delegation/`.
+> all-PLEASED [review artifact](#enforcement-honestly-one-structural-slice-the-rest-is-discipline)
+> sits in `.delegation/`.
 >
 > **Add `.delegation/` to that repo's `.gitignore` in the same breath**, before
 > you commit anything, and keep the marker out of your commits. Two concrete
@@ -51,15 +52,17 @@ anything get committed.
 > your colleagues; it disarms you. The warning repeats on every gated command,
 > which is deliberate noise: it should be fixed, not tuned out.
 >
-> To un-arm a repo you armed, delete its `.delegation/` directory
-> (`rm -rf .delegation`). If the marker is already part of HEAD the gate is
-> inert there and says so on every gated command, so there is nothing to
-> un-arm. To go the other way and adopt an inherited marker as your own opt-in:
-> `git rm -r --cached .delegation`, add `.delegation/` to `.gitignore`, **and
-> commit that removal**. The marker counts as inherited for exactly as long as
-> HEAD carries it, which is what makes that un-arming commit itself ungated, so
-> there is no deadlock. See
-> [When not to delegate, and how to un-arm a repo](#when-not-to-delegate-and-how-to-un-arm-a-repo).
+> **To switch the gate off** in a repo you armed: `rm -rf .delegation`. Check
+> `git status` first, because if someone committed an archive under it you would
+> be deleting their files. If the marker is already part of HEAD the gate is
+> already standing down and says so on every gated command, so there is nothing
+> to switch off.
+>
+> **`git rm -r --cached .delegation` does the opposite.** It leaves the
+> directory on disk untracked, which is the armed state. That is the way to
+> claim an inherited marker as your own opt-in, and it is covered under
+> [claiming an inherited marker](#enforcement-honestly-one-structural-slice-the-rest-is-discipline). Do not reach for it when
+> what you want is quiet.
 
 **Check the gate is actually live before you trust it.** A misconfigured
 install fails silently by design, because a hook that cannot run must not block
@@ -67,7 +70,8 @@ your commits. That means a dead gate and a working one look identical from the
 outside. To tell them apart, in a repo you do not mind dirtying:
 
 ```
-mkdir -p .delegation && echo ".delegation/" >> .gitignore
+mkdir -p .delegation
+grep -qxF '.delegation/' .gitignore 2>/dev/null || echo '.delegation/' >> .gitignore
 git commit --allow-empty -m "gate check"
 ```
 
@@ -263,19 +267,22 @@ A project that cannot install plugins copies these paths into its own tree,
 keeping their names and their positions relative to one another:
 
 ```
-.claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ docs/ README.md LICENSE
+.claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ docs/ test/ README.md LICENSE
 ```
 
-They go at the **plugin root** of the copy, which is either your project root
-or a subdirectory you point the plugin loader at, and the layout has to be
-preserved: every cross-file link in this tree is relative, and every hook
+They go at the **plugin root** of the copy. **Use a subdirectory**, something
+like `vendor/delegation-framework/`, and point the plugin loader at it. Copying
+to your project root overwrites your own `README.md` with this one, and nothing
+will warn you. The layout inside that directory has to be preserved: every cross-file link in this tree is relative, and every hook
 command resolves its script through `${CLAUDE_PLUGIN_ROOT}/scripts/...`.
 
 Two entries in that list are easy to drop and are not optional.
 `.claude-plugin/` carries the manifest; without it the copy is a pile of
 markdown, not an installable plugin. `README.md` is the canonical text of the
 commit gate's five honest limits, and seven files in the other directories link
-to it by relative path, so a copy without it ships seven broken links. Run
+to it by relative path, so a copy without it ships seven broken links. `test/`
+is there because this README tells you to run the suite before trusting the
+gate, and a copy without it cannot. Run
 `python3 scripts/validate-structure.py <your-copy-root>` after vendoring: it
 checks the manifest, the frontmatter, the hook script paths, the required docs,
 and every relative link, so a wrong list fails there rather than in a session.
@@ -285,7 +292,7 @@ copy is a frozen snapshot by nature; it drifts the moment either side changes.
 So the update story is explicit and minimal:
 
 1. `git fetch` the upstream repo.
-2. `git diff <vendored-commit>..<target-tag> -- .claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ docs/ README.md LICENSE`
+2. `git diff <vendored-commit>..<target-tag> -- .claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ docs/ test/ README.md LICENSE`
 3. Re-apply the diff to your copy.
 4. Re-run `python3 scripts/validate-structure.py <your-copy-root>`.
 5. Record the new commit in your README.
@@ -329,11 +336,19 @@ archive is allowed and does not disarm your gate, but every clone then gets a
 [Enforcement, honestly](#enforcement-honestly-one-structural-slice-the-rest-is-discipline).)
 
 **If the marker is one you inherited** (HEAD carries it, so the gate is already
-standing down and warning), there is nothing to un-arm. To silence the warning,
-either delete the directory or make the opt-in your own:
-`git rm -r --cached .delegation`, add `.delegation/` to `.gitignore`, **and
-commit that removal**. Until that removal is committed the marker still counts
-as inherited, which is exactly what makes that commit itself ungated.
+standing down and warning), there is nothing to un-arm: it is already off. You
+have two choices, and they go in opposite directions.
+
+To make the warning stop and leave enforcement off, delete the directory:
+`rm -rf .delegation`. Run `git status` first. Those files may be tracked, in
+which case you are deleting somebody's committed archive, and the deletion
+commit is itself ungated so nothing will stop you.
+
+To turn enforcement **on** for yourself, claim the marker:
+`git rm -r --cached .delegation`, add `.delegation/` to `.gitignore`, and commit
+that removal. Until it is committed the marker still counts as inherited, which
+is exactly what makes that commit ungated. Be clear that this arms the gate. It
+is not a way to quieten it.
 
 ## Dependencies
 
@@ -385,31 +400,54 @@ a *visible act* (deleting or faking an artifact, or removing the marker)
 rather than merely forgetting a rule.
 
 **When the marker counts as an opt-in.** Only when the HEAD commit does not
-carry it. The gate reads the HEAD commit tree, never the index, and there are
-exactly three answers:
+carry it. The gate reads the HEAD commit tree, never the index. Three readings,
+across six states:
 
 | What HEAD's tree holds at `.delegation` | Reading | Gate |
 |---|---|---|
-| A file directly inside `.delegation/`, or a submodule at `.delegation` | inherited: it arrived with the repository | **off**, and it warns |
+| A file directly inside `.delegation/`, or a submodule, or a symlink | inherited: it arrived with the repository | **off**, and it warns |
 | `.delegation/` holding only subdirectories, such as `history/` | local: an archive is not the marker | **on** |
-| No `.delegation` entry at all | local: someone here created it | **on** |
-| No resolvable HEAD commit (fresh `git init`, unborn branch, unreadable HEAD) | local: nothing can have arrived in a commit that does not exist | **on** |
-| HEAD resolves but its objects cannot be read | unknown provenance | **off**, and it warns |
+| No `.delegation` entry at all, or a plain file of that name | local: someone here created it | **on** |
+| No refs anywhere, so no history at all (fresh `git init`) | local: nothing can have arrived in a commit that does not exist | **on** |
+| Refs exist but HEAD does not resolve (orphan branch, garbled HEAD) | unknown provenance | **off**, and it warns |
+| HEAD resolves but its objects cannot be read, fail their hash, or come from a pack entry whose declared size does not match its stream | unknown provenance | **off**, and it warns |
 | The marker is not inside a git repo at all | nothing to bind an artifact to | **off**, and it warns |
 
-`git add .delegation` changes none of this. Staging is a local act, so a staged
-marker leaves the gate **on**; the deny simply adds a line telling you that you
-staged it and that `git restore --staged .delegation` undoes it. Both warnings
-repeat on every gated command by decision, not by oversight: a hook is a
-one-shot process, so saying it once would take a state file that outlives the
+Alternates are followed transitively, so chained `--shared` or `--reference`
+clones read correctly, capped at 64 object directories so a circular chain
+terminates.
+
+`git add .delegation` changes none of this: staging is a local act, so a staged
+marker leaves the gate **on**. But the *next* commit would carry the marker into
+HEAD and stand the gate down for you and every clone, so a staged marker now
+draws a warning on allow as well as a line on deny. That is the one case where
+the gate speaks while letting a commit through, and it exists because the
+silence was the whole danger: the commit that disarms this thing used to be the
+one commit it had nothing to say about.
+
+Warnings repeat on every gated command by decision, not by oversight. A hook is
+a one-shot process, so saying it once would take a state file that outlives the
 session it describes, and a stale "already told you" file would suppress the
 only signal that the gate is not enforcing.
 
-**Un-arming an inherited marker.** `git rm -r --cached .delegation`, gitignore
-it, **and commit that removal**. The first two steps alone change nothing: the
-marker counts as inherited for as long as HEAD carries it. That is also what
-makes the un-arming commit itself ungated, so there is no deadlock where you
-need a panel to escape a gate that is not enforcing.
+**Claiming an inherited marker as your own opt-in.** Read the heading twice
+before you run this, because it is the opposite of switching the gate off. An
+inherited marker means the gate is already standing down, so there is nothing
+to un-arm; what follows turns enforcement **on** for you.
+
+```
+git rm -r --cached .delegation      # stop tracking it
+echo ".delegation/" >> .gitignore   # keep it local from now on
+git commit -m "keep .delegation local"
+```
+
+The first two steps alone change nothing, because the marker counts as
+inherited for exactly as long as HEAD carries it. That is also what makes this
+commit itself ungated, so there is no deadlock where you need a panel to escape
+a gate that is not enforcing. If what you actually wanted was to stop the
+warnings without arming anything, delete the directory instead: `rm -rf
+.delegation`, and check `git status` first in case someone committed an archive
+you would be deleting from under them.
 
 **One panel, one commit.** Because the artifact is bound to HEAD, it waives
 exactly one commit and is spent the moment that commit lands. So the loop is:
@@ -458,7 +496,26 @@ of committing the marker), but checking it out materializes a `.delegation/`
 directory in every clone, and by the same rule that directory reads as local
 there. So a cloner who has this plugin installed is **gated** in a repo they
 never opted into. Accepted trade, and the escape is the ordinary one: delete
-`.delegation/`, or keep the archive outside the repo.
+`.delegation/`, or keep the archive outside the repo. Note the sharp edge on
+that escape, which the deny message now warns about: if the archive is tracked,
+deleting the directory deletes somebody's committed files, and the deletion
+commit is itself ungated, so nothing stops you.
+
+Third: an orphan branch or a garbled HEAD stands the gate **down** in a repo
+whose owner armed it. `git checkout --orphan` leaves HEAD pointing at a ref that
+does not exist, so provenance becomes unknowable, and unknowable resolves to
+standing down rather than enforcing. That direction is deliberate: at this
+decision, guessing wrong toward enforcement blocks a contributor who never
+opted into anything, and guessing wrong toward standing down costs one
+unreviewed commit. The gate returns on its own once HEAD resolves again.
+
+**A cost, not a limit.** The hooks add roughly 44ms to **every** `Bash` and
+`PowerShell` tool call, not only gated ones, because the matcher fires on all of
+them and the script's imports run before the command is inspected. About 30ms of
+that is Python interpreter startup plus stdlib imports; the provenance read
+itself is about 0.36ms and stays flat on repositories with millions of objects.
+That is the price of the gate being a hook rather than a git hook, and you pay
+it on `ls` as well as on `git commit`.
 
 **Its five honest limits:**
 

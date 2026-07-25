@@ -294,10 +294,13 @@ carry** (the `delegating` skill creates it when a loop starts, and adds it to
 that repo's `.gitignore` in the same step). A marker HEAD *does* carry arrived
 with the repository rather than from anyone in this working copy, so it is not
 consent: the gate warns and stands down. Staging the marker with `git add`
-changes nothing, because staging is a local act. Un-arming an inherited marker
+changes nothing to the verdict, because staging is a local act, but the gate
+warns on the way past: the next commit would carry the marker into HEAD and
+stand the gate down everywhere. Claiming an inherited marker as your own opt-in
 takes `git rm -r --cached .delegation`, a gitignore line, **and a commit of
-that removal**, which is itself ungated precisely because the marker still
-counts as inherited until HEAD stops carrying it. Within its reach, skipping
+that removal**, which is itself ungated precisely because the marker counts as
+inherited until HEAD stops carrying it. Note the direction: that sequence turns
+enforcement **on**. Switching it off is `rm -rf .delegation`. Within its reach, skipping
 review takes a *visible act*, not a lapse of memory.
 
 `pull`, `merge` and `rebase` are **not** gated, and neither are `reset`,

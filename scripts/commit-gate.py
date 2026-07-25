@@ -75,8 +75,11 @@ suppress the only signal that the gate is not enforcing.
   the network authorizes nothing.
   Provenance is read from the HEAD COMMIT TREE, never from the index.
   `git add .delegation` is a local act by the person sitting there, so a
-  staged-but-uncommitted marker leaves the gate ON and the deny says what
-  they actually did. Only the marker's OWN files count, i.e. entries at
+  staged-but-uncommitted marker leaves the gate ON, and the staged fact is
+  said on BOTH paths: the deny says what they actually did, and an allow
+  warns that this very commit is the one that will carry the marker into
+  HEAD and stand the gate down for everyone afterwards. Only the marker's
+  OWN files count, i.e. entries at
   `.delegation/<file>`; a committed `.delegation/history/` archive is an
   audit trail, the opposite intent, and disarms nothing.
 - A marker whose provenance CANNOT BE DETERMINED, because the HEAD commit
@@ -93,11 +96,22 @@ suppress the only signal that the gate is not enforcing.
   nothing can be enforced; staying silent there left an armed-looking marker
   with zero enforcement behind it.
 
-A repo with NO resolvable HEAD COMMIT (a fresh `git init`, or a HEAD that
-cannot be resolved to a commit id at all) reads as a LOCAL marker rather
-than as unknown: nothing can have arrived inside a commit that does not
-exist, and git itself cannot author a commit in that state, so keeping the
-gate armed there blocks nobody.
+A repo with NO COMMITS ANYWHERE (a fresh `git init`: no refs at all) reads as
+a LOCAL marker rather than as unknown, because nothing can have arrived
+inside a commit that does not exist. A repo whose HEAD does not resolve but
+which DOES have refs reads as UNKNOWN and stands the gate down: `git checkout
+--orphan fresh` produces exactly that state, git authors commits happily from
+it (rc=0), and the marker's provenance there is genuinely unknowable, so a
+contributor who inherited a marker and ran a documented command must not be
+blocked and told they opted in. The refs test and its limits are at
+`repo_has_history`.
+
+A `.delegation` that HEAD carries as a SYMLINK or a submodule counts as
+inherited, exactly like a directory: checkout materialises a path the
+working-tree check answers True for, without anyone here choosing it. The two
+checks share one written-down rule (MARKER_MODES) because they used to
+disagree, and the disagreement gated every cloner of a repo whose
+`.delegation` was a committed symlink.
 
 Repo resolution: from the hook's cwd, adjusted when the command itself says
 otherwise. EVERY `cd <path>` before the git word is composed in order (a
@@ -189,6 +203,7 @@ Design choices, stated honestly:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sys
@@ -243,6 +258,11 @@ HEAD_UNBORN = "<unborn>"
 
 # Hard cap on any text that reaches the reason channel.
 MAX_REASON_ECHO = 60
+
+# The fixed tail of the stale-binding problem string. `deny_message` keys its
+# "only the binding is stale, re-point head_sha" hint off this, so the message
+# and the check that selects it cannot drift apart.
+HEAD_MISMATCH_MARKER = "one artifact waives one commit"
 
 # A quoted-or-plain token (no shell separators inside a plain token).
 _TOKEN = r"(?:\"[^\"]+\"|'[^']+'|[^\s;&|()`\"']+)"
@@ -382,7 +402,11 @@ def path_is_dir(path: Path) -> bool:
     Used only while LOOKING for the opt-in marker. A directory the OS will
     not let us stat cannot be evidence that somebody opted in, so this is
     fail-open by design. Everything AFTER a marker is found is fail-closed
-    (see `artifact_problem`)."""
+    (see `artifact_problem`).
+
+    Symlinks are FOLLOWED, which `Path.is_dir()` does anyway, and the HEAD
+    tree side agrees with that on purpose: see MARKER_MODES, where the same
+    decision is written down once and used by both checks."""
     try:
         return path.is_dir()
     except OSError:
@@ -591,6 +615,43 @@ def read_packed_ref(git_dir: Path, ref: str) -> str | None:
     return None
 
 
+def repo_has_history(git_dir: Path) -> bool:
+    """Does this repo hold commits, even though HEAD does not name one?
+
+    The test is deliberately cheap and narrow: does ANY ref exist, loose under
+    `refs/` or listed in `packed-refs`, here or in the common dir a linked
+    worktree shares. A fresh `git init` has none, and gets one the moment a
+    commit lands, which is exactly the line the caller needs.
+
+    Its limits, stated rather than papered over. A repo whose every ref was
+    deleted while its objects survive reads as "no history" here, and so does
+    one whose refs live only in a reftable (`git init --ref-format=reftable`),
+    which this reader does not parse. Both mistakes point the same way: the
+    marker reads LOCAL and the gate keeps enforcing, which is the safe side of
+    this particular question and the side a fresh `git init` needs."""
+    bases = [git_dir]
+    common = read_commondir(git_dir)
+    if common is not None:
+        bases.append(common)
+    for base in bases:
+        try:
+            for path in (base / "refs").rglob("*"):
+                if path.is_file():
+                    return True
+        except OSError:
+            pass
+        try:
+            lines = (base / "packed-refs").read_text(
+                encoding="utf-8-sig"
+            ).splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            if line and line[0] not in "#^":
+                return True
+    return False
+
+
 def read_head_sha(root: Path) -> str | None:
     """The repo's current HEAD commit, read straight off the filesystem.
 
@@ -658,12 +719,31 @@ _OFS_DELTA = 6
 _REF_DELTA = 7
 _TREE_MODE = b"40000"
 _GITLINK_MODE = b"160000"
+_SYMLINK_MODE = b"120000"
+
+# The HEAD-tree entry modes that MATERIALISE, on checkout, the same thing the
+# working-tree check counts as the marker. This is the one place that decides
+# it, and both checks use it, because they disagreed about symlinks and gated
+# strangers: `path_is_dir()` FOLLOWS a symlink, so a committed symlink named
+# `.delegation` pointing at a directory is present in every clone, while the
+# tree walk answered "a FILE named .delegation; not this marker" and enforced
+# against every cloner in a repo none of them opted into. A tree, a gitlink
+# and a symlink all produce a path `path_is_dir()` can answer True for, so all
+# three arrive with the repository. A regular file cannot, so it is not the
+# marker; a `.delegation/` directory next to a committed file of that name is
+# something somebody created here.
+MARKER_MODES = (_TREE_MODE, _GITLINK_MODE, _SYMLINK_MODE)
 
 # Bounds. A commit is a few hundred bytes and a tree a few kilobytes; the cap
 # is generous only so that a legitimately huge root tree still parses.
 MAX_OBJECT_BYTES = 32 * 1024 * 1024
 MAX_DELTA_DEPTH = 64
 _CHUNK = 65536
+# How many object directories one repo may reach through alternates. Git
+# follows alternates transitively and so does `_object_dirs()`; this cap is
+# what makes a circular chain terminate, and it is far above any real
+# `--reference` fan-out.
+MAX_OBJECT_DIRS = 64
 
 
 def _object_dirs(git_dir: Path) -> list[Path]:
@@ -682,7 +762,19 @@ def _object_dirs(git_dir: Path) -> list[Path]:
                 dirs.append(objects)
         except OSError:
             continue
-    for objects in list(dirs):
+    # Alternates are TRANSITIVE, and git follows them that way: `git clone
+    # --shared A B; git clone --shared B C` leaves C naming B's object
+    # directory, whose own alternates name A's, where the objects actually
+    # live. Iterating a snapshot taken before the appends followed exactly one
+    # level, so in C every object read failed and a purely local marker read
+    # UNKNOWN: the gate stood down on every commit, in ordinary CI and
+    # monorepo practice. `dirs` doubles as the visited set (membership is
+    # checked before every append) and MAX_OBJECT_DIRS terminates a circular
+    # chain, however the cycle is spelled.
+    index = 0
+    while index < len(dirs) and len(dirs) < MAX_OBJECT_DIRS:
+        objects = dirs[index]
+        index += 1
         try:
             text = (objects / "info" / "alternates").read_text(
                 encoding="utf-8-sig"
@@ -697,6 +789,14 @@ def _object_dirs(git_dir: Path) -> list[Path]:
             if not candidate.is_absolute():
                 candidate = objects / candidate
             try:
+                # Normalised, so a cycle spelled two different ways still
+                # lands on the same entry of the visited set.
+                candidate = candidate.resolve()
+            except OSError:
+                continue
+            if len(dirs) >= MAX_OBJECT_DIRS:
+                break
+            try:
                 if candidate.is_dir() and candidate not in dirs:
                     dirs.append(candidate)
             except OSError:
@@ -705,7 +805,16 @@ def _object_dirs(git_dir: Path) -> list[Path]:
 
 
 def _read_loose_object(objects_dir: Path, sha: str):
-    """(kind, payload) for a loose object, or None."""
+    """(kind, payload) for a loose object, or None.
+
+    The object id is VERIFIED, not assumed. Checking only that the body is as
+    long as its header claims let a loose object be swapped for a well-formed
+    object of different content, and the reader then answered confidently
+    where git refuses outright ("error: hash mismatch"). That forges a verdict
+    in either direction: a swapped root tree can hide a committed marker (the
+    gate then blocks a colleague who never opted in) or invent one (the gate
+    stands down in a repo whose owner armed it). A mismatch is exactly the
+    "cannot tell" case, so it returns None and the caller reads UNKNOWN."""
     path = objects_dir / sha[:2] / sha[2:]
     try:
         if path.stat().st_size > MAX_OBJECT_BYTES:
@@ -724,7 +833,15 @@ def _read_loose_object(objects_dir: Path, sha: str):
     if kind not in ("commit", "tree", "tag", "blob") or not size_text.isdigit():
         return None
     body = data[nul + 1 :]
-    return (kind, body) if len(body) == int(size_text) else None
+    if len(body) != int(size_text):
+        return None
+    if len(sha) == 40:
+        digest = hashlib.sha1(data).hexdigest()
+    elif len(sha) == 64:
+        digest = hashlib.sha256(data).hexdigest()
+    else:
+        return None  # an object id width this reader does not hash
+    return (kind, body) if digest == sha else None
 
 
 def _idx_lookup(idx_path: Path, sha: str, oid_len: int):
@@ -803,7 +920,15 @@ def _inflate_at(fh, start: int, size: int):
     """Exactly `size` inflated bytes starting at `start`, or None.
 
     Streamed in chunks with a max_length bound, so a corrupt or hostile
-    entry claiming a small size cannot expand into memory unchecked."""
+    entry claiming a small size cannot expand into memory unchecked.
+
+    The declared size must also be where the stream actually ENDS. Returning
+    the first `size` bytes without checking meant an entry that UNDER-declares
+    its size inflated to a valid-looking TRUNCATED object: a hand-built tree
+    whose `.delegation` entry was cut off parsed cleanly and read LOCAL, and a
+    size one entry longer flipped the same repo to INHERITED. Both halves of
+    the check are the same rule: the header describes the stream, or the entry
+    is not readable."""
     if size > MAX_OBJECT_BYTES:
         return None
     try:
@@ -816,6 +941,18 @@ def _inflate_at(fh, start: int, size: int):
                 return None
             out += dec.decompress(chunk, size - len(out))
             if dec.eof and len(out) < size:
+                return None
+        # Drain what is left one byte at a time: any further inflated byte
+        # means the entry holds more than its header declared. `max_length`
+        # can stop zlib exactly at `size` without it having seen the
+        # end-of-stream marker, so eof is not yet decisive here.
+        while not dec.eof:
+            tail = dec.unconsumed_tail
+            if not tail:
+                tail = fh.read(_CHUNK)
+                if not tail:
+                    return None
+            if dec.decompress(tail, 1):
                 return None
     except (OSError, zlib.error):
         return None
@@ -1056,19 +1193,33 @@ def marker_provenance(root: Path) -> str:
     `is_marker_own_path`. A committed `.delegation/history/` is an audit
     trail and leaves the gate armed.
 
-    A submodule (gitlink) at `.delegation` counts as inherited: cloning the
-    repo materialises that directory, which is exactly the harm.
+    A submodule (gitlink) or a symlink at `.delegation` counts as inherited
+    for the same reason a directory does: cloning the repo materialises a
+    `.delegation` the working-tree check answers True for. See MARKER_MODES.
 
-    UNKNOWN when the HEAD commit resolves but the objects behind it cannot
-    be read or parsed. LOCAL when there is no resolvable HEAD commit at all:
-    nothing can have arrived inside a commit that does not exist."""
+    UNKNOWN when the HEAD commit resolves but the objects behind it cannot be
+    read or parsed, and also when HEAD does not resolve in a repo that HAS
+    refs (an orphan branch): provenance is unknowable there. LOCAL when the
+    repo holds no refs at all, i.e. a fresh `git init`, where nothing can have
+    arrived inside a commit because there are no commits."""
     try:
         git_dir = resolve_git_dir(root)
         if git_dir is None:
             return MARKER_LOCAL
         head = read_head_sha(root)
         if head is None or head == HEAD_UNBORN or len(head) not in (40, 64):
-            return MARKER_LOCAL
+            # No resolvable HEAD COMMIT. Two different situations hide in
+            # there and used to share the LOCAL answer, which blocked a
+            # contributor who inherited a marker and then ran a documented
+            # command: `git checkout --orphan fresh` leaves HEAD naming a ref
+            # that does not exist, and git DOES author a commit from that
+            # state (rc=0), so the old justification for reading it as LOCAL
+            # was simply false. With refs still on disk the marker's
+            # provenance is genuinely unknowable, so say so and stand down.
+            # With no refs at all (a fresh `git init`) nothing can have
+            # arrived inside a commit, so LOCAL is right and the gate keeps
+            # enforcing. See `repo_has_history` for the test and its limits.
+            return MARKER_UNKNOWN if repo_has_history(git_dir) else MARKER_LOCAL
         store = ObjectStore(git_dir, len(head) // 2)
         tree_sha = _commit_root_tree(store, head)
         if tree_sha is None:
@@ -1084,10 +1235,14 @@ def marker_provenance(root: Path) -> str:
         if marker is None:
             return MARKER_LOCAL  # HEAD does not carry the marker at all
         mode, _, sha = marker
-        if mode == _GITLINK_MODE:
-            return MARKER_INHERITED  # a submodule materialises on clone
-        if mode != _TREE_MODE:
+        if mode not in MARKER_MODES:
             return MARKER_LOCAL  # a FILE named .delegation; not this marker
+        if mode != _TREE_MODE:
+            # A submodule or a symlink: checkout materialises a `.delegation`
+            # that the working-tree check answers True for, with nobody here
+            # opting in. Same answer as a committed directory, for the same
+            # reason. See MARKER_MODES.
+            return MARKER_INHERITED
         subtree = store.get(sha)
         if subtree is None or subtree[0] != "tree":
             return MARKER_UNKNOWN
@@ -1100,6 +1255,43 @@ def marker_provenance(root: Path) -> str:
         return MARKER_LOCAL  # only subdirectories, e.g. history/
     except Exception:  # noqa: BLE001 - cannot tell is a real answer here
         return MARKER_UNKNOWN
+
+
+def head_tracks_marker_contents(root: Path) -> bool:
+    """True when the HEAD commit carries a `.delegation/` TREE, i.e. tracked
+    files live under the marker even though the marker itself reads as a local
+    opt-in (a committed `.delegation/history/` archive; see
+    `is_marker_own_path`).
+
+    ADVISORY ONLY, like `marker_is_staged`: it decides nothing, it qualifies
+    one sentence of the deny message. Escape hatch 2 says "delete the
+    `.delegation/` directory", and where those files are tracked, following
+    that literally destroys somebody's committed review archive, with the
+    deletion commit itself ungated because deleting the marker disarms the
+    gate first. A stranger should be told that before they run it, not
+    after."""
+    try:
+        git_dir = resolve_git_dir(root)
+        if git_dir is None:
+            return False
+        head = read_head_sha(root)
+        if head is None or head == HEAD_UNBORN or len(head) not in (40, 64):
+            return False
+        store = ObjectStore(git_dir, len(head) // 2)
+        tree_sha = _commit_root_tree(store, head)
+        if tree_sha is None:
+            return False
+        root_tree = store.get(tree_sha)
+        if root_tree is None or root_tree[0] != "tree":
+            return False
+        entries = tree_entries(root_tree[1], store.oid_len)
+        if entries is None:
+            return False
+        wanted = OPT_IN_MARKER.encode("utf-8")
+        return any(name == wanted and mode == _TREE_MODE
+                   for mode, name, _ in entries)
+    except Exception:  # noqa: BLE001 - advisory: no sentence, no harm
+        return False
 
 
 def freshness_problem(data: dict, root: Path) -> str | None:
@@ -1132,8 +1324,8 @@ def freshness_problem(data: dict, root: Path) -> str | None:
         # `recorded` is hex-validated above, so these 12 chars are safe to echo.
         return (
             f"the review artifact was written against commit "
-            f"{scrub(recorded[:12])}, but HEAD is now {current[:12]}; one "
-            "artifact waives one commit"
+            f"{scrub(recorded[:12])}, but HEAD is now {current[:12]}; "
+            + HEAD_MISMATCH_MARKER
         )
     return None
 
@@ -1219,7 +1411,8 @@ def artifact_problem(root: Path) -> str | None:
         )
 
 
-def deny_message(problem: str, scope: str = "", note: str = "") -> str:
+def deny_message(problem: str, scope: str = "", note: str = "",
+                 tracked_contents: bool = False) -> str:
     """The whole user experience of this framework's one structural feature.
 
     A blocked human needs three things in this order: what is wrong, how to
@@ -1236,15 +1429,39 @@ def deny_message(problem: str, scope: str = "", note: str = "") -> str:
     `problem` (built by the artifact checks, and every artifact-derived
     fragment in it is already positional or hex-validated), `scope` and
     `note`. Scrubbing kills newlines, so no value can ever add a line to
-    this frame, let alone forge one of the numbered hatches."""
+    this frame, let alone forge one of the numbered hatches.
+
+    `tracked_contents` is a fact about the HEAD tree, not text: it qualifies
+    escape hatch 2 where following it would delete tracked files. See
+    `head_tracks_marker_contents`."""
     lines = [
         "delegation-framework commit gate: BLOCKED.",
         "Problem: " + scrub(problem, 400) + ".",
-        f"Why: this repo opted in to the gate by having a {OPT_IN_MARKER}/ "
-        "directory at its root that nobody committed, so every git command "
-        "that authors a new commit (commit, cherry-pick, revert, am) needs a "
-        "review artifact that is all-PLEASED and bound to the current HEAD.",
+        # Factual, not a claim about consent. This line used to say the repo
+        # "opted in", and a colleague armed by a single `git pull` was
+        # greeted by a deny asserting they had chosen this. What the gate can
+        # actually check is the state, so that is what it describes. The list
+        # of gated commands is now complete too: `--amend` is the deny a real
+        # user is likeliest to meet, and a message that never mentioned it
+        # read like a bug.
+        f"Why: this repo has a {OPT_IN_MARKER}/ directory at its root that "
+        "the HEAD commit does not carry, so every git command that authors a "
+        "new commit (commit, cherry-pick, revert, am, including --amend and "
+        "--continue) needs a review artifact that is all-PLEASED and bound to "
+        "the current HEAD.",
     ]
+    if HEAD_MISMATCH_MARKER in problem:
+        # The cheap fix, said where the problem is only the binding. After an
+        # `--amend` deny, or any deny that follows a commit landing, this
+        # takes seconds; sending a beginner to "run the skeptic panel" for a
+        # typo in a commit message is what made the gate feel broken.
+        lines.append(
+            "Fastest fix here: only the artifact's binding is stale, not the "
+            "review. Re-point 'head_sha' at `git rev-parse HEAD` and commit "
+            "again. A fresh panel is needed only if WHAT you are committing "
+            "changed since the review, which is the case `--amend` after "
+            "`git add` creates."
+        )
     if note:
         lines.append(scrub(note, 400))
     lines += [
@@ -1257,7 +1474,15 @@ def deny_message(problem: str, scope: str = "", note: str = "") -> str:
         "HEAD). One artifact waives one commit.",
         f"(2) OPT THIS REPO OUT: delete the {OPT_IN_MARKER}/ directory at the "
         "repo root; this gate and both reminder hooks go silent in this repo "
-        "immediately.",
+        "immediately."
+        + (
+            f" CAREFUL: the HEAD commit carries files under {OPT_IN_MARKER}/ "
+            "here (a committed review archive), so deleting the directory "
+            "deletes TRACKED files somebody committed on purpose, and the "
+            "deletion commit is itself ungated because the gate goes silent "
+            "the moment the marker is gone. If that archive is not yours to "
+            "delete, use (3)." if tracked_contents else ""
+        ),
         "(3) TURN IT OFF EVERYWHERE: disable the delegation-framework hooks "
         "(/hooks) or remove the plugin.",
     ]
@@ -1352,9 +1577,12 @@ def main() -> int:
             "created locally: the HEAD commit tree could not be read. "
             "Provenance unknown, so the commit gate is standing down here "
             "rather than blocking someone who may never have opted in. "
-            f"`git ls-tree HEAD {OPT_IN_MARKER}` is the same question asked "
-            "of git itself; empty output means the marker is local and the "
-            "gate should be enforcing."
+            "What failed is reading this repo's own object store (a partial "
+            "or filtered clone, a corrupt object, an orphan branch, or an "
+            "object format this reader does not understand); `git fsck "
+            "--connectivity-only` is the question worth asking next, and "
+            "enforcement returns by itself once the HEAD commit tree can be "
+            "read."
         )
         return 0
 
@@ -1377,7 +1605,28 @@ def main() -> int:
                 "repository, so it does not disarm the gate. If you did not "
                 f"mean to stage it: `git restore --staged {OPT_IN_MARKER}`."
             )
-        deny(deny_message(problem, scope, note))
+        deny(deny_message(problem, scope, note,
+                          head_tracks_marker_contents(root)))
+        return 0
+
+    # THE COMMIT THAT DISARMS THE GATE. The staged fact was computed only on
+    # the deny path, so the one commit that matters most went through in
+    # total silence: an armed repo, a marker nobody gitignored, a valid
+    # all-PLEASED artifact, `git add .`. The commit lands, the marker enters
+    # HEAD, and from then on it reads as INHERITED here and in every clone,
+    # so the gate stands down for everyone, with that artifact shipped
+    # alongside it. Still an ALLOW, because the artifact is valid and this
+    # may be exactly what the user meant; but never again in silence.
+    if marker_is_staged(root):
+        warn(
+            f"delegation-framework: {OPT_IN_MARKER}/ is STAGED, so this "
+            "commit will carry the marker into the HEAD commit. From then on "
+            "it counts as having arrived WITH the repository rather than as "
+            "anyone opting in, and the commit gate stands down here and in "
+            "every clone, with this review artifact shipped alongside it. To "
+            f"keep the opt-in local: `git restore --staged {OPT_IN_MARKER}` "
+            f"and add `{OPT_IN_MARKER}/` to .gitignore."
+        )
     return 0
 
 
