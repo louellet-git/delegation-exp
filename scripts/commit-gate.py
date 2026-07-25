@@ -6,8 +6,9 @@ Requires Python 3.7 or newer (`from __future__ import annotations`, and the
 
 Reads the PreToolUse hook payload on stdin. If the tool command *runs* a git
 subcommand that AUTHORS A NEW COMMIT (`commit`, `cherry-pick`, `revert`,
-`am`), and the target repo has **opted in** by having an untracked
-`.delegation/` directory at its root, the gate requires a well-formed,
+`am`), and the target repo has **opted in** by having an UNCOMMITTED
+`.delegation/` directory at its root (present in the working tree, not
+carried by the HEAD commit), the gate requires a well-formed,
 all-PLEASED review artifact at `.delegation/review-artifact.json` that is
 **bound to the current HEAD**. Without one it emits a JSON
 `permissionDecision: "deny"`; otherwise it stays silent and the normal
@@ -29,10 +30,16 @@ Which subcommands are gated, and which deliberately are not:
   `--dry-run`. None of them can create a commit, and denying them is the
   worst failure this gate had: a user stuck mid-conflict in a detached HEAD
   ran `git rebase --abort` to back out and was told to "run the skeptic
-  panel", which cannot resolve a conflicted rebase. `--continue` is
-  deliberately NOT in that list: `git cherry-pick --continue`, `git revert
-  --continue` and `git am --continue` write the commit the conflicted
-  operation stopped short of, so they are the real commit-creating step.
+  panel", which cannot resolve a conflicted rebase. The flag counts
+  wherever it sits on the line: `git commit --dry-run -m "wip"` and `git
+  commit -m "wip" --dry-run` are the same command and both pass, while a
+  flag named INSIDE the commit message stays gated (see GIT_COMMIT_RE).
+  `--continue` is deliberately NOT in that list: `git cherry-pick
+  --continue`, `git revert --continue` and `git am --continue` write the
+  commit the conflicted operation stopped short of, so they are the real
+  commit-creating step. `--amend` is not in that list either, though it is
+  the one that costs a real user something; the reasoning is at
+  NON_COMMITTING_FLAGS.
 
 Matching is anchored: the `git` word must sit at a command position (start
 of line, after `; & | ( ) { }` or a backtick, or after a shell keyword like
@@ -53,20 +60,44 @@ walling off repos that never use the framework, the gate enforces only where
 `/delegate` creates it when a loop starts). No marker means silent allow,
 and that silence is load-bearing.
 
-Two marker states are NOT opt-ins, and each says so once instead of acting:
+Three marker states are NOT opt-ins. In each of them the gate stands down
+and says why, on EVERY gated command rather than once: a hook is a one-shot
+process, so "once per session" would mean state on disk that outlives the
+thing it describes, and a stale "already told you" file would silently
+suppress the only signal that the gate is not enforcing.
 
-- A marker that is TRACKED in git. It arrived with the clone, so it was not
-  an act of consent by anyone in this working copy: one contributor running
-  `git add .` would otherwise arm the gate for every colleague who has the
-  plugin, in a repo none of them opted into, and the documented escape
-  (delete `.delegation/`) would delete a shared tracked file and disarm it
-  for all of them too. An authorization token that arrives over the network
-  authorizes nothing. Tracked state is read straight out of `.git/index`,
-  the same no-shell-out way HEAD is read.
+- A marker CARRIED BY THE HEAD COMMIT. It arrived with the repo, so it was
+  not an act of consent by anyone in this working copy: one contributor
+  committing `.delegation/` would otherwise arm the gate for every colleague
+  who has the plugin, in a repo none of them opted into, and the documented
+  escape (delete `.delegation/`) would delete a shared tracked file and
+  disarm it for all of them too. An authorization token that arrives over
+  the network authorizes nothing.
+  Provenance is read from the HEAD COMMIT TREE, never from the index.
+  `git add .delegation` is a local act by the person sitting there, so a
+  staged-but-uncommitted marker leaves the gate ON and the deny says what
+  they actually did. Only the marker's OWN files count, i.e. entries at
+  `.delegation/<file>`; a committed `.delegation/history/` archive is an
+  audit trail, the opposite intent, and disarms nothing.
+- A marker whose provenance CANNOT BE DETERMINED, because the HEAD commit
+  or a tree under it could not be read (a partial clone that filtered out
+  trees, a corrupt object store, an object format this reader does not
+  understand). Past the marker, failing closed means "do not let unreviewed
+  work through", and that is right. AT the marker, failing closed means
+  "keep blocking a colleague who never opted into anything", which is the
+  harm this rule exists to prevent. The two checks have opposite hazards
+  and must not share a default, so unknown provenance stands the gate down
+  and says plainly that it could not tell.
 - A marker in a directory that is not inside a git repo at all (someone ran
   the loop before `git init`). There is no HEAD to bind an artifact to, so
   nothing can be enforced; staying silent there left an armed-looking marker
   with zero enforcement behind it.
+
+A repo with NO resolvable HEAD COMMIT (a fresh `git init`, or a HEAD that
+cannot be resolved to a commit id at all) reads as a LOCAL marker rather
+than as unknown: nothing can have arrived inside a commit that does not
+exist, and git itself cannot author a commit in that state, so keeping the
+gate armed there blocks nobody.
 
 Repo resolution: from the hook's cwd, adjusted when the command itself says
 otherwise. EVERY `cd <path>` before the git word is composed in order (a
@@ -81,9 +112,20 @@ Design choices, stated honestly:
 
 - The script always exits 0 and communicates via hook JSON output. A deny is
   a successful run that prints "deny", never a nonzero exit. hooks.json
-  wires it as a single `python3` invocation with `|| exit 0`, so a missing
-  interpreter or a missing script file degrades to silence rather than to a
-  nonzero PreToolUse exit, which would block every Bash call in the session.
+  wires it as `python3 X || python X || py -3 X || exit 0`. The fallbacks
+  exist because the python.org Windows installer ships `python.exe` and no
+  `python3.exe`, and the gate is matched on `Bash|PowerShell` and decodes
+  the artifact as `utf-8-sig` specifically for that platform, so a chain
+  that only ever tries `python3` was dead code on Windows. The chain is
+  SAFE, in the one way that matters, because every way a link can fail
+  (interpreter absent, script file absent, interpreter too old to compile
+  the script) happens BEFORE the script's first statement and therefore
+  before anything reads stdin; and once the script does read stdin it always
+  exits 0, so `||` never fires after the pipe has been drained. That is the
+  invariant the ordering protects: a failed link means an untouched stdin.
+  A missing interpreter or script still degrades to silence rather than to
+  a nonzero PreToolUse exit, which would block every Bash call in the
+  session.
 - Fail-open on INFRASTRUCTURE problems (unreadable stdin, malformed hook
   payload, a repo root we are not allowed to stat): a broken hook must not
   brick tool calls.
@@ -116,10 +158,17 @@ Design choices, stated honestly:
   reviewed against; once that commit is made, HEAD moves and the artifact is
   stale. The "archive it afterwards" step is prose guidance to an LLM, and
   the failure mode this gate exists to wall off is *forgetting*, so
-  freshness is checked structurally rather than trusted.
+  freshness is checked structurally rather than trusted. Known residual,
+  left open on purpose: `git reset --soft HEAD~1` moves HEAD back and makes
+  a spent artifact fresh again. The only way to spend an artifact is to
+  make the commit it authorised, so the re-arm returns exactly what was
+  just used and nothing more; closing it would mean gating `reset`, which
+  authors no commit, and gating things that author no commit is the
+  over-reach `--abort` taught us not to repeat.
 - FIVE honest limits (see README "Enforcement, honestly"):
-  (1) fires only where these hooks are installed and enabled, and only if
-      `python3` is on PATH, otherwise it silently vanishes;
+  (1) fires only where these hooks are installed and enabled, and only if a
+      Python 3.7+ interpreter answers to `python3`, `python` or `py -3`,
+      otherwise it silently vanishes;
   (2) verifies the artifact exists / is well-formed (including a non-empty
       `deliverable`) / is all-PLEASED / is bound to the current HEAD, not
       that the review was rigorous; a PLEASED artifact can be fabricated
@@ -143,11 +192,19 @@ from __future__ import annotations
 import json
 import re
 import sys
+import zlib
 from pathlib import Path
 
 ARTIFACT_REL_PATH = Path(".delegation") / "review-artifact.json"
 OPT_IN_MARKER = ".delegation"
 VALID_MODES = {"swarm", "deep", "hybrid"}
+
+# The three answers `marker_provenance()` can give. INHERITED and UNKNOWN
+# both stand the gate down (see the module docstring on why the marker check
+# and the artifact check must not share a default); only LOCAL enforces.
+MARKER_LOCAL = "local"
+MARKER_INHERITED = "inherited"
+MARKER_UNKNOWN = "unknown"
 
 # Git subcommands that author a NEW commit. `merge`, `rebase` and `pull` were
 # here and were removed on purpose: they integrate or replay commits that
@@ -163,6 +220,17 @@ COMMIT_SUBCOMMANDS = (
 # them can produce a commit, so a command carrying one is never gated, no
 # matter which subcommand it names. `--continue` is intentionally absent: it
 # writes the commit the conflicted operation stopped short of.
+#
+# `--amend` is intentionally absent too, and that is a real cost paid on
+# purpose. Amending a typo in the message of a commit that was just gated
+# needs a fresh artifact, because HEAD moved when that commit landed. The
+# reason it stays gated anyway: `--amend` writes a NEW commit object whose
+# content is whatever is in the index, so `git add unreviewed.py && git
+# commit --amend --no-edit` would launder arbitrary unreviewed work into
+# history. Telling a message-only amend from a content amend means diffing
+# the index against the HEAD tree on every command, and the failure this
+# gate exists to wall off is precisely *forgetting what got included*. The
+# honest price of the typo is re-pointing `head_sha` at the new HEAD.
 NON_COMMITTING_FLAGS = (
     "abort",
     "skip",
@@ -195,10 +263,22 @@ _TOKEN = r"(?:\"[^\"]+\"|'[^']+'|[^\s;&|()`\"']+)"
 # no ref) out of the gate.
 #
 # The final lookahead drops any command that carries a non-committing flag
-# (`--abort`, `--skip`, `--quit`, `--dry-run`). It scans only as far as the
-# next shell separator OR the next quote character, so a commit MESSAGE that
-# happens to mention one of those flags (`git commit -m "fix --abort
-# handling"`) is still gated: the scan stops at the opening quote.
+# (`--abort`, `--skip`, `--quit`, `--dry-run`). It scans to the next shell
+# separator, treating a quoted run as ONE opaque token rather than stopping
+# dead at the opening quote. Stopping at the quote kept a commit MESSAGE
+# that merely mentions a flag (`git commit -m "fix --abort handling"`)
+# gated, which is right, but it also denied `git commit -m "wip" --dry-run`
+# while allowing the same flags in the other order: a dry run creates no
+# commit and can never need a panel, whichever end of the line it sits on.
+# Skipping OVER the quoted run keeps both properties, because the flag has
+# to appear OUTSIDE the quotes to count. The two alternatives are disjoint
+# at every position (the character class excludes quote characters, so only
+# the quoted branch can start at one), which is what keeps the scan linear
+# instead of catastrophically backtracking. An unterminated quote matches
+# neither branch, so the scan stops there and the command stays gated:
+# fail-closed, as everywhere the parser gives up.
+_SCAN_TO_SEPARATOR = r"(?:[^\n;&|()`'\"]|\"[^\"\n]*\"|'[^'\n]*')*"
+
 GIT_COMMIT_RE = re.compile(
     r"(?m)(?:^|[;&|(){}`])\s*(?:!\s*)*"
     r"(?:(?:if|then|else|elif|do|while|until)\s+)*"
@@ -210,7 +290,8 @@ GIT_COMMIT_RE = re.compile(
     r"-c\s+\S+|--?[A-Za-z][\w=./:-]*))*"
     r")"
     r"\s+(?:" + "|".join(COMMIT_SUBCOMMANDS) + r")(?![-\w])"
-    r"(?![^\n;&|()`'\"]*\s--(?:" + "|".join(NON_COMMITTING_FLAGS) + r")(?![-\w]))"
+    r"(?!" + _SCAN_TO_SEPARATOR
+    + r"\s--(?:" + "|".join(NON_COMMITTING_FLAGS) + r")(?![-\w]))"
 )
 
 CD_PREFIX_RE = re.compile(
@@ -222,6 +303,10 @@ WORK_TREE_FLAG_RE = re.compile(r"--work-tree(?:=|\s+)(" + _TOKEN + r")")
 
 _SHA_RE = re.compile(r"\A[0-9a-fA-F]{7,64}\Z")
 _CONTROL_RE = re.compile(r"[\x00-\x1f\x7f-\x9f]")
+# Same class, minus \n (\x0a). Used ONLY on the fixed deny frame, whose line
+# breaks are ours and deliberate. Every value interpolated into that frame
+# has already been through `scrub()`, which strips \n along with the rest.
+_CONTROL_KEEP_NEWLINE_RE = re.compile(r"[\x00-\x09\x0b-\x1f\x7f-\x9f]")
 
 # The minimal passing artifact, printed verbatim in every deny so a blocked
 # human can either satisfy the gate or recognise that they do not want it.
@@ -255,15 +340,27 @@ def scrub(text: object, limit: int = MAX_REASON_ECHO) -> str:
 
 
 def deny(reason: str) -> None:
+    """Emit the deny decision, keeping the frame's own line breaks.
+
+    The scrub over the WHOLE reason string used to include `\\n`, so a
+    1,221-character message carrying three numbered escape hatches and an
+    inline JSON schema arrived as one unbroken paragraph and the schema
+    could not be cleanly selected and pasted. The scrub exists to defend
+    against artifact-supplied text; it was being applied to a fixed template
+    we wrote, which needs no defending. Interpolated values are scrubbed at
+    the point of interpolation instead (see `deny_message`), and this last
+    pass still strips every control character EXCEPT the newline, so the
+    guarantee that nothing off disk can inject structure into this channel
+    is unchanged."""
     print(
         json.dumps(
             {
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
                     "permissionDecision": "deny",
-                    # Belt and braces: the callers already scrub, and the
-                    # fixed text carries no control characters.
-                    "permissionDecisionReason": _CONTROL_RE.sub(" ", reason),
+                    "permissionDecisionReason": _CONTROL_KEEP_NEWLINE_RE.sub(
+                        " ", reason
+                    ),
                 }
             }
         )
@@ -393,24 +490,45 @@ def resolve_git_dir(root: Path) -> Path | None:
     return candidate if candidate.is_dir() else None
 
 
-def marker_is_tracked(root: Path) -> bool:
-    """True when a file under `.delegation/` is recorded in the git index.
+def is_marker_own_path(rel_path: str) -> bool:
+    """True for `.delegation/<file>`: the marker's own files, including the
+    live artifact, but NOT anything in a subdirectory of it.
 
-    A tracked marker is not an opt-in: it arrived over the network with the
-    clone, nobody in this working copy consented to it, and the documented
-    escape (delete `.delegation/`) would rip a tracked file out of a shared
-    repo and disarm the gate for everyone else at the same time.
+    The scope of the whole provenance rule, in one predicate. Keying on the
+    subtree instead treated two opposite intents identically: this framework
+    tells the manager to archive spent artifacts to `.delegation/history/`,
+    so a user who deliberately armed a repo, gitignored the live artifact
+    and committed the audit trail was silently disarming their own gate.
+    "Someone committed the marker" and "someone committed the review
+    history" are not the same act and do not get the same answer."""
+    prefix = OPT_IN_MARKER + "/"
+    if not rel_path.startswith(prefix):
+        return False
+    return "/" not in rel_path[len(prefix) :]
 
-    Read out of `.git/index` rather than by shelling out to `git ls-files`,
-    consistent with how HEAD is read: no dependency on the git binary, no
-    subprocess that can hang a PreToolUse hook, same path on every OS.
+
+def marker_is_staged(root: Path) -> bool:
+    """True when one of the marker's own files sits in the git index.
+
+    ADVISORY ONLY. This decides nothing; it selects one extra sentence in
+    the deny message, telling a user who just ran `git add .delegation` what
+    they actually did and how to undo it. Staging is a local act by the
+    person sitting there, so it can never be evidence that the marker
+    arrived from somewhere else. That question is answered by
+    `marker_provenance()`, from the HEAD commit tree.
+
+    Reading it out of `.git/index` used to DRIVE the rule, and was wrong in
+    both directions: `git add .` disarmed the gate outright (the cheapest
+    bypass in the framework, and the warning claimed a clone that had never
+    happened), while `index.version=4` and `core.splitIndex` are not parsed
+    here at all, so git said tracked and the gate said untracked. Now
+    neither mistake can cost anything: an index this reader cannot parse
+    simply means the extra sentence is omitted.
 
     Index v2/v3 layout: b"DIRC", 4-byte version, 4-byte entry count, then
     per entry 62 bytes of metadata (plus 2 more when the v3 extended flag
     0x4000 is set), a NUL-terminated path, and NUL padding to an 8-byte
-    boundary. Version 4 prefix-compresses paths; rather than guess, anything
-    we cannot parse reads as NOT tracked, which leaves the gate ON. Fail
-    closed, as everywhere else past the marker."""
+    boundary."""
     try:
         git_dir = resolve_git_dir(root)
         if git_dir is None:
@@ -422,7 +540,6 @@ def marker_is_tracked(root: Path) -> bool:
         count = int.from_bytes(data[8:12], "big")
         if version not in (2, 3):
             return False  # v4 paths are prefix-compressed; do not guess
-        prefix = (OPT_IN_MARKER + "/").encode("utf-8")
         pos = 12
         for _ in range(count):
             if pos + 62 > len(data):
@@ -434,12 +551,13 @@ def marker_is_tracked(root: Path) -> bool:
             end = data.find(b"\x00", path_start)
             if end == -1:
                 return False
-            if data[path_start:end].startswith(prefix):
+            entry = data[path_start:end].decode("utf-8", "replace")
+            if is_marker_own_path(entry):
                 return True
             record = (end + 1) - pos  # metadata + path + its NUL terminator
             pos += ((record + 7) // 8) * 8
         return False
-    except Exception:  # noqa: BLE001 - unreadable index: keep enforcing
+    except Exception:  # noqa: BLE001 - unreadable index: just no extra line
         return False
 
 
@@ -515,6 +633,473 @@ def read_head_sha(root: Path) -> str | None:
         if packed is not None:
             return packed
     return HEAD_UNBORN  # branch named but never committed to
+
+
+# --------------------------------------------------------------------------
+# Reading the HEAD commit tree, without a git binary.
+#
+# The provenance rule needs one fact that only a COMMIT can supply: is the
+# marker part of the history this repo arrived with? Answering it means
+# resolving HEAD (above), reading a commit object, and walking two levels of
+# tree. Objects live loose (zlib-deflated files under objects/xx/yyyy) or
+# inside packfiles (an .idx for lookup, an entry that may itself be a delta
+# against another entry). Both are implemented here, because supporting only
+# loose objects would have left a one-command bypass open: `git gc` packs
+# everything, git runs it automatically, and a gate that reads "cannot tell"
+# after a routine gc would stand itself down in the very repo its owner
+# armed. Everything is bounded (object size, delta depth, binary search over
+# the .idx with seeks rather than slurping a 200 MB file) because this runs
+# inside a 10-second PreToolUse hook, and every failure path returns None,
+# which the caller turns into "cannot tell" rather than into a guess.
+# --------------------------------------------------------------------------
+
+_PACK_TYPES = {1: "commit", 2: "tree", 3: "blob", 4: "tag"}
+_OFS_DELTA = 6
+_REF_DELTA = 7
+_TREE_MODE = b"40000"
+_GITLINK_MODE = b"160000"
+
+# Bounds. A commit is a few hundred bytes and a tree a few kilobytes; the cap
+# is generous only so that a legitimately huge root tree still parses.
+MAX_OBJECT_BYTES = 32 * 1024 * 1024
+MAX_DELTA_DEPTH = 64
+_CHUNK = 65536
+
+
+def _object_dirs(git_dir: Path) -> list[Path]:
+    """Every object directory this repo can read: its own, the common dir's
+    (a linked worktree keeps HEAD locally but objects centrally), and any
+    alternates those name (shared clones, submodule stores)."""
+    bases = [git_dir]
+    common = read_commondir(git_dir)
+    if common is not None:
+        bases.append(common)
+    dirs: list[Path] = []
+    for base in bases:
+        objects = base / "objects"
+        try:
+            if objects.is_dir() and objects not in dirs:
+                dirs.append(objects)
+        except OSError:
+            continue
+    for objects in list(dirs):
+        try:
+            text = (objects / "info" / "alternates").read_text(
+                encoding="utf-8-sig"
+            )
+        except OSError:
+            continue
+        for line in text.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            candidate = Path(line)
+            if not candidate.is_absolute():
+                candidate = objects / candidate
+            try:
+                if candidate.is_dir() and candidate not in dirs:
+                    dirs.append(candidate)
+            except OSError:
+                continue
+    return dirs
+
+
+def _read_loose_object(objects_dir: Path, sha: str):
+    """(kind, payload) for a loose object, or None."""
+    path = objects_dir / sha[:2] / sha[2:]
+    try:
+        if path.stat().st_size > MAX_OBJECT_BYTES:
+            return None
+        raw = path.read_bytes()
+    except OSError:
+        return None
+    try:
+        data = zlib.decompressobj().decompress(raw, MAX_OBJECT_BYTES)
+    except zlib.error:
+        return None
+    nul = data.find(b"\x00")
+    if nul == -1:
+        return None
+    kind, _, size_text = data[:nul].decode("ascii", "replace").partition(" ")
+    if kind not in ("commit", "tree", "tag", "blob") or not size_text.isdigit():
+        return None
+    body = data[nul + 1 :]
+    return (kind, body) if len(body) == int(size_text) else None
+
+
+def _idx_lookup(idx_path: Path, sha: str, oid_len: int):
+    """Byte offset of `sha` in the matching packfile, or None.
+
+    Binary search driven by the .idx fanout table, using seeks: a large repo
+    can have a .idx of hundreds of megabytes and a PreToolUse hook must not
+    read it into memory. Handles idx v2 (the only version git has written
+    for two decades) and v1."""
+    try:
+        target = bytes.fromhex(sha)
+    except ValueError:
+        return None
+    if len(target) != oid_len:
+        return None
+    try:
+        with idx_path.open("rb") as fh:
+            magic = fh.read(8)
+            if len(magic) < 8:
+                return None
+            if magic[:4] == b"\xfftOc":
+                if int.from_bytes(magic[4:8], "big") != 2:
+                    return None
+                version, fanout = 2, 8
+            else:
+                if oid_len != 20:  # v1 predates any non-SHA-1 object format
+                    return None
+                version, fanout = 1, 0
+            first = target[0]
+            if first == 0:
+                lo = 0
+            else:
+                fh.seek(fanout + (first - 1) * 4)
+                lo = int.from_bytes(fh.read(4), "big")
+            fh.seek(fanout + first * 4)
+            hi = int.from_bytes(fh.read(4), "big")
+            fh.seek(fanout + 255 * 4)
+            total = int.from_bytes(fh.read(4), "big")
+            if not 0 <= lo <= hi <= total:
+                return None
+            table = fanout + 256 * 4
+            # v2: names[], then crc32[], then 4-byte offsets[], then the
+            # 8-byte offsets for entries whose 4-byte slot has bit 31 set.
+            # v1: one 24-byte record per object, offset first, then the name.
+            offsets = table + total * oid_len + total * 4
+            large = offsets + total * 4
+            while lo < hi:
+                mid = (lo + hi) // 2
+                if version == 1:
+                    fh.seek(table + mid * 24 + 4)
+                else:
+                    fh.seek(table + mid * oid_len)
+                name = fh.read(oid_len)
+                if len(name) != oid_len:
+                    return None
+                if name == target:
+                    if version == 1:
+                        fh.seek(table + mid * 24)
+                        return int.from_bytes(fh.read(4), "big")
+                    fh.seek(offsets + mid * 4)
+                    packed = int.from_bytes(fh.read(4), "big")
+                    if not packed & 0x80000000:
+                        return packed
+                    fh.seek(large + (packed & 0x7FFFFFFF) * 8)
+                    return int.from_bytes(fh.read(8), "big")
+                if name < target:
+                    lo = mid + 1
+                else:
+                    hi = mid
+    except OSError:
+        return None
+    return None
+
+
+def _inflate_at(fh, start: int, size: int):
+    """Exactly `size` inflated bytes starting at `start`, or None.
+
+    Streamed in chunks with a max_length bound, so a corrupt or hostile
+    entry claiming a small size cannot expand into memory unchecked."""
+    if size > MAX_OBJECT_BYTES:
+        return None
+    try:
+        fh.seek(start)
+        dec = zlib.decompressobj()
+        out = bytearray()
+        while len(out) < size:
+            chunk = fh.read(_CHUNK)
+            if not chunk:
+                return None
+            out += dec.decompress(chunk, size - len(out))
+            if dec.eof and len(out) < size:
+                return None
+    except (OSError, zlib.error):
+        return None
+    return bytes(out)
+
+
+def _apply_delta(base: bytes, delta: bytes):
+    """Git's delta encoding: copy-from-base and insert-literal instructions."""
+    pos = 0
+
+    def varint():
+        nonlocal pos
+        value = 0
+        shift = 0
+        while True:
+            if pos >= len(delta) or shift > 63:
+                return None
+            byte = delta[pos]
+            pos += 1
+            value |= (byte & 0x7F) << shift
+            if not byte & 0x80:
+                return value
+            shift += 7
+
+    src = varint()
+    dst = varint()
+    if src is None or dst is None or src != len(base):
+        return None
+    if dst > MAX_OBJECT_BYTES:
+        return None
+    out = bytearray()
+    while pos < len(delta):
+        op = delta[pos]
+        pos += 1
+        if op & 0x80:
+            offset = 0
+            size = 0
+            for i in range(4):
+                if op & (1 << i):
+                    if pos >= len(delta):
+                        return None
+                    offset |= delta[pos] << (8 * i)
+                    pos += 1
+            for i in range(3):
+                if op & (1 << (4 + i)):
+                    if pos >= len(delta):
+                        return None
+                    size |= delta[pos] << (8 * i)
+                    pos += 1
+            if size == 0:
+                size = 0x10000
+            if offset + size > len(base):
+                return None
+            out += base[offset : offset + size]
+        elif op:
+            if pos + op > len(delta):
+                return None
+            out += delta[pos : pos + op]
+            pos += op
+        else:
+            return None  # instruction 0 is reserved
+        if len(out) > dst:
+            return None
+    return bytes(out) if len(out) == dst else None
+
+
+class ObjectStore:
+    """Just enough of git's object database to read a commit and two trees.
+
+    Every method answers None rather than raising or guessing; the caller
+    turns None into "provenance unknown", which stands the gate down."""
+
+    def __init__(self, git_dir: Path, oid_len: int) -> None:
+        self.dirs = _object_dirs(git_dir)
+        self.oid_len = oid_len
+        self._packs: list[tuple[Path, Path]] | None = None
+
+    def packs(self) -> list[tuple[Path, Path]]:
+        if self._packs is None:
+            found: list[tuple[Path, Path]] = []
+            for objects in self.dirs:
+                try:
+                    names = sorted((objects / "pack").glob("*.idx"))
+                except OSError:
+                    continue
+                for idx in names:
+                    pack = idx.with_suffix(".pack")
+                    try:
+                        if pack.is_file():
+                            found.append((idx, pack))
+                    except OSError:
+                        continue
+            self._packs = found
+        return self._packs
+
+    def get(self, sha: str, depth: int = 0):
+        """(kind, payload) for an object id, or None."""
+        if depth > MAX_DELTA_DEPTH or len(sha) != self.oid_len * 2:
+            return None
+        if not _SHA_RE.match(sha):
+            return None
+        sha = sha.lower()
+        for objects in self.dirs:
+            found = _read_loose_object(objects, sha)
+            if found is not None:
+                return found
+        for idx, pack in self.packs():
+            offset = _idx_lookup(idx, sha, self.oid_len)
+            if offset is None:
+                continue
+            try:
+                with pack.open("rb") as fh:
+                    return self._entry(fh, offset, depth)
+            except OSError:
+                return None
+        return None
+
+    def _entry(self, fh, offset: int, depth: int):
+        """One packfile entry, resolving delta chains as it goes."""
+        if depth > MAX_DELTA_DEPTH or offset < 0:
+            return None
+        try:
+            fh.seek(offset)
+        except OSError:
+            return None
+        header = fh.read(32 + self.oid_len)
+        if len(header) < 2:
+            return None
+        byte = header[0]
+        obj_type = (byte >> 4) & 0x07
+        size = byte & 0x0F
+        shift = 4
+        i = 1
+        while byte & 0x80:
+            if i >= len(header) or shift > 63:
+                return None
+            byte = header[i]
+            i += 1
+            size |= (byte & 0x7F) << shift
+            shift += 7
+        base_offset = None
+        base_sha = None
+        if obj_type == _OFS_DELTA:
+            if i >= len(header):
+                return None
+            byte = header[i]
+            i += 1
+            rel = byte & 0x7F
+            while byte & 0x80:
+                if i >= len(header) or rel > offset:
+                    return None
+                byte = header[i]
+                i += 1
+                rel = ((rel + 1) << 7) | (byte & 0x7F)
+            base_offset = offset - rel
+        elif obj_type == _REF_DELTA:
+            if i + self.oid_len > len(header):
+                return None
+            base_sha = header[i : i + self.oid_len].hex()
+            i += self.oid_len
+        elif obj_type not in _PACK_TYPES:
+            return None
+        data = _inflate_at(fh, offset + i, size)
+        if data is None:
+            return None
+        if base_offset is None and base_sha is None:
+            return _PACK_TYPES[obj_type], data
+        # A delta borrows its type from the base it patches.
+        if base_offset is not None:
+            base = self._entry(fh, base_offset, depth + 1)
+        else:
+            base = self.get(base_sha, depth + 1)
+        if base is None:
+            return None
+        patched = _apply_delta(base[1], data)
+        return None if patched is None else (base[0], patched)
+
+
+def tree_entries(data: bytes, oid_len: int):
+    """[(mode, name, sha)] for a tree object, or None if it does not parse."""
+    entries = []
+    pos = 0
+    while pos < len(data):
+        space = data.find(b" ", pos)
+        if space == -1:
+            return None
+        nul = data.find(b"\x00", space)
+        if nul == -1 or nul + 1 + oid_len > len(data):
+            return None
+        entries.append(
+            (
+                data[pos:space],
+                data[space + 1 : nul],
+                data[nul + 1 : nul + 1 + oid_len].hex(),
+            )
+        )
+        pos = nul + 1 + oid_len
+    return entries
+
+
+def _commit_root_tree(store: ObjectStore, sha: str):
+    """The root tree id of the commit `sha` names, or None.
+
+    Peels annotated tags, in case HEAD was detached onto one."""
+    for _ in range(4):
+        obj = store.get(sha)
+        if obj is None:
+            return None
+        kind, body = obj
+        head_line = body.split(b"\n", 1)[0]
+        if kind == "tag":
+            if not head_line.startswith(b"object "):
+                return None
+            sha = head_line[len(b"object ") :].strip().decode("ascii", "replace")
+            continue
+        if kind != "commit" or not head_line.startswith(b"tree "):
+            return None
+        return head_line[len(b"tree ") :].strip().decode("ascii", "replace")
+    return None
+
+
+def marker_provenance(root: Path) -> str:
+    """Where this repo's `.delegation/` marker came from: MARKER_LOCAL,
+    MARKER_INHERITED or MARKER_UNKNOWN.
+
+    INHERITED means the HEAD COMMIT carries one of the marker's own files
+    (`.delegation/<file>`, including the live artifact). That, and only
+    that, means the marker arrived from somewhere other than the person
+    sitting here, so it is not an opt-in.
+
+    Deliberately NOT the index. A staged marker is a local act: `git add .`
+    on an unignored marker used to disarm the gate on the spot, in a repo
+    that had never been cloned from anywhere, while the warning told the
+    user it had "arrived with the clone". It was the cheapest bypass in the
+    framework, cheaper than fabricating an artifact.
+
+    Deliberately NOT the whole `.delegation/` subtree either: see
+    `is_marker_own_path`. A committed `.delegation/history/` is an audit
+    trail and leaves the gate armed.
+
+    A submodule (gitlink) at `.delegation` counts as inherited: cloning the
+    repo materialises that directory, which is exactly the harm.
+
+    UNKNOWN when the HEAD commit resolves but the objects behind it cannot
+    be read or parsed. LOCAL when there is no resolvable HEAD commit at all:
+    nothing can have arrived inside a commit that does not exist."""
+    try:
+        git_dir = resolve_git_dir(root)
+        if git_dir is None:
+            return MARKER_LOCAL
+        head = read_head_sha(root)
+        if head is None or head == HEAD_UNBORN or len(head) not in (40, 64):
+            return MARKER_LOCAL
+        store = ObjectStore(git_dir, len(head) // 2)
+        tree_sha = _commit_root_tree(store, head)
+        if tree_sha is None:
+            return MARKER_UNKNOWN
+        root_tree = store.get(tree_sha)
+        if root_tree is None or root_tree[0] != "tree":
+            return MARKER_UNKNOWN
+        entries = tree_entries(root_tree[1], store.oid_len)
+        if entries is None:
+            return MARKER_UNKNOWN
+        wanted = OPT_IN_MARKER.encode("utf-8")
+        marker = next((e for e in entries if e[1] == wanted), None)
+        if marker is None:
+            return MARKER_LOCAL  # HEAD does not carry the marker at all
+        mode, _, sha = marker
+        if mode == _GITLINK_MODE:
+            return MARKER_INHERITED  # a submodule materialises on clone
+        if mode != _TREE_MODE:
+            return MARKER_LOCAL  # a FILE named .delegation; not this marker
+        subtree = store.get(sha)
+        if subtree is None or subtree[0] != "tree":
+            return MARKER_UNKNOWN
+        children = tree_entries(subtree[1], store.oid_len)
+        if children is None:
+            return MARKER_UNKNOWN
+        for child_mode, _, _ in children:
+            if child_mode != _TREE_MODE:
+                return MARKER_INHERITED  # a file of the marker's own
+        return MARKER_LOCAL  # only subdirectories, e.g. history/
+    except Exception:  # noqa: BLE001 - cannot tell is a real answer here
+        return MARKER_UNKNOWN
 
 
 def freshness_problem(data: dict, root: Path) -> str | None:
@@ -634,34 +1219,51 @@ def artifact_problem(root: Path) -> str | None:
         )
 
 
-def deny_message(problem: str, scope: str) -> str:
+def deny_message(problem: str, scope: str = "", note: str = "") -> str:
     """The whole user experience of this framework's one structural feature.
 
     A blocked human needs three things in this order: what is wrong, how to
     satisfy the gate, and how to get rid of it. All three escape hatches are
     listed, in priority order, and the artifact schema is inlined so that
-    self-rescue does not require reading a skill file first."""
-    return (
-        "delegation-framework commit gate: BLOCKED. Problem: "
-        + problem
-        + ". Why: this repo opted in to the gate by having a "
-        + f"{OPT_IN_MARKER}/ directory at its root, so every git command that "
-        "authors a new commit (commit, cherry-pick, revert, am) needs a "
-        "review artifact that is all-PLEASED and bound to the current HEAD. "
-        "Three ways forward, in priority order. "
+    self-rescue does not require reading a skill file first.
+
+    The frame is assembled as LINES. It is fixed text of ours, so it is not
+    the thing `scrub()` defends against; running the flattening scrub over
+    the whole string turned a 1,200-character message with a numbered list
+    and an inline JSON schema into one unbroken paragraph, and made the
+    schema impossible to select cleanly. The three INTERPOLATED values are
+    the ones that get scrubbed, here at the point of interpolation:
+    `problem` (built by the artifact checks, and every artifact-derived
+    fragment in it is already positional or hex-validated), `scope` and
+    `note`. Scrubbing kills newlines, so no value can ever add a line to
+    this frame, let alone forge one of the numbered hatches."""
+    lines = [
+        "delegation-framework commit gate: BLOCKED.",
+        "Problem: " + scrub(problem, 400) + ".",
+        f"Why: this repo opted in to the gate by having a {OPT_IN_MARKER}/ "
+        "directory at its root that nobody committed, so every git command "
+        "that authors a new commit (commit, cherry-pick, revert, am) needs a "
+        "review artifact that is all-PLEASED and bound to the current HEAD.",
+    ]
+    if note:
+        lines.append(scrub(note, 400))
+    lines += [
+        "Three ways forward, in priority order.",
         "(1) WRITE THE ARTIFACT: run the skeptic panel to an all-PLEASED "
-        f"verdict, then save this shape at {ARTIFACT_REL_PATH.as_posix()} : "
-        + ARTIFACT_SCHEMA
-        + " . Every verdict must be exactly PLEASED, every 'blocking' list "
+        f"verdict, then save this shape at {ARTIFACT_REL_PATH.as_posix()} :",
+        ARTIFACT_SCHEMA,
+        "    Every verdict must be exactly PLEASED, every 'blocking' list "
         "empty, and 'head_sha' must match the current HEAD (git rev-parse "
-        "HEAD). One artifact waives one commit. "
-        "(2) OPT THIS REPO OUT: delete the "
-        f"{OPT_IN_MARKER}/ directory at the repo root; this gate and both "
-        "reminder hooks go silent in this repo immediately. "
+        "HEAD). One artifact waives one commit.",
+        f"(2) OPT THIS REPO OUT: delete the {OPT_IN_MARKER}/ directory at the "
+        "repo root; this gate and both reminder hooks go silent in this repo "
+        "immediately.",
         "(3) TURN IT OFF EVERYWHERE: disable the delegation-framework hooks "
-        "(/hooks) or remove the plugin."
-        + scope
-    )
+        "(/hooks) or remove the plugin.",
+    ]
+    if scope:
+        lines.append(scrub(scope, 200))
+    return "\n".join(lines)
 
 
 def main() -> int:
@@ -723,18 +1325,36 @@ def main() -> int:
             )
         return 0
 
-    if marker_is_tracked(root):
-        # The marker is committed/staged, so it came with the repo rather
-        # than from anyone here choosing it. Not an opt-in; allow and say why
-        # once. See marker_is_tracked's docstring.
+    # Where the marker CAME FROM decides whether it is an opt-in at all.
+    # Both non-local answers stand the gate down and say so on every gated
+    # command: a hook process is one-shot, and the only way to say it once
+    # would be a state file that outlives the session it describes and then
+    # silently suppresses the one signal that the gate is not enforcing.
+    provenance = marker_provenance(root)
+    if provenance == MARKER_INHERITED:
         warn(
             "delegation-framework: this repo's "
-            f"{OPT_IN_MARKER}/ marker is tracked in git, so it arrived with "
-            "the clone rather than from anyone in this working copy opting "
-            "in. The commit gate is NOT enforcing here. To arm it "
-            "deliberately: `git rm -r --cached "
-            f"{OPT_IN_MARKER}` and add `{OPT_IN_MARKER}/` to .gitignore, so "
-            "the opt-in stays local to whoever wants it."
+            f"{OPT_IN_MARKER}/ marker is part of the HEAD commit, so it "
+            "arrived with the repository rather than from anyone in this "
+            "working copy opting in. The commit gate is NOT enforcing here. "
+            f"To arm it deliberately: `git rm -r --cached {OPT_IN_MARKER}`, "
+            f"add `{OPT_IN_MARKER}/` to .gitignore, and commit that removal "
+            "(the marker counts as inherited for as long as HEAD carries it, "
+            "and that un-arming commit is itself ungated). The opt-in then "
+            "stays local to whoever wants it."
+        )
+        return 0
+    if provenance == MARKER_UNKNOWN:
+        warn(
+            "delegation-framework: this repo has a "
+            f"{OPT_IN_MARKER}/ marker, but the gate could NOT DETERMINE "
+            "whether it was committed (so it arrived with the repository) or "
+            "created locally: the HEAD commit tree could not be read. "
+            "Provenance unknown, so the commit gate is standing down here "
+            "rather than blocking someone who may never have opted in. "
+            f"`git ls-tree HEAD {OPT_IN_MARKER}` is the same question asked "
+            "of git itself; empty output means the marker is local and the "
+            "gate should be enforcing."
         )
         return 0
 
@@ -743,10 +1363,21 @@ def main() -> int:
         scope = ""
         if named_root is None or root != named_root:
             scope = (
-                f" [gate scoped to {scrub(root.as_posix(), 80)}: the command's "
+                f"[gate scoped to {scrub(root.as_posix(), 80)}: the command's "
                 "own target could not be resolved to an opted-in repo]"
             )
-        deny(deny_message(problem, scope))
+        note = ""
+        if marker_is_staged(root):
+            # They ran `git add .delegation`, and under the old index-based
+            # rule that alone disarmed the gate. Staging is a local act, so
+            # it changes nothing; say what they did and how to undo it.
+            note = (
+                f"Note: {OPT_IN_MARKER}/ is STAGED here but not committed. "
+                "Staging is a local act, not something that arrived with the "
+                "repository, so it does not disarm the gate. If you did not "
+                f"mean to stage it: `git restore --staged {OPT_IN_MARKER}`."
+            )
+        deny(deny_message(problem, scope, note))
     return 0
 
 

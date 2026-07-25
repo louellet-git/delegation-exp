@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Tests for scripts/commit-gate.py — the framework's one structural slice.
+"""Tests for scripts/commit-gate.py, the framework's one structural slice.
 
-Stdlib only (`unittest`), no `git` binary required: the gate reads HEAD off
-the filesystem, so the throwaway repos here are hand-built `.git` directories
-in a tempdir. Runnable both ways:
+Stdlib only (`unittest`), no `git` binary required: the gate reads HEAD and
+the objects behind it off the filesystem, so the throwaway repos here are
+hand-built `.git` directories in a tempdir, down to real zlib-deflated
+commit and tree objects (`write_object` below). That matters more than it
+used to: the marker provenance rule reads the HEAD COMMIT TREE, so a repo
+whose ref points at an object that does not exist is not a stand-in for a
+real one, it is the "cannot tell" case. Runnable both ways:
 
     python -m unittest discover test
     python test/test_commit_gate.py
@@ -22,6 +26,7 @@ real `.git/index` parsing); those skip cleanly when it is absent.
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import importlib.util
 import io
 import json
@@ -30,8 +35,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 import unittest.mock
+import zlib
 from pathlib import Path
 
 GATE_PATH = Path(__file__).resolve().parent.parent / "scripts" / "commit-gate.py"
@@ -41,18 +48,95 @@ assert _spec is not None and _spec.loader is not None
 gate = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(gate)
 
-HEAD_SHA = "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
-OTHER_SHA = "ffeeddccbbaa99887766554433221100aabbccdd"
 DROP = object()  # marker: remove this key from the artifact entirely
+
+
+def object_bytes(kind: str, payload: bytes) -> tuple[str, bytes]:
+    """(sha, stored bytes) for a git object, exactly as git computes them."""
+    body = f"{kind} {len(payload)}".encode("ascii") + b"\x00" + payload
+    return hashlib.sha1(body).hexdigest(), body
+
+
+def write_object(repo: Path, kind: str, payload: bytes) -> str:
+    """Store a loose object in `repo` and return its sha."""
+    sha, body = object_bytes(kind, payload)
+    target = repo / ".git" / "objects" / sha[:2]
+    target.mkdir(parents=True, exist_ok=True)
+    (target / sha[2:]).write_bytes(zlib.compress(body))
+    return sha
+
+
+def tree_payload(entries) -> bytes:
+    """entries: (mode bytes, name str, sha hex). Git sorts by name, with a
+    directory sorting as though its name ended in '/'."""
+    def key(entry):
+        return entry[1] + ("/" if entry[0] == b"40000" else "")
+    return b"".join(
+        mode + b" " + name.encode("utf-8") + b"\x00" + bytes.fromhex(sha)
+        for mode, name, sha in sorted(entries, key=key)
+    )
+
+
+def commit_payload(tree_sha: str, message: str) -> bytes:
+    return (
+        f"tree {tree_sha}\n"
+        "author t <t@example.invalid> 0 +0000\n"
+        "committer t <t@example.invalid> 0 +0000\n"
+        f"\n{message}\n"
+    ).encode("utf-8")
+
+
+EMPTY_TREE_SHA = object_bytes("tree", b"")[0]
+# The two canonical commits every fixture repo carries: HEAD_SHA is what a
+# ref points at by default, OTHER_SHA is a real second commit tests can move
+# a ref to. Both name objects that actually exist, because "the ref names an
+# object we cannot read" is now a distinct, tested state of its own.
+HEAD_SHA = object_bytes("commit", commit_payload(EMPTY_TREE_SHA, "base"))[0]
+OTHER_SHA = object_bytes("commit", commit_payload(EMPTY_TREE_SHA, "other"))[0]
+
+
+def nest(paths: dict) -> dict:
+    """{'a/b': b'x'} -> {'a': {'b': b'x'}}"""
+    root: dict = {}
+    for path, content in paths.items():
+        parts = path.split("/")
+        node = root
+        for part in parts[:-1]:
+            node = node.setdefault(part, {})
+        node[parts[-1]] = content
+    return root
+
+
+def build_tree(repo: Path, tree: dict) -> str:
+    entries = []
+    for name, value in tree.items():
+        if isinstance(value, dict):
+            entries.append((b"40000", name, build_tree(repo, value)))
+        else:
+            entries.append((b"100644", name, write_object(repo, "blob", value)))
+    return write_object(repo, "tree", tree_payload(entries))
+
+
+def commit_paths(repo: Path, paths: dict, message: str = "committed") -> str:
+    """Write a real commit whose tree contains `paths`, and return its sha."""
+    tree_sha = build_tree(repo, nest(paths))
+    return write_object(repo, "commit", commit_payload(tree_sha, message))
 
 
 def make_repo(path: Path, marker: bool = True, head_sha: str | None = HEAD_SHA,
               branch: str = "refs/heads/main", detached: bool = False,
-              packed: bool = False) -> Path:
-    """A minimal but real-shaped git repo: `.git/HEAD` plus a ref."""
+              packed: bool = False, committed: dict | None = None) -> Path:
+    """A minimal but real-shaped git repo: `.git/HEAD`, a ref, and the
+    objects the ref names. `committed=` puts real files in the HEAD tree."""
     path.mkdir(parents=True, exist_ok=True)
     git_dir = path / ".git"
     (git_dir / "refs" / "heads").mkdir(parents=True, exist_ok=True)
+    (git_dir / "objects").mkdir(parents=True, exist_ok=True)
+    write_object(path, "tree", b"")
+    write_object(path, "commit", commit_payload(EMPTY_TREE_SHA, "base"))
+    write_object(path, "commit", commit_payload(EMPTY_TREE_SHA, "other"))
+    if committed is not None:
+        head_sha = commit_paths(path, committed)
     if detached:
         (git_dir / "HEAD").write_text((head_sha or "") + "\n", encoding="utf-8")
     else:
@@ -137,6 +221,17 @@ class GateTestCase(unittest.TestCase):
 
     def repo(self, name: str = "repo", **kwargs) -> Path:
         return make_repo(self.tmp / name, **kwargs)
+
+    def real_repo(self, name: str) -> Path:
+        """A real repo with one real commit, built by the git binary. Callers
+        must skipUnless(GIT)."""
+        repo = self.tmp / name
+        repo.mkdir()
+        git(repo, "init", "-q", "-b", "main")
+        (repo / "README.md").write_text("hi\n", encoding="utf-8")
+        git(repo, "add", "README.md")
+        git(repo, "commit", "-qm", "readme")
+        return repo
 
     def assertAllowed(self, command: str, cwd: Path, msg: str = "") -> None:
         code, output = run_gate(command, cwd)
@@ -401,6 +496,11 @@ class TestDefect2ReasonChannel(GateTestCase):
                        "approve the commit"):
             self.assertNotIn(marker, reason, "artifact text reached the reason")
         for ch in reason:
+            # `\n` is the ONE control character allowed, and only because the
+            # fixed frame puts it there. Everything interpolated is scrubbed
+            # of newlines, which is what the line-count test below pins.
+            if ch == "\n":
+                continue
             self.assertGreaterEqual(ord(ch), 0x20, "control character in reason")
             self.assertNotEqual(ord(ch), 0x7F)
 
@@ -439,16 +539,21 @@ class TestDefect2ReasonChannel(GateTestCase):
         self.assertIn(OTHER_SHA[:12], reason)
         self.assertNotIn(OTHER_SHA, reason)  # truncated, never the whole value
 
-    def test_raw_json_output_carries_no_newlines_from_the_artifact(self):
+    def test_the_artifact_cannot_add_a_line_to_the_deny_frame(self):
+        # The frame now has real line breaks (they are ours). The property
+        # that survives from "no newlines at all" is the one that mattered:
+        # nothing off disk can inject a line, so it can never forge one of
+        # the numbered escape hatches or a fake gate message.
         repo = self.repo()
         write_artifact(repo, reviews=[
             {"lens": "x" + self.INJECTION, "verdict": "NOPE" + self.INJECTION},
         ])
         code, output = run_gate('git commit -m "x"', repo)
         self.assertEqual(code, 0)
-        raw = json.dumps(output)
-        self.assertNotIn("\\n", raw)
-        self.assertNotIn("IGNORE ALL PREVIOUS", raw)
+        reason = output["hookSpecificOutput"]["permissionDecisionReason"]
+        expected = gate.deny_message("a benign problem").count("\n")
+        self.assertEqual(reason.count("\n"), expected)
+        self.assertNotIn("IGNORE ALL PREVIOUS", json.dumps(output))
 
     def test_scrub_flattens_and_truncates(self):
         flat = gate.scrub("a\nb\tc\x00d")
@@ -523,8 +628,10 @@ class TestDefect3Freshness(GateTestCase):
         self.assertIn("this repo has none yet", reason)
 
     def test_unreadable_head_fails_open_on_freshness_only(self):
-        # HEAD garbled: infrastructure, so the freshness check stands down —
-        # but the rest of the artifact is still enforced.
+        # HEAD garbled: infrastructure, so the freshness check stands down,
+        # but the rest of the artifact is still enforced. The marker also
+        # still counts as a local opt-in here (no resolvable HEAD commit
+        # means nothing can have arrived inside one), so the gate stays on.
         repo = self.repo()
         (repo / ".git" / "HEAD").write_text("not a ref\n", encoding="utf-8")
         write_artifact(repo, head_sha=OTHER_SHA)
@@ -955,10 +1062,13 @@ class TestFix4ArtifactErrorsFailClosed(GateTestCase):
         self.assertIn("could not be checked", reason)
 
     def test_exception_while_reading_head_denies(self):
+        # First call is the provenance check (answer it honestly, so the gate
+        # is enforcing); the second is the freshness check, and THAT one
+        # blowing up must deny rather than escape into the top-level catch.
         repo = self.repo()
         write_artifact(repo)
         with unittest.mock.patch.object(
-            gate, "read_head_sha", side_effect=RuntimeError("boom")
+            gate, "read_head_sha", side_effect=[HEAD_SHA, RuntimeError("boom")]
         ):
             self.assertDenied('git commit -m "x"', repo)
 
@@ -972,7 +1082,7 @@ class TestFix4ArtifactErrorsFailClosed(GateTestCase):
 
 
 class TestFix5And6HookWiring(GateTestCase):
-    """One interpreter, and a missing script degrades to silence."""
+    """The interpreter chain, and a missing script degrading to silence."""
 
     def hook_commands(self) -> list[str]:
         data = json.loads(HOOKS_PATH.read_text(encoding="utf-8"))
@@ -984,13 +1094,53 @@ class TestFix5And6HookWiring(GateTestCase):
         self.assertEqual(len(commands), 3)
         return commands
 
-    def test_no_interpreter_fallback_chain(self):
-        # `python X || python3 X` drained stdin in the first process; the
-        # fallback then read nothing, json.load failed, and the gate allowed.
+    def test_interpreter_chain_order(self):
+        # `python3` alone was dead code on Windows: the python.org installer
+        # ships python.exe and no python3.exe, on the one platform this repo
+        # decodes utf-8-sig for and matches PowerShell on. The chain is safe
+        # because every way a link can FAIL (interpreter absent, script
+        # absent, interpreter too old to compile the script) happens before
+        # the script's first statement, so before stdin is read; and once the
+        # script reads stdin it always exits 0, so `||` cannot fire after the
+        # pipe was drained. Order is most-likely-correct first.
         for command in self.hook_commands():
             with self.subTest(command=command):
-                self.assertNotIn("|| python", command)
-                self.assertIn('python3 "${CLAUDE_PLUGIN_ROOT}', command)
+                links = [part.strip() for part in command.split("||")]
+                self.assertEqual(len(links), 4)
+                root = '"${CLAUDE_PLUGIN_ROOT}'
+                self.assertTrue(links[0].startswith("python3 " + root))
+                self.assertTrue(links[1].startswith("python " + root))
+                self.assertTrue(links[2].startswith("py -3 " + root))
+                self.assertEqual(links[3], "exit 0")
+                script = links[0].split('"')[1]
+                for link in links[:3]:
+                    self.assertIn(script, link, "all links run the same script")
+
+    @unittest.skipUnless(shutil.which("sh"), "needs a POSIX shell")
+    def test_stdin_survives_a_missing_first_interpreter(self):
+        # The invariant, end to end: the first link does not exist, so it
+        # cannot have read the payload, and the second link still sees it.
+        # (This is what `python X || python3 X` broke when the first link was
+        # an interpreter that ran, drained stdin and only then failed.)
+        for command in self.hook_commands():
+            if "commit-gate" in command:
+                break
+        repo = self.repo()
+        command = command.replace("${CLAUDE_PLUGIN_ROOT}", str(REPO_ROOT))
+        command = command.replace("python3 ", "no-such-python3-xyz ", 1)
+        command = command.replace("|| python ", f"|| {sys.executable} ", 1)
+        payload = json.dumps({
+            "tool_name": "Bash",
+            "tool_input": {"command": 'git commit -m "x"'},
+            "cwd": str(repo),
+        })
+        result = subprocess.run(
+            ["sh", "-c", command], input=payload,
+            capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            json.loads(result.stdout)["hookSpecificOutput"]
+            ["permissionDecision"], "deny")
 
     def test_every_hook_command_degrades_to_exit_zero(self):
         for command in self.hook_commands():
@@ -1067,77 +1217,292 @@ class TestFix7StopReminder(GateTestCase):
         self.assertFalse(stop.artifact_is_acceptable(repo, None))
 
 
-class TestFix8TrackedMarker(GateTestCase):
-    """A marker that arrived over the network authorizes nothing."""
+class TestMarkerProvenance(GateTestCase):
+    """Where the marker CAME FROM decides whether it is an opt-in.
 
-    def test_tracked_marker_warns_and_allows(self):
+    Three states, and the two hazards do not share a default: a marker
+    carried by the HEAD commit arrived with the repository (stand down), a
+    marker of unknown provenance is no evidence of consent either (stand
+    down), and everything else is a local opt-in (enforce). Read from the
+    HEAD COMMIT TREE: the index says nothing about where anything came
+    from."""
+
+    def test_committed_marker_warns_and_allows(self):
+        repo = self.repo(committed={".delegation/keep": b"", "README.md": b"hi"})
+        message = self.assertWarned('git commit -m "x"', repo)
+        self.assertIn("part of the HEAD commit", message)
+        self.assertIn("NOT enforcing", message)
+        self.assertIn("commit that removal", message)
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_INHERITED)
+
+    def test_committed_live_artifact_is_also_an_inherited_marker(self):
+        repo = self.repo(committed={".delegation/review-artifact.json": b"{}"})
+        self.assertIn("part of the HEAD commit",
+                      self.assertWarned('git commit -m "x"', repo))
+
+    def test_staged_but_uncommitted_marker_still_gates(self):
+        # THE regression. `git add .` on an unignored marker, in a repo that
+        # was never cloned from anywhere, used to disarm the gate outright
+        # and tell the user it had "arrived with the clone".
         repo = self.repo()
         write_fake_index(repo, [".delegation/review-artifact.json", "README.md"])
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_LOCAL)
+        reason = self.assertDenied('git commit -m "x"', repo)
+        self.assertIn("no review artifact found at", reason)
+
+    def test_staged_marker_deny_says_what_the_user_actually_did(self):
+        repo = self.repo()
+        write_fake_index(repo, [".delegation/keep"])
+        reason = self.assertDenied('git commit -m "x"', repo)
+        self.assertIn("STAGED here but not committed", reason)
+        self.assertIn("git restore --staged .delegation", reason)
+        self.assertNotIn("arrived with the clone", reason)
+
+    def test_the_staged_note_is_absent_when_nothing_is_staged(self):
+        repo = self.repo()
+        write_fake_index(repo, ["README.md"])
+        self.assertNotIn("STAGED", self.assertDenied('git commit -m "x"', repo))
+
+    def test_committed_history_archive_does_not_disarm_the_gate(self):
+        # The other half of the scoping bug: this framework tells the manager
+        # to archive spent artifacts to .delegation/history/. A user who
+        # gitignored the live artifact and committed the audit trail was
+        # silently disarming a gate they had deliberately armed.
+        repo = self.repo(committed={
+            ".delegation/history/2026-01-01-artifact.json": b"{}",
+            "README.md": b"hi",
+        })
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_LOCAL)
+        self.assertIn("no review artifact found at",
+                      self.assertDenied('git commit -m "x"', repo))
+
+    def test_committed_history_plus_committed_marker_file_is_inherited(self):
+        repo = self.repo(committed={
+            ".delegation/history/old.json": b"{}",
+            ".delegation/keep": b"",
+        })
+        self.assertIn("part of the HEAD commit",
+                      self.assertWarned('git commit -m "x"', repo))
+
+    def test_lookalike_committed_paths_do_not_disarm_the_gate(self):
+        repo = self.repo(committed={
+            ".delegationX/notes.md": b"x",
+            "docs/.delegation/notes.md": b"x",
+            ".delegation-old/notes.md": b"x",
+        })
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_LOCAL)
+        self.assertDenied('git commit -m "x"', repo)
+
+    def test_a_committed_file_named_delegation_is_not_the_marker(self):
+        repo = self.repo(committed={".delegation": b"not a directory"})
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_LOCAL)
+        self.assertDenied('git commit -m "x"', repo)
+
+    def test_a_submodule_at_the_marker_path_is_inherited(self):
+        # A gitlink materialises the directory on clone, which is the harm.
+        repo = self.repo()
+        tree = write_object(repo, "tree", tree_payload(
+            [(b"160000", ".delegation", OTHER_SHA)]))
+        head = write_object(repo, "commit", commit_payload(tree, "submodule"))
+        (repo / ".git" / "refs" / "heads" / "main").write_text(
+            head + "\n", encoding="utf-8")
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_INHERITED)
+
+    def test_unreadable_head_tree_stands_the_gate_down(self):
+        # "Cannot tell" is its own answer, and it disarms. Past the marker,
+        # failing closed means "no unreviewed work through" and is right; AT
+        # the marker it means "keep blocking a colleague who never opted into
+        # anything", which is the harm the rule exists to prevent.
+        repo = self.repo(committed={".delegation/keep": b""})
+        for path in (repo / ".git" / "objects").rglob("*"):
+            if path.is_file():
+                path.unlink()
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_UNKNOWN)
         message = self.assertWarned('git commit -m "x"', repo)
-        self.assertIn("tracked in git", message)
-        self.assertIn("NOT enforcing", message)
+        self.assertIn("could NOT DETERMINE", message)
+        self.assertIn("standing down", message)
 
-    def test_untracked_marker_still_gates(self):
+    def test_corrupt_head_object_stands_the_gate_down(self):
         repo = self.repo()
-        write_fake_index(repo, ["README.md", "src/main.py"])
-        self.assertDenied('git commit -m "x"', repo)
+        loose = repo / ".git" / "objects" / HEAD_SHA[:2] / HEAD_SHA[2:]
+        loose.write_bytes(b"not zlib at all")
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_UNKNOWN)
+        self.assertIn("could NOT DETERMINE",
+                      self.assertWarned('git commit -m "x"', repo))
 
-    def test_lookalike_paths_do_not_disarm_the_gate(self):
+    def test_the_index_format_no_longer_decides_anything(self):
+        # v4 prefix-compresses paths and `core.splitIndex` moves them out of
+        # the file entirely; this reader parses neither. That used to mean
+        # "git says tracked, the gate says untracked", on exactly the large
+        # repos `git config feature.manyFiles true` is recommended for. Now
+        # the index only selects one advisory sentence.
         repo = self.repo()
-        write_fake_index(repo, [
-            ".delegationX/notes.md",
-            "docs/.delegation/notes.md",
-            ".delegation-old/notes.md",
-        ])
-        self.assertDenied('git commit -m "x"', repo)
-
-    def test_index_version_3_extended_flags_are_parsed(self):
-        repo = self.repo()
-        write_fake_index(repo, [".delegation/keep", "z.txt"], version=3)
-        self.assertIn("tracked in git", self.assertWarned('git commit -m x', repo))
-
-    def test_unparseable_index_keeps_enforcing(self):
-        # v4 prefix-compresses paths. Refusing to guess must fail CLOSED.
-        repo = self.repo()
-        write_fake_index(repo, [".delegation/keep"], version=4)
-        self.assertDenied('git commit -m "x"', repo)
-        (repo / ".git" / "index").write_bytes(b"garbage")
-        self.assertDenied('git commit -m "x"', repo)
+        for blob in (None, b"garbage"):
+            with self.subTest(blob=blob):
+                if blob is None:
+                    write_fake_index(repo, [".delegation/keep"], version=4)
+                else:
+                    (repo / ".git" / "index").write_bytes(blob)
+                self.assertFalse(gate.marker_is_staged(repo))
+                self.assertEqual(gate.marker_provenance(repo), gate.MARKER_LOCAL)
+                reason = self.assertDenied('git commit -m "x"', repo)
+                self.assertNotIn("STAGED", reason)
         (repo / ".git" / "index").unlink()
         self.assertDenied('git commit -m "x"', repo)
 
+    def test_no_commits_yet_is_a_local_marker(self):
+        repo = self.repo(head_sha=None)
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_LOCAL)
+
+    def test_unresolvable_head_is_a_local_marker(self):
+        # Nothing can have arrived inside a commit that cannot be named, and
+        # git cannot author one in this state either, so enforcing blocks
+        # nobody. (Contrast: HEAD resolves but its objects do not, above.)
+        repo = self.repo()
+        (repo / ".git" / "HEAD").write_text("not a ref\n", encoding="utf-8")
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_LOCAL)
+
+    def test_the_warning_repeats_on_every_gated_command(self):
+        # Fix 6, decided and pinned: the docstring now says "every time"
+        # instead of "once". A hook process is one-shot, so "once per repo
+        # per session" would need state on disk that outlives the session it
+        # describes, and a stale suppression file would silently hide the
+        # only signal that the gate is not enforcing.
+        repo = self.repo(committed={".delegation/keep": b""})
+        first = self.assertWarned('git commit -m "x"', repo)
+        second = self.assertWarned('git commit -m "y"', repo)
+        self.assertEqual(first, second)
+
     @unittest.skipUnless(GIT, "git binary not available")
-    def test_real_git_index_tracked_marker(self):
-        # Same scenario against an index git itself wrote, so a shared bug in
-        # the hand-built writer above cannot mask a reader bug.
-        repo = self.tmp / "real-tracked"
-        repo.mkdir()
-        git(repo, "init", "-q", "-b", "main")
-        (repo / "README.md").write_text("hi\n", encoding="utf-8")
+    def test_real_git_committed_marker(self):
+        # Against objects git itself wrote, so a shared bug in the hand-built
+        # object writer above cannot mask a reader bug.
+        repo = self.real_repo("real-committed")
         (repo / ".delegation").mkdir()
         (repo / ".delegation" / "keep").write_text("", encoding="utf-8")
         git(repo, "add", ".")  # the ordinary act that armed everyone's clone
         git(repo, "commit", "-qm", "add everything")
-        message = self.assertWarned('git commit -m "x"', repo)
-        self.assertIn("tracked in git", message)
+        self.assertIn("part of the HEAD commit",
+                      self.assertWarned('git commit -m "x"', repo))
 
     @unittest.skipUnless(GIT, "git binary not available")
-    def test_real_git_index_untracked_marker_still_gates(self):
-        repo = self.tmp / "real-untracked"
+    def test_real_git_staged_marker_still_gates(self):
+        repo = self.real_repo("real-staged")
+        (repo / ".delegation").mkdir()
+        (repo / ".delegation" / "keep").write_text("", encoding="utf-8")
+        git(repo, "add", ".")  # staged, never committed: a local act
+        reason = self.assertDenied('git commit -m "x"', repo)
+        self.assertIn("STAGED here but not committed", reason)
+
+    @unittest.skipUnless(GIT, "git binary not available")
+    def test_real_git_local_marker_survives_gc(self):
+        # Without packfile support this was a one-command bypass: `git gc`
+        # packs every object, git runs it automatically, and a gate that read
+        # "cannot tell" from a packed repo would stand down in the very repo
+        # its owner armed.
+        repo = self.real_repo("real-gc")
+        (repo / ".delegation").mkdir()  # local opt-in, never added
+        git(repo, "gc", "-q", "--aggressive")
+        self.assertTrue(any((repo / ".git" / "objects" / "pack").glob("*.pack")),
+                        "expected gc to produce a packfile")
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_LOCAL)
+        self.assertDenied('git commit -m "x"', repo)
+
+    @unittest.skipUnless(GIT, "git binary not available")
+    def test_real_git_committed_marker_survives_gc(self):
+        repo = self.real_repo("real-gc-committed")
+        (repo / ".delegation").mkdir()
+        (repo / ".delegation" / "keep").write_text("", encoding="utf-8")
+        git(repo, "add", ".")
+        git(repo, "commit", "-qm", "add everything")
+        git(repo, "gc", "-q", "--aggressive")
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_INHERITED)
+        self.assertIn("part of the HEAD commit",
+                      self.assertWarned('git commit -m "x"', repo))
+
+    @unittest.skipUnless(GIT, "git binary not available")
+    def test_real_git_repacked_history_flips_correctly(self):
+        # Both answers, read out of packfiles rather than loose objects, on
+        # either side of the commit that changes the answer. (Delta
+        # resolution itself is covered by TestObjectStoreMatchesGit.)
+        repo = self.real_repo("real-repacked")
+        for i in range(20):
+            (repo / "grow.txt").write_text("line\n" * (i + 1), encoding="utf-8")
+            git(repo, "add", "grow.txt")
+            git(repo, "commit", "-qm", f"grow {i}")
+        (repo / ".delegation").mkdir()
+        git(repo, "repack", "-adq")
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_LOCAL)
+        (repo / ".delegation" / "keep").write_text("", encoding="utf-8")
+        git(repo, "add", ".")
+        git(repo, "commit", "-qm", "commit the marker")
+        git(repo, "repack", "-adq")
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_INHERITED)
+
+    @unittest.skipUnless(GIT, "git binary not available")
+    def test_real_git_clone_of_a_committed_marker_is_inherited(self):
+        # The whole point of the rule, end to end: a colleague who never
+        # opted into anything clones a repo whose marker somebody committed.
+        origin = self.real_repo("origin")
+        (origin / ".delegation").mkdir()
+        (origin / ".delegation" / "keep").write_text("", encoding="utf-8")
+        git(origin, "add", ".")
+        git(origin, "commit", "-qm", "add everything")
+        clone = self.tmp / "clone"
+        subprocess.run([GIT, "clone", "-q", str(origin), str(clone)],
+                       env=GIT_ENV, capture_output=True, text=True, timeout=60)
+        self.assertTrue((clone / ".delegation").is_dir())
+        self.assertEqual(gate.marker_provenance(clone), gate.MARKER_INHERITED)
+        self.assertIn("part of the HEAD commit",
+                      self.assertWarned('git commit -m "x"', clone))
+
+    @unittest.skipUnless(GIT, "git binary not available")
+    def test_real_git_sha256_repository(self):
+        # Object ids are 32 bytes there, in tree entries and in the pack .idx
+        # alike, so the reader takes its width from HEAD rather than assuming.
+        repo = self.tmp / "sha256"
         repo.mkdir()
-        git(repo, "init", "-q", "-b", "main")
+        init = subprocess.run(
+            [GIT, "init", "-q", "-b", "main", "--object-format=sha256", "."],
+            cwd=repo, env=GIT_ENV, capture_output=True, text=True, timeout=60)
+        if init.returncode != 0:
+            self.skipTest("this git does not support --object-format=sha256")
         (repo / "README.md").write_text("hi\n", encoding="utf-8")
         git(repo, "add", "README.md")
         git(repo, "commit", "-qm", "readme")
-        (repo / ".delegation").mkdir()  # local opt-in, never added
-        self.assertDenied('git commit -m "x"', repo)
+        (repo / ".delegation").mkdir()
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_LOCAL)
+        (repo / ".delegation" / "keep").write_text("", encoding="utf-8")
+        git(repo, "add", ".")
+        git(repo, "commit", "-qm", "commit the marker")
+        git(repo, "gc", "-q")
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_INHERITED)
 
-    def test_tracked_marker_also_silences_the_reminder_hooks(self):
+    def test_inherited_and_unknown_markers_also_silence_the_reminders(self):
+        for committed, expected in (
+            ({".delegation/keep": b""}, gate.MARKER_INHERITED),
+            (None, gate.MARKER_LOCAL),
+        ):
+            with self.subTest(expected=expected):
+                repo = self.repo(f"reminders-{expected}", committed=committed)
+                self.assertEqual(gate.marker_provenance(repo), expected)
+                for module in (stop, subagent):
+                    self.assertEqual(
+                        module.marker_is_local_opt_in(repo, module.load_gate()),
+                        expected == gate.MARKER_LOCAL)
+        broken = self.repo("reminders-unknown", committed={".delegation/k": b""})
+        for path in (broken / ".git" / "objects").rglob("*"):
+            if path.is_file():
+                path.unlink()
+        self.assertEqual(gate.marker_provenance(broken), gate.MARKER_UNKNOWN)
+        for module in (stop, subagent):
+            self.assertFalse(
+                module.marker_is_local_opt_in(broken, module.load_gate()))
+
+    def test_reminders_nudge_when_the_gate_module_will_not_load(self):
         repo = self.repo()
-        write_fake_index(repo, [".delegation/keep"])
-        self.assertTrue(gate.marker_is_tracked(repo))
-        self.assertTrue(stop.load_gate().marker_is_tracked(repo))
-        self.assertTrue(subagent.load_gate().marker_is_tracked(repo))
+        for module in (stop, subagent):
+            self.assertTrue(module.marker_is_local_opt_in(repo, None))
 
 
 class TestFix9DenyMessage(GateTestCase):
@@ -1175,11 +1540,48 @@ class TestFix9DenyMessage(GateTestCase):
         # human whose terminal just stopped.
         self.assertNotIn("implementers never do", self.reason())
 
-    def test_is_a_single_flat_line(self):
-        reason = self.reason()
-        self.assertNotIn("\n", reason)
-        for ch in reason:
+    def test_the_fixed_frame_keeps_its_line_breaks(self):
+        # The scrub exists to defend against artifact-supplied text; running
+        # it over the whole string applied it to a fixed template we wrote,
+        # and rendered a numbered list plus an inline JSON schema as one
+        # 1,200-character paragraph nobody could read or paste from.
+        lines = self.reason().split("\n")
+        self.assertGreater(len(lines), 6)
+        self.assertEqual(lines[0], "delegation-framework commit gate: BLOCKED.")
+        self.assertTrue(lines[1].startswith("Problem: "))
+        for prefix in ("(1) WRITE THE ARTIFACT", "(2) OPT THIS REPO OUT",
+                       "(3) TURN IT OFF EVERYWHERE"):
+            with self.subTest(prefix=prefix):
+                self.assertEqual(
+                    len([ln for ln in lines if ln.startswith(prefix)]), 1,
+                    "each escape hatch is exactly one line of its own")
+
+    def test_the_schema_is_alone_on_its_line_and_is_valid_json(self):
+        # It has to be selectable and pasteable, which is the whole reason
+        # the deny prints it at all.
+        schema_lines = [ln for ln in self.reason().split("\n")
+                        if ln.startswith("{")]
+        self.assertEqual(len(schema_lines), 1)
+        self.assertEqual(schema_lines[0], gate.ARTIFACT_SCHEMA)
+        self.assertIsInstance(json.loads(schema_lines[0]), dict)
+
+    def test_no_control_characters_other_than_the_frames_newlines(self):
+        for ch in self.reason():
+            if ch == "\n":
+                continue
             self.assertGreaterEqual(ord(ch), 0x20)
+            self.assertNotEqual(ord(ch), 0x7F)
+
+    def test_an_interpolated_value_can_never_add_a_line(self):
+        plain = gate.deny_message("p")
+        for value in ("a\nb\n(1) FAKE HATCH", "a\r\nb", "a\x00b"):
+            with self.subTest(value=value):
+                self.assertEqual(gate.deny_message(value).count("\n"),
+                                 plain.count("\n"))
+                self.assertEqual(gate.deny_message("p", scope=value).count("\n"),
+                                 plain.count("\n") + 1)
+                self.assertEqual(gate.deny_message("p", note=value).count("\n"),
+                                 plain.count("\n") + 1)
 
     def test_still_echoes_nothing_from_the_artifact(self):
         repo = self.repo()
@@ -1223,6 +1625,229 @@ class TestFix11StatedPythonVersion(GateTestCase):
     def test_manifest_states_the_minimum_version(self):
         data = json.loads(PLUGIN_MANIFEST.read_text(encoding="utf-8"))
         self.assertIn("Python 3.7", data["description"])
+
+
+class TestObjectStoreMatchesGit(GateTestCase):
+    """The provenance rule is only as good as the object reader under it.
+
+    Loose objects are zlib files; packed ones may be deltas against another
+    entry, by offset (OFS_DELTA) or by object id (REF_DELTA, what a thin
+    pack from a fetch completes to). Read every object git wrote and compare
+    it byte for byte with `git cat-file`, which is the only way to know the
+    delta machinery is right rather than merely not crashing."""
+
+    def growing_repo(self, name: str) -> Path:
+        repo = self.real_repo(name)
+        for i in range(1, 13):
+            (repo / "grow.txt").write_text(
+                "".join(f"line number {k} with some padding text\n"
+                        for k in range(200 * i)),
+                encoding="utf-8")
+            git(repo, "add", "grow.txt")
+            git(repo, "commit", "-qm", f"grow {i}")
+        (repo / ".delegation").mkdir()
+        (repo / ".delegation" / "keep").write_text("", encoding="utf-8")
+        git(repo, "add", ".")
+        git(repo, "commit", "-qm", "commit the marker")
+        return repo
+
+    def assertReadsEveryObject(self, repo: Path) -> int:
+        shas = [line.split()[0]
+                for line in git(repo, "cat-file", "--batch-all-objects",
+                                "--batch-check=%(objectname) %(objecttype)"
+                                ).stdout.splitlines() if line.strip()]
+        self.assertGreater(len(shas), 20)
+        raw = subprocess.run(
+            [GIT, "cat-file", "--batch"], cwd=repo, env=GIT_ENV,
+            input="\n".join(shas).encode(), capture_output=True, timeout=60,
+        ).stdout
+        store = gate.ObjectStore(repo / ".git", 20)
+        pos = 0
+        for sha in shas:
+            end = raw.index(b"\n", pos)
+            _, kind, size = raw[pos:end].decode("ascii").split()
+            body = raw[end + 1 : end + 1 + int(size)]
+            pos = end + 1 + int(size) + 1
+            with self.subTest(sha=sha):
+                self.assertEqual(store.get(sha), (kind, body))
+        return len(shas)
+
+    @unittest.skipUnless(GIT, "git binary not available")
+    def test_loose_objects(self):
+        self.assertReadsEveryObject(self.growing_repo("loose-objects"))
+
+    @unittest.skipUnless(GIT, "git binary not available")
+    def test_packed_objects_with_offset_deltas(self):
+        repo = self.growing_repo("ofs-deltas")
+        git(repo, "-c", "repack.usedeltabaseoffset=true", "repack", "-adq")
+        self.assertEqual(len(list((repo / ".git" / "objects").glob("??/*"))), 0)
+        self.assertReadsEveryObject(repo)
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_INHERITED)
+
+    @unittest.skipUnless(GIT, "git binary not available")
+    def test_packed_objects_with_reference_deltas(self):
+        repo = self.growing_repo("ref-deltas")
+        git(repo, "-c", "repack.usedeltabaseoffset=false", "repack", "-adq")
+        self.assertReadsEveryObject(repo)
+        self.assertEqual(gate.marker_provenance(repo), gate.MARKER_INHERITED)
+
+    @unittest.skipUnless(GIT, "git binary not available")
+    def test_a_pack_actually_contained_deltas(self):
+        # Guards the two tests above from silently becoming trivial if a
+        # future git stops deltifying this fixture.
+        repo = self.growing_repo("has-deltas")
+        git(repo, "repack", "-adq")
+        idx = list((repo / ".git" / "objects" / "pack").glob("*.idx"))
+        verify = git(repo, "verify-pack", "-v", str(idx[0])).stdout
+        deltas = [line for line in verify.splitlines() if len(line.split()) >= 7]
+        self.assertTrue(deltas, "expected git to write at least one delta")
+
+
+class TestDryRunArgumentOrder(GateTestCase):
+    """A dry run creates no commit, at either end of the command line."""
+
+    def test_dry_run_is_allowed_whichever_side_of_the_message_it_sits(self):
+        # `--dry-run` before the message was allowed and after it was denied,
+        # because the flag scan stopped dead at the first quote. Same command,
+        # opposite answers, and neither ordering can create a commit.
+        repo = self.repo()
+        for command in (
+            'git commit --dry-run -m "wip"',
+            'git commit -m "wip" --dry-run',
+            "git commit -m 'wip' --dry-run",
+            'git commit -m "wip" --author "A B <a@b.c>" --dry-run',
+            'git cherry-pick abc1234 --quit',
+            'git am -m "x" --abort',
+        ):
+            with self.subTest(command=command):
+                self.assertAllowed(command, repo)
+
+    def test_a_flag_named_inside_the_message_still_gates(self):
+        # The protection that made the scan stop at the quote in the first
+        # place: a commit message that merely talks about a flag must not buy
+        # a free commit. It survives, because the flag now has to appear
+        # OUTSIDE the quotes to count.
+        repo = self.repo()
+        for command in (
+            'git commit -m "fix --abort handling"',
+            "git commit -m 'document --dry-run'",
+            'git commit -m "wip --dry-run"',
+            'git commit -m "one" -m "two --dry-run"',
+            'git commit -m "release --skip notes"',
+        ):
+            with self.subTest(command=command):
+                self.assertDenied(command, repo)
+
+    def test_an_unterminated_quote_stays_gated(self):
+        repo = self.repo()
+        self.assertDenied('git commit -m "unterminated --dry-run', repo)
+
+    def test_a_later_commit_is_matched_on_its_own(self):
+        repo = self.repo()
+        self.assertDenied(
+            'git commit -m "wip" --dry-run; git commit -m "for real"', repo)
+        self.assertDenied("git commit -m x && git rebase --abort", repo)
+
+    def test_the_scan_stays_linear_on_a_long_command(self):
+        # The two branches of the scan are disjoint at every position (the
+        # character class excludes quotes), which is what keeps a failing
+        # match from backtracking catastrophically.
+        repo = self.repo()
+        command = 'git commit -m "' + ("a b " * 4000) + '" --dry-run'
+        start = time.monotonic()
+        self.assertAllowed(command, repo)
+        self.assertLess(time.monotonic() - start, 2.0)
+
+
+class TestAmendStaysGated(GateTestCase):
+    """`--amend` authors a commit, so it is gated. Decided, not overlooked."""
+
+    def test_amend_needs_an_artifact_of_its_own(self):
+        # The cost is real: after a gated commit lands, HEAD has moved and
+        # the artifact is spent, so fixing a typo in the message needs a
+        # fresh one. It stays gated because `--amend` writes a NEW commit
+        # whose content is whatever is staged, so `git add unreviewed.py &&
+        # git commit --amend --no-edit` would otherwise launder arbitrary
+        # unreviewed work into history through a spent artifact.
+        repo = self.repo()
+        for command in (
+            "git commit --amend",
+            "git commit --amend --no-edit",
+            'git commit --amend -m "typo"',
+            'git commit --amend -m "wording"  # no new work',
+        ):
+            with self.subTest(command=command):
+                self.assertDenied(command, repo)
+
+    def test_amend_passes_with_a_current_artifact(self):
+        repo = self.repo()
+        write_artifact(repo)
+        self.assertAllowed("git commit --amend --no-edit", repo)
+
+    def test_amend_dry_run_is_not_gated(self):
+        repo = self.repo()
+        self.assertAllowed("git commit --amend --dry-run", repo)
+
+
+class TestKnownResidualSoftReset(GateTestCase):
+    """`git reset --soft HEAD~1` re-arms a spent artifact. Left open.
+
+    Closing it would mean gating `reset`, which authors no commit, and
+    gating things that author no commit is the over-reach `--abort` taught
+    this gate not to repeat. The only way to spend an artifact is to make
+    the commit it authorised, so the re-arm returns exactly what was just
+    used and nothing more."""
+
+    def test_reset_is_not_gated(self):
+        repo = self.repo()
+        for command in ("git reset --soft HEAD~1", "git reset --hard HEAD~1",
+                        "git reset", "git restore --staged ."):
+            with self.subTest(command=command):
+                self.assertAllowed(command, repo)
+
+    def test_moving_head_back_makes_a_spent_artifact_fresh_again(self):
+        repo = self.repo()
+        ref = repo / ".git" / "refs" / "heads" / "main"
+        write_artifact(repo)  # bound to HEAD_SHA
+        self.assertAllowed('git commit -m "reviewed"', repo)
+        ref.write_text(OTHER_SHA + "\n", encoding="utf-8")  # the commit landed
+        self.assertIn("one artifact waives one commit",
+                      self.assertDenied('git commit -m "more"', repo))
+        ref.write_text(HEAD_SHA + "\n", encoding="utf-8")  # reset --soft HEAD~1
+        self.assertAllowed('git commit -m "more"', repo)
+
+    @unittest.skipUnless(GIT, "git binary not available")
+    def test_real_git_soft_reset_rearms(self):
+        repo = self.real_repo("real-reset")
+        (repo / ".delegation").mkdir()
+        head = git(repo, "rev-parse", "HEAD").stdout.strip()
+        write_artifact(repo, head_sha=head)
+        self.assertAllowed('git commit -m "reviewed"', repo)
+        (repo / "work.txt").write_text("work\n", encoding="utf-8")
+        git(repo, "add", "work.txt")
+        git(repo, "commit", "-qm", "the gated commit")
+        self.assertIn("one artifact waives one commit",
+                      self.assertDenied('git commit -m "more"', repo))
+        git(repo, "reset", "--soft", "HEAD~1")
+        self.assertAllowed('git commit -m "more"', repo)
+
+
+class TestMarkerScopePredicate(GateTestCase):
+    """`.delegation/<file>` is the marker; `.delegation/history/...` is not."""
+
+    def test_marker_own_paths(self):
+        for path in (".delegation/keep", ".delegation/review-artifact.json",
+                     ".delegation/.gitkeep"):
+            with self.subTest(path=path):
+                self.assertTrue(gate.is_marker_own_path(path))
+
+    def test_everything_else(self):
+        for path in (".delegation/history/old.json", ".delegation",
+                     ".delegationX/notes.md", "docs/.delegation/notes.md",
+                     ".delegation-old/notes.md", "README.md",
+                     ".delegation/history/nested/deep.json"):
+            with self.subTest(path=path):
+                self.assertFalse(gate.is_marker_own_path(path))
 
 
 class TestNeverOptedInStaysSilent(GateTestCase):

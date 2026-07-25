@@ -31,28 +31,34 @@ anything get committed.
 > `/delegate` first checks whether the change is trivial enough to just do
 > directly, and stops there if it is. Once it does start a loop it creates a
 > `.delegation/` directory at the repo root, and that directory is the opt-in
-> marker: from that point on, **every commit in this
-> repo**, including a one-line typo fix, is denied unless a current
+> marker: from that point on, **every git command in this repo that authors a
+> new commit** (`commit`, `cherry-pick`, `revert`, `am`, their `--continue`,
+> and `--amend`), including a one-line typo fix, is denied unless a current
 > all-PLEASED review artifact sits in `.delegation/`.
 >
 > **Add `.delegation/` to that repo's `.gitignore` in the same breath**, before
-> you commit anything. The opt-in should stay local to whoever wants it. A
-> marker that is tracked in git is **not** treated as an opt-in: it arrived
-> with the clone rather than from anyone in that working copy choosing it, so
-> the gate warns and allows rather than arming a repo nobody opted into. The
-> warning repeats on each gated command, which is deliberate noise: it should
-> be fixed by gitignoring the marker, not tuned out.
-> The same rule disposes of a committed artifact: if `.delegation/` is tracked,
-> the gate is off and says so, instead of silently honouring a waiver that
-> shipped over the network. Gitignoring it keeps the marker meaning what it
-> should, which is that someone here chose this.
+> you commit anything, and keep the marker out of your commits. Two concrete
+> failures sit behind that instruction. First, an unignored marker plus an
+> ordinary `git add .` sweeps `.delegation/`, and any all-PLEASED artifact
+> sitting in it, straight into your own commit. Second, and this is the one
+> that matters: **a marker the HEAD commit carries turns the gate OFF**, for
+> you and for everyone who clones the repo. Provenance is read from the HEAD
+> commit tree. A marker HEAD does not carry was created by whoever is sitting
+> here, which is an act of consent, so the gate enforces. A marker HEAD does
+> carry arrived with the repository, which is nobody in this working copy
+> consenting to anything, so the gate warns and stands down rather than arming
+> a repo its contributors never opted into. Committing the marker does not arm
+> your colleagues; it disarms you. The warning repeats on every gated command,
+> which is deliberate noise: it should be fixed, not tuned out.
 >
-> To un-arm a repo, delete its `.delegation/` directory (`rm -rf .delegation`).
-> If the marker is tracked in git the gate is already inert there, so there is
-> nothing to un-arm and you should leave it alone. Note that `git rm -r
-> --cached .delegation` does the opposite of un-arming: it leaves the directory
-> on disk untracked, which is precisely the armed state. That command is how
-> you deliberately adopt an inherited marker as your own opt-in. See
+> To un-arm a repo you armed, delete its `.delegation/` directory
+> (`rm -rf .delegation`). If the marker is already part of HEAD the gate is
+> inert there and says so on every gated command, so there is nothing to
+> un-arm. To go the other way and adopt an inherited marker as your own opt-in:
+> `git rm -r --cached .delegation`, add `.delegation/` to `.gitignore`, **and
+> commit that removal**. The marker counts as inherited for exactly as long as
+> HEAD carries it, which is what makes that un-arming commit itself ungated, so
+> there is no deadlock. See
 > [When not to delegate, and how to un-arm a repo](#when-not-to-delegate-and-how-to-un-arm-a-repo).
 
 **Check the gate is actually live before you trust it.** A misconfigured
@@ -66,8 +72,11 @@ git commit --allow-empty -m "gate check"
 ```
 
 An armed gate denies that commit and prints the artifact schema. Silence means
-the hooks are not running, whatever the install said. Remove `.delegation/`
-afterwards if you were only testing.
+the hooks are not running, whatever the install said. A *warning* instead of a
+deny means the hooks are running but this repo's marker is not an opt-in: its
+HEAD commit already carries `.delegation/`, or the directory is not inside a
+git repo at all, and the warning says which. Remove `.delegation/` afterwards
+if you were only testing.
 
 **The worked example.** [`docs/example-run.md`](docs/example-run.md) is one
 delegation start to finish: decompose, fan out, panel, consolidate, fix,
@@ -132,12 +141,26 @@ everything else is a flat sibling it spawns, one level deep. Full detail:
   adversarially review every deliverable. Neither can spawn; a worker that
   needs a helper asks the manager to spawn one.
 
+**Two naming conventions, so you can tell them apart.** *Skills and commands*
+are addressed with the plugin namespace, as `delegation-framework:delegating`
+or `/delegate`. *Agents are spawned by the bare `name:` in their own
+frontmatter*, with no namespace: `subagent_type: "skeptic"`,
+`subagent_type: "steward"`, and `subagent_type: "general-purpose"` for the
+inline-briefed implementers, which have no definition file at all. That is the
+convention every example in this repo follows; if your runtime lists plugin
+agents under some other id, use the one it lists.
+
 **The spawn rule (load-bearing).** This framework enforces one-level-deep
-spawning as a *design choice*, not as a runtime constraint. Subagent tool grants
-are set per agent definition: see the `tools:` frontmatter in
-[`agents/skeptic.md`](agents/skeptic.md) and [`agents/steward.md`](agents/steward.md),
-which withhold any spawn tool, against [`agents/manager.md`](agents/manager.md),
-which holds `Task`. A runtime *may* hand a subagent its own spawn tool; this
+spawning as a *design choice*, not as a runtime constraint, and it is upheld by
+what this repo **withholds**, not by what it grants. The spawnable agent
+definitions, [`agents/skeptic.md`](agents/skeptic.md) and
+[`agents/steward.md`](agents/steward.md), carry `tools:` frontmatter with no
+spawn tool in it, so a skeptic or steward cannot start a second tier. The
+manager's own ability to spawn comes from being the **top-level session**, not
+from any grant this repo issues: nothing here loads
+[`agents/manager.md`](agents/manager.md) (you adopt that role yourself, you
+never spawn it), so the `Task` in its `tools:` line describes the role and
+confers nothing. A runtime *may* hand a subagent its own spawn tool; this
 framework declines to. The difference matters: this is a rule we impose, and it
 can therefore be broken by an agent definition that grants `Task` to a worker.
 It is not a wall the platform holds for us. So: the manager is the sole
@@ -300,7 +323,17 @@ The commit gate and both reminder hooks go silent in that repo immediately. The
 marker holds no state the framework needs later, so re-arming is just running
 the loop again (or `mv .delegation.off .delegation`). If you want to keep the
 archived artifacts in `.delegation/history/` as a record, move them somewhere
-outside the repo root before deleting, or use the second form.
+outside the repo root before deleting, or use the second form. (Committing that
+archive is allowed and does not disarm your gate, but every clone then gets a
+`.delegation/` directory and an armed gate: see the second residual under
+[Enforcement, honestly](#enforcement-honestly-one-structural-slice-the-rest-is-discipline).)
+
+**If the marker is one you inherited** (HEAD carries it, so the gate is already
+standing down and warning), there is nothing to un-arm. To silence the warning,
+either delete the directory or make the opt-in your own:
+`git rm -r --cached .delegation`, add `.delegation/` to `.gitignore`, **and
+commit that removal**. Until that removal is committed the marker still counts
+as inherited, which is exactly what makes that commit itself ungated.
 
 ## Dependencies
 
@@ -311,8 +344,10 @@ somewhere else, and no version to pin. The manifest
 `dependencies`.
 
 The one external requirement is an interpreter: the hook commands are portable
-Python, so `python3` must be on PATH for the commit gate and the
-reminder hooks to run at all (see limit 1 below).
+Python 3.7+, and each one tries `python3`, then `python`, then `py -3`, then
+gives up quietly. One of those three has to answer for the commit gate and the
+reminder hooks to run at all (see limit 1 below). The fallbacks are why Windows
+works: the python.org installer ships `python.exe` and no `python3.exe`.
 
 ## Enforcement, honestly: one structural slice, the rest is discipline
 
@@ -329,13 +364,16 @@ PreToolUse hook on the git subcommands that introduce *newly authored* work
 ([`scripts/commit-gate.py`](scripts/commit-gate.py)) denies the command
 unless a well-formed, all-PLEASED artifact **bound to the current HEAD**
 exists. No command carrying `--abort`, `--skip`, `--quit` or `--dry-run` is
-ever gated, since none of them can create a commit and `git rebase --abort`
-has to work mid-conflict above all. `--continue` is gated on the four
-subcommands above, because it writes the commit the conflicted operation
-stopped short of. The gate acts **only in repos that
-have opted in** by having an untracked `.delegation/` directory at the repo root (the
-`delegating` skill / `/delegate` creates it when a loop starts; it is also
-the natural home of the artifact and checklist). Command matching is
+ever gated, wherever on the line the flag sits, as long as it sits outside
+quotes: none of them can create a commit and `git rebase --abort` has to work
+mid-conflict above all. (A flag *named inside a commit message*,
+`git commit -m "fix --abort handling"`, does not waive anything.) `--continue`
+is gated on the four subcommands above, because it writes the commit the
+conflicted operation stopped short of, and so is `--amend` (below). The gate
+acts **only in repos that have opted in** by having a `.delegation/` directory
+at the repo root **that the HEAD commit does not carry** (the `delegating`
+skill / `/delegate` creates it when a loop starts; it is also the natural home
+of the artifact and checklist). Command matching is
 anchored on command *position*, not on quoting. Prose inside a running
 command (`echo please run git commit later`, `grep 'git commit' docs/`) does
 not trigger it. But a command separator inside quotes is still a separator
@@ -345,6 +383,33 @@ by tests: parsing quoting and heredocs means writing a shell, and every bug
 in that shell would fail open. Within its reach, skipping review takes
 a *visible act* (deleting or faking an artifact, or removing the marker)
 rather than merely forgetting a rule.
+
+**When the marker counts as an opt-in.** Only when the HEAD commit does not
+carry it. The gate reads the HEAD commit tree, never the index, and there are
+exactly three answers:
+
+| What HEAD's tree holds at `.delegation` | Reading | Gate |
+|---|---|---|
+| A file directly inside `.delegation/`, or a submodule at `.delegation` | inherited: it arrived with the repository | **off**, and it warns |
+| `.delegation/` holding only subdirectories, such as `history/` | local: an archive is not the marker | **on** |
+| No `.delegation` entry at all | local: someone here created it | **on** |
+| No resolvable HEAD commit (fresh `git init`, unborn branch, unreadable HEAD) | local: nothing can have arrived in a commit that does not exist | **on** |
+| HEAD resolves but its objects cannot be read | unknown provenance | **off**, and it warns |
+| The marker is not inside a git repo at all | nothing to bind an artifact to | **off**, and it warns |
+
+`git add .delegation` changes none of this. Staging is a local act, so a staged
+marker leaves the gate **on**; the deny simply adds a line telling you that you
+staged it and that `git restore --staged .delegation` undoes it. Both warnings
+repeat on every gated command by decision, not by oversight: a hook is a
+one-shot process, so saying it once would take a state file that outlives the
+session it describes, and a stale "already told you" file would suppress the
+only signal that the gate is not enforcing.
+
+**Un-arming an inherited marker.** `git rm -r --cached .delegation`, gitignore
+it, **and commit that removal**. The first two steps alone change nothing: the
+marker counts as inherited for as long as HEAD carries it. That is also what
+makes the un-arming commit itself ungated, so there is no deadlock where you
+need a panel to escape a gate that is not enforcing.
 
 **One panel, one commit.** Because the artifact is bound to HEAD, it waives
 exactly one commit and is spent the moment that commit lands. So the loop is:
@@ -360,22 +425,57 @@ gate in separate commits.
 **What is deliberately not gated.** `pull`, `merge` and `rebase` are not gated.
 They move or replay commits that were already gated when they were authored, so
 gating them again would demand a fresh panel for work that already carried one,
-and would deny routine integration in every armed repo. The residual, stated
+and would deny routine integration in every armed repo. Neither are `reset`,
+`restore`, `push`, `add`, or anything read-only: none of them authors a commit,
+and gating things that author no commit is the over-reach that denying
+`git rebase --abort` taught us not to repeat. The residual, stated
 plainly: landing a branch with `git merge --no-ff` creates a merge commit that
 no review artifact covers. Review happened at the commits *inside* the branch,
 not at the merge. If those commits were authored somewhere this gate does not
 reach (limits 1, 3 and 4 below), nothing on the merge path re-checks them.
 
+**`--amend` is gated**, and it is the one that costs an honest user something:
+amending a typo in the message of a commit you *just* landed needs a fresh
+artifact, because HEAD moved when that commit landed. It stays gated because an
+amend writes a **new commit whose content is whatever is staged**, so allowing
+it would make `git add unreviewed.py && git commit --amend --no-edit` a laundry
+route for unreviewed work through an artifact that was already spent. Telling a
+message-only amend from a content amend means diffing the index against the HEAD
+tree on every command, and *forgetting what got included* is the exact failure
+this gate exists to wall off. The honest price of the typo is re-pointing
+`head_sha` at the new HEAD.
+
+**Two residuals worth naming.** First: `git reset --soft HEAD~1` is not gated,
+and it moves HEAD back, which makes a spent artifact fresh again. One artifact
+can therefore waive more than one commit that way. This is deliberate. The only
+way to spend an artifact is to make the commit it authorised, so the re-arm
+returns exactly what was just used and nothing more, and closing it would
+mean gating `reset`, which authors no commit. It is strictly weaker than the
+`bash -c "git commit"` bypass in limit 4, which is already documented.
+Second: a committed `.delegation/history/` deliberately does **not** disarm
+your gate (an archive of spent artifacts is an audit trail, the opposite intent
+of committing the marker), but checking it out materializes a `.delegation/`
+directory in every clone, and by the same rule that directory reads as local
+there. So a cloner who has this plugin installed is **gated** in a repo they
+never opted into. Accepted trade, and the escape is the ordinary one: delete
+`.delegation/`, or keep the archive outside the repo.
+
 **Its five honest limits:**
 
 1. It fires only where this plugin's hooks are installed and enabled in
-   the environment running the committing agent, and only if `python3` is on PATH. The hook commands are Python; without it
-   the gate silently vanishes. A different environment,
-   or hooks disabled, means no gate.
-2. It verifies the artifact exists, is well-formed (including a non-empty
-   `deliverable` saying what was reviewed), is all-PLEASED, and is bound to
-   the commit it was reviewed against (`head_sha` must match current HEAD,
-   so one artifact waives exactly one commit). It does
+   the environment running the committing agent, and only if a Python 3.7+
+   interpreter answers to one of `python3`, `python` or `py -3`. Each hook
+   command tries those three in order and then exits quietly; the fallbacks are
+   what make Windows work, since the python.org installer ships `python.exe`
+   and no `python3.exe`. With none of the three on PATH the gate silently
+   vanishes. A different environment, or hooks disabled, means no gate.
+2. It verifies the artifact exists and is well-formed (a non-empty
+   `deliverable` saying what was reviewed, a valid `mode`, a non-empty
+   `reviews` array, **a non-empty `lens` on every review**), that every
+   `verdict` is exactly `PLEASED` with every `blocking` list empty **and
+   `consolidated_blocking` empty**, and that it is bound to the commit it was
+   reviewed against (`head_sha` must match current HEAD, so one artifact waives
+   exactly one commit). It does
    *not* verify that the review was rigorous. A determined agent could
    fabricate a PLEASED artifact. The gate is a wall against forgetting,
    not against bad faith.
@@ -391,7 +491,10 @@ reach (limits 1, 3 and 4 below), nothing on the merge path re-checks them.
    flags. Paths built from variables or nested quoting are still not
    resolved, but they no longer waive: an unresolvable or out-of-tree target
    falls back to the hook's own repo and gates there, which can deny a
-   commit aimed at a different, ungated repo (fail closed, see limit 5). Matcher evasion is a bad-faith route rather than
+   commit aimed at a different, ungated repo (fail closed, see limit 5). It
+   does not do that silently: the deny carries a line naming the repo the gate
+   scoped itself to and saying the command's own target could not be resolved.
+   Matcher evasion is a bad-faith route rather than
    an accident, but it is *possible*: the gate walls off the forgetful
    default path, not every path to a commit.
 5. **Over-reach (the flip side).** Plugin hooks are session-global: the
@@ -404,13 +507,26 @@ reach (limits 1, 3 and 4 below), nothing on the merge path re-checks them.
    review artifact; remove the repo's `.delegation/` directory (un-opt-in);
    or disable the hook.
 
+**What a deny actually looks like.** Nine lines, with real line breaks, in this
+order: the headline, the specific problem, why this repo is gated at all, then
+the three escape hatches above in priority order, with the artifact schema
+printed **alone on its own line** so it can be selected and pasted without
+re-typing. One extra line appears when `.delegation/` is staged but not
+committed, saying so and giving `git restore --staged .delegation`; one more
+appears when the gate had to fall back to the hook's own repo (limit 4). No
+value read out of the artifact is ever echoed back into that message: findings
+are reported positionally ("review #2 ..."), because hook output reaches the
+model as privileged text and a cloned repo could otherwise speak through it.
+
 Everything else (the always-pair-a-skeptic breadth, the reliability rules,
 panel sizing) is skill guidance plus **reminder hooks**, which nudge and
 never structurally enforce: a SubagentStop nudge ("attach a skeptic") and a
 Stop nudge (uncommitted work with no all-PLEASED artifact at session stop),
-both scoped by the same `.delegation/` opt-in marker so they stay silent in
-unrelated repos. A hook cannot know an off-tree research deliverable went
-unreviewed.
+both scoped by the same `.delegation/` opt-in marker, read through the same
+HEAD-tree provenance rule, so they stay silent in unrelated repos and in repos
+whose marker merely arrived with the clone. The Stop nudge asks the gate itself
+whether the artifact would pass, rather than keeping a second opinion about it.
+A hook cannot know an off-tree research deliverable went unreviewed.
 
 ## The do-not-modify rule — what it does and does not mean
 
@@ -469,8 +585,9 @@ python3 scripts/check-domain-neutral.py   # denylist grep: no source-domain voca
 **The test suite is the only one that exercises behaviour.** It covers the
 commit gate, which is the one structural slice: what it gates and what it
 deliberately does not, repo resolution through `cd` chains and `git -C`, the
-artifact-to-HEAD binding, malformed and hostile artifacts, the tracked-marker
-rule, and that a repo which never opted in stays silent. If you are deciding
+artifact-to-HEAD binding, malformed and hostile artifacts, the three marker
+provenance states read from the HEAD tree, and that a repo which never opted in
+stays silent. If you are deciding
 whether to trust this thing, run that first. It needs no network, no fixtures
 you have to build, and no `git` binary.
 
@@ -502,8 +619,8 @@ mechanisms, not one.
 Note: the design spec named the gate/check scripts as shell scripts (`.sh`);
 they ship as portable Python (`.py`) so the same scripts run on Windows
 and POSIX, a deliberate and flagged divergence with identical contracts. The
-hook commands therefore require `python3` on PATH (limit 1
-above).
+hook commands therefore require a Python 3.7+ interpreter, which they look for
+as `python3`, then `python`, then `py -3` (limit 1 above).
 
 ## What green does NOT buy you
 

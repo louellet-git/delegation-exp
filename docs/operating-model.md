@@ -43,11 +43,14 @@ DECOMPOSE → IMPLEMENT (parallel where safe) → REVIEW PANEL (2–7 skeptics, 
   ([`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#the-brief-template)),
   which carries the single task, the explicit file-ownership allowlist, the
   reserved files, the exact test command, the acceptance condition, the
-  test-first and evidence-before-claims postures, the re-brief that the agent
-  does not commit or push, and the status contract itself. Build briefs from
+  pre-assigned ADR / doc numbers, what a predecessor slice already changed and
+  any partial work it left in the tree, the test-first and
+  evidence-before-claims postures, the re-brief that the agent does not commit
+  or push, and the status contract itself. Build briefs from
   that template rather than from a partial list; the items an ad-hoc brief
-  drops are the ones other parts of this model depend on. Save each brief to
-  `.delegation/briefs/` so a steward checkpoint has something to reconcile
+  drops are the ones other parts of this model depend on. Save **every** brief
+  to `.delegation/briefs/` before dispatching it, fix-round and scouting briefs
+  included, so a steward checkpoint has something to reconcile
   against. The
   subagent reads whatever files it needs, does the work, runs its tests, and
   reports DONE / BLOCKED / NEEDS_CONTEXT with the evidence behind it. A BLOCKED
@@ -84,10 +87,16 @@ DECOMPOSE → IMPLEMENT (parallel where safe) → REVIEW PANEL (2–7 skeptics, 
 - Re-verify, don't trust the fix report. Re-run the *specific* reviewers
   who were NOT PLEASED; have them probe for inputs that still slip through,
   not just confirm the diff.
-- **Loop-convergence stop-rule:** the loop converges. Each re-review
-  should find strictly less than the round before. If it keeps finding
-  new one-line nits, fix them and close on an exhaustive manager check
-  instead of another full round.
+- **Loop-convergence stop-rule:** the loop converges. Each re-review should
+  find strictly less than the round before. If late rounds surface only
+  one-line nits, you may close without convening another *full* panel: send
+  the nits to one final dispatched fix round, re-review **only the dissenters**,
+  and add your own exhaustive check on top. What the shortcut never skips is
+  the verdicts. The artifact is written only when every reviewer has returned
+  PLEASED, and the gate accepts nothing else, so a "shortcut" that leaves a
+  dissenter holding NOT PLEASED leaves no artifact anyone can honestly write.
+  It also never means the manager fixes the nits itself; a smaller round is
+  still a dispatched round.
 - **MANAGER INSPECTS** is a procedure, not a glance: reconcile the integrated
   diff against the dispatched allowlists, run the full test command yourself,
   check the artifact's fields including `head_sha`, then stage explicit paths.
@@ -100,13 +109,17 @@ DECOMPOSE → IMPLEMENT (parallel where safe) → REVIEW PANEL (2–7 skeptics, 
 
 ## The spawn topology: one level deep, the manager is the sole spawner
 
-This framework holds **one-level-deep spawning** by construction, and the whole
-org is shaped to it. The mechanism is per-agent tool grants: only the manager
-is given a spawn tool; the steward and every worker are given none, leaving them
-`SendMessage` to siblings that already exist. This is a rule the framework imposes
-through its own agent definitions, not a constraint the runtime imposes on it.
-Grant `Task` to a worker and the topology breaks, which is exactly why no agent
-definition here does:
+This framework holds **one-level-deep spawning** by design, and the whole org is
+shaped to it. The mechanism is **withholding**, not granting: the spawnable
+agent definitions here (`agents/skeptic.md`, `agents/steward.md`) carry `tools:`
+frontmatter with no spawn tool in it, leaving them `SendMessage` to siblings
+that already exist. The manager's own ability to spawn is not something this
+repo issues either; it comes from the manager being the **top-level session**,
+which is why `agents/manager.md` is a role you adopt and nothing in the repo
+loads it. This is a rule the framework imposes through its own agent
+definitions, not a constraint the runtime imposes on it. Grant a spawn tool to a
+worker and the topology breaks, which is exactly why no agent definition here
+does:
 
 1. **The manager is the sole spawner.** The steward and every worker
    (implementers, skeptics, researchers) are flat siblings under the manager.
@@ -273,34 +286,60 @@ The panel produces a review artifact
 (`.delegation/review-artifact.json`; format in
 [`../skills/skeptical-review/SKILL.md`](../skills/skeptical-review/SKILL.md)).
 A PreToolUse hook denies the git subcommands that introduce newly authored work
-(`commit`, `cherry-pick`, `revert`, `am`) unless a well-formed, all-PLEASED
-artifact bound to the current HEAD exists, in repos that have opted in by
-carrying a `.delegation/` directory at the repo root (the `delegating` skill
-creates it when a loop starts, and adds it to that repo's `.gitignore` in the
-same step). Within its reach, skipping review takes a *visible
-act*, not a lapse of memory.
+(`commit`, `cherry-pick`, `revert`, `am`, including their `--continue` and
+including `--amend`) unless a well-formed, all-PLEASED artifact bound to the
+current HEAD exists. It acts only in repos that have opted in by carrying a
+`.delegation/` directory at the repo root **that the HEAD commit does not
+carry** (the `delegating` skill creates it when a loop starts, and adds it to
+that repo's `.gitignore` in the same step). A marker HEAD *does* carry arrived
+with the repository rather than from anyone in this working copy, so it is not
+consent: the gate warns and stands down. Staging the marker with `git add`
+changes nothing, because staging is a local act. Un-arming an inherited marker
+takes `git rm -r --cached .delegation`, a gitignore line, **and a commit of
+that removal**, which is itself ungated precisely because the marker still
+counts as inherited until HEAD stops carrying it. Within its reach, skipping
+review takes a *visible act*, not a lapse of memory.
 
-`pull`, `merge` and `rebase` are **not** gated. They integrate or replay
-commits that were already gated when they were authored, so re-gating them
-would demand a fresh panel for reviewed work and would deny routine integration
-in every armed repo. The residual, stated plainly: landing a branch with
-`git merge --no-ff` produces a merge commit no artifact covers, because the
-review happened at the commits inside the branch rather than at the merge.
+`pull`, `merge` and `rebase` are **not** gated, and neither are `reset`,
+`restore`, `push`, `add` or anything read-only. They integrate or replay
+commits that were already gated when they were authored, or author no commit at
+all, so re-gating them would demand a fresh panel for reviewed work and would
+deny routine integration in every armed repo. Nor is any command carrying
+`--abort`, `--skip`, `--quit` or `--dry-run` outside quotes. Two residuals,
+stated plainly: landing a branch with `git merge --no-ff` produces a merge
+commit no artifact covers, because the review happened at the commits inside
+the branch rather than at the merge; and `git reset --soft HEAD~1` moves HEAD
+back, which re-arms a spent artifact, so one artifact can waive more than one
+commit that way. The second is deliberate and strictly weaker than the already
+documented `bash -c "git commit"` bypass: the only way to spend an artifact is
+to make the commit it authorised, so the re-arm returns exactly what was just
+used.
+
+`--amend` is gated for a reason worth knowing before it surprises you at the
+keyboard: an amend writes a new commit whose content is whatever is staged, so
+allowing it would let `git add unreviewed.py && git commit --amend --no-edit`
+launder unreviewed work through an artifact that was already spent. Amending
+the message of a commit you just landed therefore needs a fresh artifact, since
+HEAD moved when that commit landed.
 
 Because the artifact binds to a single HEAD, **one panel waives exactly one
 commit**: integrate, review once, commit once.
 
 Five honest limits travel with it: it fires only where this plugin's hooks are
-installed and enabled and `python3` is on PATH; it checks that the
-artifact exists, is well-formed, and is all-PLEASED, never that the review was
+installed and enabled and a Python 3.7+ interpreter answers to `python3`,
+`python` or `py -3`; it checks that the artifact exists, is well-formed
+(including a non-empty `lens` on every review and an empty
+`consolidated_blocking`), and is all-PLEASED, never that the review was
 rigorous, so it walls off forgetting rather than bad faith; it gates the local
 commit only; commits the matcher never sees (aliases, subprocesses, IDE
-commits) bypass it and variable or nested-quoted paths can make it consult the
-wrong repo silently; and, being session-global, it can false-positive on an
-exotic compound command. The full text of all five, with the escape hatches, is
-the canonical statement in the
+commits) bypass it, and a path built from variables or nested quoting still
+does not resolve, though it no longer waives: the gate falls back to the hook's
+own repo and prints a line saying which repo it scoped itself to; and, being
+session-global, it can false-positive on an exotic compound command. The full
+text of all five, with the escape hatches, is the canonical statement in the
 [README](../README.md#enforcement-honestly-one-structural-slice-the-rest-is-discipline).
 
 After a gated commit lands, the manager **archives the artifact** (e.g. move
 it to `.delegation/history/`) so a stale all-PLEASED file cannot silently
-waive review for the *next* slice.
+waive review for the *next batch*, which under one panel one commit is the
+unit that follows.

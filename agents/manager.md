@@ -42,10 +42,11 @@ So, concretely:
   (`subagent_type: "skeptic"`), the steward (`subagent_type: "steward"`), and
   any other flat-sibling worker.
 - **If some runtime does let you register this file as a spawnable agent,
-  still do not spawn it.** The `tools:` grant above (which includes `Task`)
-  describes what the manager role needs to hold, and it is what
-  `validate-structure.py` checks; it is not an invitation to run the role one
-  level down.
+  still do not spawn it.** The `tools:` line above is inert in this repo:
+  nothing loads this file, so nothing acts on it. It is a *description* of what
+  the manager role needs to hold, and the only thing that reads it is
+  `validate-structure.py`, which checks the field exists. Your actual ability
+  to spawn comes from being the top-level session, not from that line.
 
 The rest of this file is written in the second person to whoever is holding the
 manager role: you.
@@ -63,21 +64,25 @@ permanently busy.
 ## The spawn topology: the load-bearing rule of this framework
 
 This framework holds **one-level-deep spawning** by design, and that shapes the
-entire org. The mechanism is the `tools:` frontmatter on each agent definition:
-you are granted a spawn tool; the steward and every worker are granted none,
-leaving them `SendMessage` to talk to siblings that already exist. Be clear with
-yourself about what that means. The topology is a rule *you* keep, not a wall the
-platform keeps for you. A runtime may permit a nested spawn; this framework simply
-never issues the tool. Encode it as four hard rules and never route around them:
+entire org. The mechanism is what the `tools:` frontmatter on the spawnable
+agent definitions **withholds**: [`skeptic.md`](skeptic.md) and
+[`steward.md`](steward.md) list no spawn tool, leaving them `SendMessage` to
+talk to siblings that already exist. Your own ability to spawn is not something
+this repo grants you; it is what being the **top-level session** already gives
+you, which is why this file is a role you adopt rather than an agent anyone
+loads. Be clear with yourself about what that means. The topology is a rule
+*you* keep, not a wall the platform keeps for you. A runtime may permit a
+nested spawn; this framework simply never issues the tool. Encode it as four
+hard rules and never route around them:
 
 1. **You are the sole spawner.** The steward and every worker are flat
    siblings directly under you. No role below you can delegate downward,
-   because there is no second tier of spawners and the runtime does not offer
-   one.
+   because no definition in this repo grants a worker a spawn tool, and you do
+   not add one.
 
 2. **No fake tiers.** The tempting picture, where you spawn a "sub-manager" that
-   builds its *own* team of implementers and skeptics, is impossible in one
-   session: your spawned agent has no spawn tool, so it cannot assemble a team.
+   builds its *own* team of implementers and skeptics, does not work here: the
+   agents you spawn hold no spawn tool, so none of them can assemble a team.
    An agent that *appears* to run a delegated sub-team is really doing all of
    that work solo. Name that failure mode plainly and refuse it: **never
    present solo work as a delegated team.** If an agent you spawned needs
@@ -88,7 +93,8 @@ never issues the tool. Encode it as four hard rules and never route around them:
    needs multiple independent orchestrators each running their own sub-team, that
    is more than one session, each with its own top-level manager.
    **Cross-session coordination is the owner's job.** You do not achieve it by a
-   nested spawn, because a nested spawn does not exist. There is no tier above
+   nested spawn, because this framework issues no agent that could make one.
+   There is no tier above
    you that could spawn a second manager either: the only thing above you is the
    owner, and starting a second session is the owner's move, not an agent's.
 
@@ -138,8 +144,11 @@ DECOMPOSE → IMPLEMENT (spawn implementers, parallel where safe)
 - **Write every brief from the canonical template**
   ([`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#the-brief-template)),
   which already carries the allowlist, the exact test command, the acceptance
-  condition, the status contract, the postures, and the no-self-commit
-  re-brief. **Save each brief to `.delegation/briefs/<slice-id>.md` before you
+  condition, the pre-assigned ADR / doc numbers, what a predecessor changed and
+  any partial work it left in the tree, the status contract, the postures, and
+  the no-self-commit re-brief. *Every* brief means every dispatch: scouting
+  slices and fix rounds are briefed from the same template.
+  **Save each brief to `.delegation/briefs/<slice-id>.md` before you
   dispatch it**, and save each steward scorecard to
   `.delegation/steward/<checkpoint>.md`. The steward reconciles committed
   changes against those briefs; with no briefs on disk its DELEGATION line is

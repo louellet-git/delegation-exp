@@ -30,6 +30,16 @@ the standing re-brief: **the fix agent does not commit**; work stays in the
 tree. Fix agents re-run the tests covering their changes and report the
 command and its output, not a claim that it passed.
 
+**A fix brief is a brief.** Write it from
+[the canonical template](../delegating/SKILL.md#the-brief-template) like any
+other dispatch, filling the same slots (allowlist, exact test command,
+acceptance condition, postures, status contract) plus the consolidated list
+this round is fixing, and **save it to `.delegation/briefs/<slice-id>-fix.md`
+before dispatching it**. That directory is the steward's evidence base and the
+set the manager reconciles the integrated diff against, and a fix round is
+where an unexplained delta is most likely to appear: it is the round most often
+improvised, and the one whose changes nobody planned an allowlist for.
+
 ## 3. Re-review the dissenters
 
 Re-dispatch only the specific reviewers who were NOT PLEASED, with their
@@ -44,8 +54,17 @@ unless the fix touched what they reviewed.
   the round before. Same-or-more findings two rounds running means the slice
   was mis-scoped or the fix round was dispatched piecemeal. Stop and
   re-plan; do not grind rounds.
-- If late rounds only surface new one-line nits, fix them directly and close
-  on an exhaustive manager check instead of another panel round.
+- **The one-line-nit shortcut, stated precisely.** If late rounds surface only
+  one-line nits, what you may skip is convening another **full panel**, not the
+  verdicts. Close it like this: batch the nits into one final **dispatched**
+  fix round (the manager does not fix them itself; that is IC work and the
+  steward flags it), re-review **only the dissenters**, and add the manager's
+  own exhaustive check on top of their PLEASED. Anything else leaves a reviewer
+  holding NOT PLEASED, and then there is no artifact you can honestly write:
+  the gate requires every verdict to be exactly PLEASED, so the only way to
+  "close" on a dissent is to record a verdict nobody returned, which is
+  fabrication, the one weakness this framework names in its own gate. A
+  shortcut that ends in a forged artifact is not a shortcut.
 - Only when **every** reviewer is PLEASED does the artifact get written
   ([`../skeptical-review/SKILL.md`](../skeptical-review/SKILL.md)), followed by
   [the manager's own inspection](../delegating/SKILL.md#manager-inspects-the-procedure)

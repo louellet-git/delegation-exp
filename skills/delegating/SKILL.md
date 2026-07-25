@@ -48,10 +48,16 @@ is as a procedure. Run it in order.
    - the set of files that would have to change for the stated claim, grouped
      into candidate slices with the overlaps between them named.
 
-   Use the same template: the allowlist is empty (it writes nothing outside its
-   own report), the test command slot says which commands it may run to *read*
-   the repo, and the acceptance condition is that every fact in the report cites
-   the file it came from. That report is a deliverable like any other, so the
+   Use the same template, and save the brief to `.delegation/briefs/` like any
+   other. The report needs a destination, or the slice has no deliverable, so
+   its allowlist is exactly one path: `.delegation/scouting/<slice-id>.md`.
+   That single file is the **one exception** to the template's standing
+   "everything under `.delegation/` is reserved" line, and the brief must say
+   so explicitly. Read-only here means it modifies nothing in the repo *except*
+   the report it was dispatched to write. The test command slot says which
+   commands it may run to *read* the repo, and the acceptance condition is that
+   every fact in the report cites the file it came from. That report is a
+   deliverable like any other, so the
    law applies with no exception: pair it with at least one skeptic. A cheap
    `evidence-vs-claim` lens is the right one, and the question it should ask is
    whether the test command was quoted from a file or guessed.
@@ -73,7 +79,9 @@ is as a procedure. Run it in order.
 
 5. **Reserve the shared files to yourself** (indexes, front-door routing docs,
    capability maps) and pre-assign any ADR or doc numbers, so parallel agents
-   cannot collide on `000N`.
+   cannot collide on `000N`. A number you assigned and did not transmit is a
+   number the agent will pick for itself: put each slice's numbers in that
+   slice's brief, in the PRE-ASSIGNED NUMBERS slot of the template below.
 
 6. **Fill the conflict-avoidance checklist** (section 4 below). If it shows an
    overlap you cannot remove, serialize those slices; do not fan out anyway.
@@ -93,6 +101,13 @@ definition to spawn, by design: implementers are briefed inline, one per slice,
 so spawn your runtime's **general-purpose worker subagent** (in Claude Code,
 `subagent_type: "general-purpose"`) and put the entire brief in its prompt.
 Never grant a worker a spawn tool.
+
+**Naming convention, since this repo uses two.** Skills and commands are
+addressed with the plugin namespace (`delegation-framework:delegating`,
+`/delegate`); agents are spawned by the bare `name:` from their own frontmatter,
+unnamespaced: `subagent_type: "skeptic"`, `subagent_type: "steward"`,
+`subagent_type: "general-purpose"`. If your runtime lists plugin agents under
+some other id, use the one it lists.
 
 Every brief is written from [the template below](#the-brief-template). Build it
 from the template rather than from memory: a brief assembled ad hoc reliably
@@ -131,6 +146,20 @@ FILE-OWNERSHIP ALLOWLIST (create or modify ONLY these):
 RESERVED, DO NOT TOUCH (the manager wires these at integration):
   <shared index files, front-door routing docs, capability maps>
   plus everything under .delegation/ (briefs, checklist, review artifact).
+  <a scouting slice names its own report here as the single exception>
+
+PRE-ASSIGNED NUMBERS (use exactly these; never pick your own):
+  <the ADR / doc numbers the conflict checklist reserved for this slice, or
+   "none this run">
+
+WHAT THE PREDECESSOR CHANGED (serialized slices only):
+  <the slice that ran before you and what it changed in the files you are about
+   to touch, or "nothing: no slice ran before you on these paths">
+
+PARTIAL WORK ALREADY IN THE TREE:
+  <paths a stopped or BLOCKED predecessor left half-written, and what to do
+   with each one: keep it, finish it, or replace it. "None: your paths are
+   clean" if nothing was left behind.>
 
 EXACT TEST COMMAND (copy-pasteable; run it yourself):
   <command>
@@ -161,11 +190,23 @@ Then stop. The next task gets a fresh agent.
 Why each part is there, in one line each: the end goal, because a reviewer or a
 worker without it optimizes line coverage; the allowlist and the reserved list,
 because parallel writers clobber each other silently and the index files are
-yours; the exact test command, because "run the tests" is not copy-pasteable;
-posture 3, because general-purpose briefs default to "commit your work" and a
-self-committed slice lands before any panel runs; posture 4, because
-one-level-deep spawning is this framework's load-bearing invariant; and the
-status contract, because it is what closes a task instead of leaving it open.
+yours; the pre-assigned numbers, because a number assigned in the conflict
+checklist and never transmitted is a number the agent invents, which is the
+collision the checklist was filled to prevent; the predecessor slot, because a
+serialized slice briefed as if it were first will re-do or undo what just
+landed; the partial-work slot, because half-written work nobody was told about
+is what makes a later panel produce noise; the exact test command, because "run
+the tests" is not copy-pasteable; posture 3, because general-purpose briefs
+default to "commit your work" and a self-committed slice lands before any panel
+runs; posture 4, because one-level-deep spawning is this framework's
+load-bearing invariant; and the status contract, because it is what closes a
+task instead of leaving it open.
+
+**Every dispatch uses this template**, not just the first round: fix-round
+briefs, re-briefs after a BLOCKED report, and the scouting brief are all
+written from it and all saved to `.delegation/briefs/<slice-id>.md` before
+dispatch. The steward reads that directory as its evidence base, and a fix
+round is exactly where an unexplained delta is most likely to appear.
 
 ### BLOCKED: the procedure
 
@@ -190,16 +231,18 @@ to take the task over yourself.
      authorize an agent to write outside its allowlist "just this once": the
      filled checklist stops being true the moment you do.
    - (c) Serialize the two slices, re-fill the checklist, and brief the second
-     on what the first changed.
+     on what the first changed, in the template's WHAT THE PREDECESSOR CHANGED
+     slot.
    - (d) Re-decompose. Stop any sibling slice that depends on the shape you
      just found to be wrong, rather than letting it finish against it.
 4. **Always a fresh agent.** Re-brief means a new agent with a complete brief,
    not another message to the blocked one. The blocked agent's context is now
    full of the dead end.
 5. **Decide what happens to the partial work** it left in the tree, explicitly:
-   keep it (and say so in the next brief, so the fresh agent is not surprised
-   by it) or revert those paths. Half-written work nobody owns is what makes a
-   later panel produce noise.
+   keep it or revert those paths. Either way the decision goes in the fresh
+   brief's PARTIAL WORK ALREADY IN THE TREE slot, path by path, so the next
+   agent is not surprised by work it did not write. Half-written work nobody
+   owns is what makes a later panel produce noise.
 6. **Append the resolution to the saved brief** in `.delegation/briefs/`. That
    file is the record a steward checkpoint reconciles against, and "why did
    this slice change shape" is exactly what it cannot recover otherwise.
@@ -269,9 +312,14 @@ here is the connective tissue around it:
   recorded reason for rejection. Two lenses demanding opposite fixes get
   resolved by you *before* dispatch, or the fix agent will thrash.
 - **The fix round is dispatched, not performed by you**, and the fix agent is
-  bound by the same posture rules as any implementer.
+  bound by the same posture rules as any implementer. Its brief comes from the
+  same template and is saved to `.delegation/briefs/` before dispatch, like any
+  other. This holds for the last, smallest round as much as the first: a round
+  of one-line nits is still a dispatched round, never a manager edit.
 - **Re-review the dissenters** against the revision, briefed to attack it as
-  fresh work rather than to tick off their old list.
+  fresh work rather than to tick off their old list. Every dissenter has to
+  come back PLEASED before an artifact exists; there is no round that ends with
+  someone still holding NOT PLEASED.
 
 ### MANAGER INSPECTS: the procedure
 
@@ -294,12 +342,18 @@ yours alone. A unanimous panel is necessary, not sufficient. Work the list:
    allowed to touch them and it is the step that gets forgotten at the end of a
    long run.
 5. **Check the artifact**: non-empty `deliverable`, a valid `mode`, an accurate
-   `rounds`, every verdict exactly `PLEASED`, every `blocking` list empty, and
+   `rounds`, a non-empty `lens` on every review, every verdict exactly
+   `PLEASED`, every `blocking` list empty, `consolidated_blocking` empty, and
    `head_sha` equal to `git rev-parse HEAD` **right now**. Fill `head_sha`
    last, once the tree has stopped changing; a fix round after you write it
    leaves the artifact bound to the same HEAD but describing an older tree.
+   Those are the gate's own checks, so an artifact that fails one of them is a
+   deny, not a warning.
 6. **Check `.delegation/` is in this repo's `.gitignore`** and that neither the
-   marker nor the artifact is staged.
+   marker nor the artifact is staged. Staging does not disarm anything (the
+   deny will tell you to run `git restore --staged .delegation`), but
+   *committing* the marker does: it would stand the gate down here and in every
+   clone.
 7. **Stage explicit paths and commit once.** Never `git add -A`. One panel, one
    commit.
 8. **Archive the artifact** to `.delegation/history/` after the commit lands,
@@ -442,9 +496,13 @@ DECOMPOSE → IMPLEMENT (fresh subagent per task, parallel where safe)
   [MANAGER INSPECTS](#manager-inspects-the-procedure).
 - Review the whole integrated tree, never half-written slices, and land it in
   **one** commit: the artifact binds to one HEAD.
-- Convergence stop-rule: each re-review must find strictly less; if only
-  new one-line nits keep appearing, fix them and close on an exhaustive
-  manager check.
+- Convergence stop-rule: each re-review must find strictly less. If only new
+  one-line nits keep appearing, you may close without convening another *full*
+  panel: one final dispatched fix round for the nits, a re-review by the
+  dissenters only, and your own exhaustive check on top. The verdicts are not
+  what the shortcut skips. Every reviewer still has to return PLEASED, because
+  that is the only state in which an honest artifact exists and the only state
+  the gate accepts.
 - **Read convergence by severity and region, not by count.** A fix round can
   raise the count while genuinely improving the deliverable — the new findings
   are usually *in the part you just rewrote*, which is the rule working, not
@@ -466,35 +524,52 @@ DECOMPOSE → IMPLEMENT (fresh subagent per task, parallel where safe)
 - **Arm the gate at loop start:** create a `.delegation/` directory at the
   repo root when you begin the loop (it also holds the filled conflict
   checklist and, later, the review artifact). This directory is the
-  **opt-in marker**: the commit gate and reminder hooks act only in repos
-  that carry it, because plugin hooks are session-global and must not wall
-  off unrelated repos.
+  **opt-in marker**: the commit gate and reminder hooks act only in repos that
+  carry it *and whose HEAD commit does not*, because plugin hooks are
+  session-global and must not wall off unrelated repos. A marker the HEAD
+  commit carries arrived with the repository rather than from anyone in this
+  working copy, so it is not consent and the gate stands down with a warning.
 - **In the same step, add `.delegation/` to that repo's `.gitignore`** if it is
-  not already there. This is not tidiness, it is required, and it closes two
-  real failure modes at once. If the marker gets committed, every contributor
-  who has this plugin installed starts getting their commits denied by a
-  framework they never installed, since the marker carries no ownership or
-  provenance, so its mere presence is the entire authorization model. And if a
-  review artifact gets committed while all-PLEASED, every clone carries a
-  permanent waiver and the gate enforces nothing while still reporting that it
-  is on. Both are one `git add .` away by default. Removing `.delegation/`
-  later is how a repo is **un-armed**, and it is the escape hatch of last
-  resort if the gate ever denies something it should not.
+  not already there. This is not tidiness, it is required, and the reason is
+  the opposite of the one you might assume. Trackedness *is* the provenance
+  signal: the gate reads the HEAD commit tree, so a committed marker does not
+  arm your colleagues, it **disarms the gate for everyone who clones the
+  repo**, and for you as soon as that commit lands. Two failure modes, both one
+  `git add .` away. First, an unignored marker plus an ordinary `git add .`
+  sweeps `.delegation/` into your own commit and turns off the gate you just
+  armed. Second, an all-PLEASED artifact committed alongside it ships a waiver
+  over the network to every clone. Gitignoring the marker is what keeps it
+  meaning "somebody here chose this". Removing `.delegation/` later is how a
+  repo is **un-armed**, and it is the escape hatch of last resort if the gate
+  ever denies something it should not. If you inherited a marker and want it
+  as your own opt-in: `git rm -r --cached .delegation`, gitignore it, **and
+  commit that removal** (that commit is ungated, because until it lands the
+  marker still counts as inherited).
 - When the panel is all-PLEASED, ensure the review artifact exists at
   `.delegation/review-artifact.json` (written per the `skeptical-review`
   skill), including `head_sha` from `git rev-parse HEAD`. The PreToolUse commit
   gate denies the git subcommands that introduce newly authored work
-  (`commit`, `cherry-pick`, `revert`, `am`) without it. `pull`, `merge` and
-  `rebase` are *not* gated: they integrate commits that were already gated when
-  they were authored. The residual is honest and worth knowing: landing a
-  branch with `merge --no-ff` is not gated, because the review happened at the
-  commits inside the branch, not at the merge. After
-  committing, archive the artifact to `.delegation/history/` so it
-  cannot waive the next batch. The gate has five honest limits, and they are
-  stated in full in the
+  (`commit`, `cherry-pick`, `revert`, `am`, their `--continue`, and `--amend`)
+  without it. `pull`, `merge` and `rebase` are *not* gated: they integrate
+  commits that were already gated when they were authored. Neither are `reset`,
+  `restore`, `push` or `add`, which author no commit, nor any command carrying
+  `--abort`, `--skip`, `--quit` or `--dry-run` outside quotes. `--amend` **is**
+  gated, because an amend writes a new commit whose content is whatever is
+  staged, so `git add unreviewed.py && git commit --amend --no-edit` would
+  launder unreviewed work through a spent artifact; expect to need a fresh
+  artifact even for a message-only amend. Two residuals worth knowing: landing
+  a branch with `merge --no-ff` is not gated, because the review happened at
+  the commits inside the branch rather than at the merge; and
+  `git reset --soft HEAD~1` re-arms a spent artifact by moving HEAD back, which
+  is deliberate and returns exactly the one commit that artifact already
+  authorised. After committing, archive the artifact to `.delegation/history/`
+  so it cannot waive the next batch. The gate has five honest limits, and they
+  are stated in full in the
   [README](../../README.md#enforcement-honestly-one-structural-slice-the-rest-is-discipline):
-  it needs hooks enabled and `python3` on PATH, the artifact is fabricable, it
-  reaches the local tree only, it can be evaded or mis-resolved by parsing,
+  it needs hooks enabled and a Python 3.7+ interpreter answering to `python3`,
+  `python` or `py -3`; the artifact is fabricable; it
+  reaches the local tree only; it can be evaded or mis-resolved by parsing
+  (an unresolvable path falls back to the hook's own repo and the deny says so);
   and it can rarely over-reach.
 
 ## References (skill-referenced data, read on demand)

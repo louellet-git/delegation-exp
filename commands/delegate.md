@@ -25,20 +25,25 @@ Follow the skill exactly:
    repo's `.gitignore` if it is not already there.** The directory is the
    opt-in marker that arms the commit gate and the reminder hooks for THIS
    repo, and it is the home of the checklist, the dispatch briefs, and the
-   review artifact. The `.gitignore` line is required, not tidiness: a
-   committed marker arms every contributor who has this plugin and never opted
-   in, and a committed all-PLEASED artifact permanently waives the gate in
-   every clone. Both are one `git add .` away.
+   review artifact. The `.gitignore` line is required, not tidiness, and the
+   reason is the reverse of the obvious one: the gate reads the marker's
+   provenance from the HEAD commit tree, so a **committed marker turns the gate
+   off**, here and in every clone, rather than arming anybody. An unignored
+   marker plus an ordinary `git add .` therefore disarms the gate you just
+   armed, and a committed all-PLEASED artifact ships a waiver alongside it.
+   Both are one `git add .` away.
 2. **Run the loop mechanics the skill describes**: one scoped task per fresh
    subagent, fan-out by disjoint write sets, test-first, evidence before
    claims.
 3. **Fill the conflict-avoidance checklist before any fan-out.**
 4. **Write every brief from the canonical template** in the skill (it already
    carries the file-ownership allowlist, the exact test command, the acceptance
-   condition, the status contract, the postures, and the re-brief that the
-   implementation agent does **not** commit or push). Save each brief under
-   `.delegation/briefs/` before dispatching it, so a steward checkpoint can
-   reconcile against it.
+   condition, the pre-assigned ADR / doc numbers, what a predecessor changed
+   and any partial work it left, the status contract, the postures, and the
+   re-brief that the implementation agent does **not** commit or push). That
+   means *every* dispatch: scouting slices and fix rounds too. Save each brief
+   under `.delegation/briefs/` before dispatching it, so a steward checkpoint
+   can reconcile against it.
 5. **Attach at least one skeptic to every deliverable.**
 6. **Integrate, then run ONE panel over the integrated tree, then make ONE
    commit.** The review artifact binds to the current HEAD, so it waives

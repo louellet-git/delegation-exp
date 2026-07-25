@@ -18,7 +18,7 @@ Checks (all must pass):
   6. The required skill-referenced docs exist.
   7. Every relative markdown link in the tree resolves to an existing file.
 
-Usage: python scripts/validate-structure.py [repo-root]
+Usage: python3 scripts/validate-structure.py [repo-root]
 Exit codes: 0 = green, 1 = failures listed, 2 = usage/IO error.
 """
 

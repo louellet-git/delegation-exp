@@ -45,13 +45,19 @@ siblings it spawns, one level deep.
 ## The spawn rule: one level deep, and what it forces
 
 This framework holds one-level-deep spawning as a deliberate design rule, and
-it is the load-bearing fact of the whole model. The mechanism is the `tools:`
-frontmatter on each agent definition: only the manager is granted a spawn tool;
-the steward and every worker are granted none, so they can only `SendMessage` to
-siblings that already exist. Note precisely what this is and is not. Subagent
-tool grants are configurable, so a runtime may well permit a nested spawn; this
-framework simply does not issue the tool that would allow one. Four rules follow,
-and no role routes around them:
+it is the load-bearing fact of the whole model. The mechanism is what the
+`tools:` frontmatter **withholds**: the spawnable definitions here,
+[`../agents/skeptic.md`](../agents/skeptic.md) and
+[`../agents/steward.md`](../agents/steward.md), list no spawn tool, so they can
+only `SendMessage` to siblings that already exist. The manager's ability to
+spawn is not a grant this repo issues; it comes from the manager being the
+**top-level session**, which is also why nothing here loads
+[`../agents/manager.md`](../agents/manager.md) and why the `Task` in that file's
+`tools:` line describes the role rather than conferring anything. Note
+precisely what this is and is not. Subagent tool grants are configurable, so a
+runtime may well permit a nested spawn; this framework simply does not issue
+the tool that would allow one. Four rules follow, and no role routes around
+them:
 
 1. **The manager is the sole spawner.** The steward and every worker are flat
    siblings under it. No role below the manager can delegate downward.
@@ -69,6 +75,15 @@ and no role routes around them:
 4. **Lateral coordination is by messaging, not spawning.** Siblings coordinate
    with `SendMessage`; spawning is the single downward edge, and only the manager
    holds it.
+
+**How the two naming conventions in this repo differ.** Skills and commands are
+addressed with the plugin namespace: `delegation-framework:skeptical-review`,
+`/delegate`. **Agents are spawned by the bare `name:` in their own frontmatter,
+with no namespace**: `subagent_type: "skeptic"`, `subagent_type: "steward"`,
+and `subagent_type: "general-purpose"` for the inline-briefed implementers,
+which have no definition file at all. Every example in this repo follows that
+split; if a runtime lists plugin agents under some other id, use the one it
+lists.
 
 ## Owner
 

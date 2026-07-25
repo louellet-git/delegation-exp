@@ -8,11 +8,14 @@ dispatch agents in parallel. An unfilled or partially filled checklist means
 serialize instead.
 
 (Creating the `.delegation/` directory for this copy is also what **opts the
-repo in** to the commit gate and reminder hooks, the marker they check
-before acting. Add `.delegation/` to that repo's `.gitignore` in the same
-step. A committed marker arrives in every clone and blocks contributors who
-never opted in, and a committed all-PLEASED artifact would waive review for
-all of them.)
+repo in** to the commit gate and reminder hooks, the marker they check before
+acting, provided the HEAD commit does not carry it. Add `.delegation/` to that
+repo's `.gitignore` in the same step, and keep it out of your commits: a marker
+the HEAD commit carries reads as having arrived with the repository rather than
+from anyone here choosing it, so committing it turns the gate **off**, for you
+and for everyone who clones. A committed all-PLEASED artifact ships a waiver to
+all of them on top. Trackedness is the provenance signal, which is exactly why
+the gitignore line is required rather than tidy.)
 
 Rationale and the hard-won rules behind each item:
 [`operating-model.md`](operating-model.md#conflict-avoidance-hard-won).
@@ -29,7 +32,10 @@ Rationale and the hard-won rules behind each item:
       front-door docs, capability maps) are listed below, reserved to the
       manager, and every agent brief forbids touching them.
 - [ ] **Pre-assigned numbers.** ADR / doc numbers each agent will create are
-      assigned below, so parallel agents cannot collide on the same number.
+      assigned below, so parallel agents cannot collide on the same number,
+      **and each agent's numbers are written into its brief** (the
+      PRE-ASSIGNED NUMBERS slot of the canonical template). A number assigned
+      here and never transmitted is a number the agent picks for itself.
 - [ ] **File-ownership allowlists.** Every agent brief contains an explicit
       allowlist of the files/directories it may create or modify.
 - [ ] **Exact test command.** Every agent brief contains the exact test

@@ -25,9 +25,14 @@ grep -qxF '.delegation/' .gitignore || echo '.delegation/' >> .gitignore
 
 `.delegation/` is the opt-in marker that arms the commit gate and the reminder
 hooks for *this* repo, and it is the home of the checklist, the dispatch briefs
-and the review artifact. The `.gitignore` line is required, not tidiness: a
-committed marker would arm every contributor who has the plugin and never opted
-in, and a committed all-PLEASED artifact would waive the gate in every clone.
+and the review artifact. The `.gitignore` line is required, not tidiness, and
+the reason runs the other way from the obvious guess: the gate reads the
+marker's provenance from the HEAD commit tree, so **committing the marker turns
+the gate off** rather than on, here and in every clone, on the grounds that a
+marker which arrived with the repository is nobody's opt-in. Left unignored,
+the marker is one `git add .` away from disarming the gate this manager just
+armed, and an all-PLEASED artifact committed with it would ship a waiver to
+every clone besides.
 
 **Scouting.** `reports-service` is a repo this manager already knows, so the
 bounded structural pass applies: `git ls-files`, the `pyproject.toml` test
@@ -35,6 +40,11 @@ config, nothing else. The manager reads no module bodies. On an unfamiliar repo
 this step would instead be a delegated read-only scouting slice, because the
 allowlists and the exact test commands below cannot be invented
 ([the DECOMPOSE procedure](../skills/delegating/SKILL.md#decompose-the-procedure)).
+
+**Sizing the batch.** Three unrelated changes to one service, integrated and
+landed together under one panel and one commit, is a **feature batch**, not a
+small change. That word decides the panel size later (5 to 7, not 2 to 3), so
+it is worth settling here rather than at dispatch time.
 
 Three slices:
 
@@ -66,7 +76,14 @@ reconciles against those files later; without them its DELEGATION line is
 unrecoverable). Every brief carries the allowlist, the exact test command, the
 acceptance condition, the test-first and evidence-before-claims postures, the
 status contract, and the standing re-brief **"You do not commit or push. Leave
-work in the tree; the manager commits once, after review."**
+work in the tree; the manager commits once, after review."** The template's
+other slots are filled rather than dropped, even when the answer is nothing:
+PRE-ASSIGNED NUMBERS reads "none this run" (the checklist assigned no ADRs),
+and because all three slices run in parallel on clean paths, WHAT THE
+PREDECESSOR CHANGED reads "nothing: no slice ran before you on these paths" and
+PARTIAL WORK ALREADY IN THE TREE reads "none: your paths are clean". A slot
+filled with "none" tells the agent the question was asked; a missing slot tells
+it nothing.
 
 ## 2. IMPLEMENT
 
@@ -78,10 +95,13 @@ notifications.
 
 ## 3. REVIEW PANEL (manager triage)
 
-Mode triage (breadth-vs-depth × risk): three small, mostly independent
-slices; no subtle shared algorithm → swarm, 3 skeptics (small change →
-2–3 per the sizing heuristic). Lenses: `correctness`,
-`evidence-vs-claim`, `honesty/overclaim`. Panel dispatched in parallel over
+Size first: this is a feature batch, so the heuristic says 5 to 7 and this
+panel is **5**. Mode triage (breadth-vs-depth × risk): three separate slices,
+no subtle shared algorithm, and nothing here scores or ranks anything, so no
+lens forces deep mode → **swarm**, all five in parallel. Lenses, from the
+catalogue's feature-batch line: `correctness`,
+`coupling/boundary-integrity`, `overfit/generalization`, `evidence-vs-claim`,
+`honesty/overclaim`. Panel dispatched in parallel over
 the whole integrated tree, only after all three agents report DONE.
 
 Panel returns:
@@ -89,6 +109,11 @@ Panel returns:
 - correctness: **NOT PLEASED**. `BLOCKING: 1. export/csv.py crashes on an
   empty dataset (unguarded header write on zero rows); the green suite only
   covers populated tables.`
+- coupling/boundary-integrity: **PLEASED**.
+- overfit/generalization: **NOT PLEASED**. `BLOCKING: 1.
+  middleware/ratelimit.py counts per fixed calendar minute and the only test
+  drives it with the clock frozen at the start of a window; a burst straddling
+  the boundary passes twice the limit and the suite stays green.`
 - evidence-vs-claim: **PLEASED** (notes, non-blocking: rate-limiter test
   asserts limiter object configured, would prefer a behavioural
   over-the-limit test; usefulness 3/5).
@@ -96,17 +121,34 @@ Panel returns:
 
 ## 4. CONSOLIDATE → FIX ROUND
 
-One blocking finding; `consolidating-review` batches it (with the
-non-blocking note attached as context) into **one** fix brief for agent A:
-add the empty-dataset guard + a red-first regression test. The fix agent
-also does not commit.
+Two blocking findings, in disjoint slices; `consolidating-review` reconciles
+them into **one** fix round and dispatches it grouped by slice owner, a fresh
+agent per group:
 
-## 5. RE-REVIEW the dissenter
+- **A-fix** (`export/`): add the empty-dataset guard plus a red-first
+  regression test.
+- **B-fix** (`middleware/`): make the window behaviour correct across a
+  boundary, plus a behavioural over-the-limit test. The `evidence-vs-claim`
+  non-blocking note about the limiter test asserting configuration rather than
+  behaviour is attached to this brief as context, clearly labelled as
+  non-blocking, because it is the same defect seen from another angle.
 
-Only the correctness skeptic re-runs — briefed to probe for inputs that
-still slip through (empty dataset, single row, unicode field, delimiter in
-value), not just to confirm the diff. It returns **PLEASED**. Strictly less
-found than round 1 → the loop converged; no further rounds.
+Both fix briefs are written from the same canonical template as A, B and C and
+saved to `.delegation/briefs/A-fix.md` and `.delegation/briefs/B-fix.md`
+**before** dispatch, with each one's PARTIAL WORK slot naming what its
+predecessor left in those paths. Otherwise the fix round is the part of the run
+the steward cannot reconcile later. The fix agents also do not commit.
+
+## 5. RE-REVIEW the dissenters
+
+Only the two dissenters re-run, `correctness` and `overfit/generalization` —
+briefed to probe for inputs that still slip through (empty dataset, single row,
+unicode field, delimiter in value; a burst straddling the window boundary, a
+clock that jumps), not just to confirm the diff. The three PLEASED reviewers
+are not re-run: the fix touched only what the dissenters reviewed. Both return
+**PLEASED**. Strictly less found than round 1 → the loop converged; no further
+rounds, and because nobody is left holding NOT PLEASED there is an artifact to
+write.
 
 ## 6. ARTIFACT → MANAGER INSPECTS → COMMIT
 
@@ -129,9 +171,11 @@ then writes `.delegation/review-artifact.json`:
   "rounds": 2,
   "head_sha": "7c1d9ab4f2e08d3c5b6a1907e4d2f83c9a0b5e61",
   "reviews": [
-    {"reviewer": "skeptic-A", "lens": "correctness", "verdict": "PLEASED", "blocking": []},
-    {"reviewer": "skeptic-B", "lens": "evidence-vs-claim", "verdict": "PLEASED", "blocking": []},
-    {"reviewer": "skeptic-C", "lens": "honesty/overclaim", "verdict": "PLEASED", "blocking": []}
+    {"reviewer": "skeptic-1", "lens": "correctness", "verdict": "PLEASED", "blocking": []},
+    {"reviewer": "skeptic-2", "lens": "coupling/boundary-integrity", "verdict": "PLEASED", "blocking": []},
+    {"reviewer": "skeptic-3", "lens": "overfit/generalization", "verdict": "PLEASED", "blocking": []},
+    {"reviewer": "skeptic-4", "lens": "evidence-vs-claim", "verdict": "PLEASED", "blocking": []},
+    {"reviewer": "skeptic-5", "lens": "honesty/overclaim", "verdict": "PLEASED", "blocking": []}
   ],
   "consolidated_blocking": []
 }
@@ -147,8 +191,12 @@ The manager then works
 [the MANAGER INSPECTS list](../skills/delegating/SKILL.md#manager-inspects-the-procedure)
 itself, because a unanimous panel is necessary and not sufficient: it reads
 `git diff` over the integrated tree, reconciles every changed path against the
-three saved briefs plus the reserved index set, re-runs the full test command
-and keeps the output, and checks `.delegation/` is gitignored and unstaged.
+five saved briefs (A, B, C, A-fix, B-fix) plus the reserved index set, re-runs
+the full test command and keeps the output, checks the artifact field by field
+(non-empty `deliverable`, valid `mode`, a `lens` on every review, every verdict
+exactly `PLEASED`, every `blocking` list and `consolidated_blocking` empty,
+`head_sha` equal to HEAD right now), and checks `.delegation/` is gitignored
+and unstaged.
 Then **one** commit, staging explicit paths, never `git add -A`, which
 `.delegation/review-artifact.json` satisfies for the PreToolUse gate (the repo
 opted in when the manager created `.delegation/` in step 1; the gate's five
@@ -183,10 +231,13 @@ been committed yet, which is the normal state at this checkpoint: one panel
 waives one commit, so nothing lands until step 6. The window is therefore
 reconciled against the **working tree**, not against commits. `git status`
 shows changes in `export/` + `tests/export/` (A, including the fix round from
-brief `A-fix`), `middleware/` + `tests/middleware/` (B), `docs/api.md` (C), and
+brief `A-fix`), `middleware/` + `tests/middleware/` (B, including brief
+`B-fix`), `docs/api.md` (C), and
 `docs/README.md`. Reconciliation: every path lies inside an agent allowlist
 except `docs/README.md`, which is in the reserved set (legitimate integration
-wiring). **Unexplained delta: empty.**
+wiring). **Unexplained delta: empty.** That reconciliation only works because
+the two fix briefs were saved like the other three: an unsaved fix round would
+have turned its own changes into an unexplained delta.
 
 ```
 MANAGER SCORECARD (window: decompose → re-review, pre-commit)
@@ -194,18 +245,20 @@ MANAGER SCORECARD (window: decompose → re-review, pre-commit)
 VISION: on-prize
   Prize-movement (MANDATORY): brief A-fix (uncommitted, in export/csv.py) — the
     empty-dataset guard closed the last open correctness gap; the claim now
-    holds for empty / single-row / unicode.
+    holds for empty / single-row / unicode. Brief B-fix closed the limiter's
+    window-boundary gap behind it.
   Evidence: A, B, C each moved a conjunct of the stated claim (export, limiter,
             docs); no slice was off-claim polish.
 
 DELEGATION: delegating-well
-  Spawn count (MANDATORY): 4 (A, B, C, + one fix agent).
+  Spawn count (MANDATORY): 5 (A, B, C, + two fix agents, one per affected slice).
   Kept-or-delegated (MANDATORY): highest-risk build = CSV export correctness
     (empty-dataset edge); delegated to agent A and caught by its own correctness
     skeptic, fix delegated too. Nothing risky kept in the manager's lap.
   Evidence: unexplained delta empty; only reserved docs/README.md touched
-            directly; panel 3 skeptics with diverse lenses, right-sized for a
-            small change.
+            directly; panel 5 skeptics with diverse lenses, right-sized for a
+            feature batch (2-3 would have been the small-change size, and this
+            is not one).
 
 RECOMMENDATION: stay the course — write the artifact, inspect, ship.
 ```
@@ -255,12 +308,17 @@ brief-id exposes.
 - The trivial-edit gate, arming the repo and gitignoring the marker in one
   step, checklist-forced fan-out, and disjoint parallelism.
 - Briefs written from the template and persisted to `.delegation/briefs/`
-  before dispatch, which is what makes the steward's reconciliation possible.
+  before dispatch, **fix-round briefs included**, which is what makes the
+  steward's reconciliation possible.
+- Panel sized to the work rather than to habit: a feature batch got 5 lenses,
+  not the 2 to 3 a small change would have got.
 - The skeptic law: every slice (including the docs slice) faced at least one
   adversarial reviewer.
-- A green suite hiding a real bug (empty dataset) that an adversarial
-  correctness lens caught, which is the reason the panel exists.
-- One consolidated fix round, dissenter-only re-review, convergence.
+- A green suite hiding two real bugs (an empty dataset, a rate-limit window
+  boundary) that adversarial `correctness` and `overfit/generalization` lenses
+  caught, which is the reason the panel exists.
+- One consolidated fix round covering both findings, dissenter-only re-review,
+  convergence with every reviewer PLEASED before any artifact was written.
 - Both posture rules: no auto-commit on DONE; implementers never
   self-commit; the manager committed once, after the gate.
 - One panel, one commit: the whole batch integrated, reviewed as a tree, and

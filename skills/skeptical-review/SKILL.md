@@ -53,13 +53,24 @@ Selection responsibility sits in **both** of these places, on purpose:
    - High breadth, low per-unit subtlety → **swarm**
    - Low breadth, high subtlety, or a claim needing reproduction → **deep**
    - High on both axes → **hybrid**
+
+   **A lens can override that choice.** Check the lens catalogue before you
+   settle the mode: `derived-output/ranking` is **mandatory and deep-only** for
+   any deliverable that scores, ranks, classifies, prioritizes, or derives a
+   verdict, because the inversion and fail-open defects it exists to catch are
+   only reachable by running the thing ([`../../docs/lenses.md`](../../docs/lenses.md),
+   [`../../agents/skeptic.md`](../../agents/skeptic.md)). So a breadth-shaped
+   deliverable that also ranks something is **hybrid**, not swarm: the swarm
+   for breadth, plus that lens run deep. A mandatory deep lens dispatched in
+   swarm mode is a review of what the thing looks like, not of what it does.
 2. **Any swarm reviewer can escalate mid-flight.** A swarm reviewer that
    hits "this needs a specialist — I'm skimming something that deserves a
    trace/repro" outputs an `ESCALATE` block (see the rubric). **Escalation
    is a first-class output, not a failure.** The manager then dispatches
    that thread as a deep review before trusting the swarm's verdict on it.
 
-Record the mode chosen (and any escalations taken) in the review artifact.
+Record the mode chosen in the review artifact's `mode`, and any escalations
+taken in the optional `escalations` array described with the schema below.
 
 ## The review artifact (feeds the commit gate)
 
@@ -87,27 +98,51 @@ Record it when you write the artifact. An artifact written without the
 field fails closed with an explicit message — re-run the panel rather than
 patching the SHA in.
 
+Keys the gate does not define are ignored, so the artifact can carry more than
+the minimum. Record the mode you chose in `mode`, and **if any swarm reviewer
+escalated, record that too**, as an optional `escalations` array alongside the
+required keys:
+
+```json
+  "escalations": [
+    {"from": "<reviewer id>", "thread": "<what needed a specialist>",
+     "dispatched_as": "<the deep review that answered it>"}
+  ]
+```
+
+That array is for the manager, the steward and the next reader, not for the
+gate: the gate neither requires it nor validates it. Do not invent other fields
+and expect them to mean anything.
+
 The PreToolUse commit gate denies the git commands that **author a new
-commit** (`commit`, `cherry-pick`, `revert`, `am`) unless this file exists,
-is valid JSON, has a non-empty `deliverable` string, a valid `mode`, a
-`head_sha` matching current HEAD, a non-empty `reviews` array, and every
-`verdict` is exactly `"PLEASED"` with no non-empty `blocking` list.
+commit** (`commit`, `cherry-pick`, `revert`, `am`, their `--continue`, and
+`--amend`) unless this file exists, is valid JSON, has a non-empty
+`deliverable` string, a valid `mode`, a `head_sha` matching current HEAD, a
+non-empty `reviews` array, **a non-empty `lens` on every review**, every
+`verdict` exactly `"PLEASED"` with no non-empty `blocking` list, and an **empty
+`consolidated_blocking`**.
 
 Deliberately **not** gated: `merge`, `rebase` and `pull`, which integrate or
-replay commits that were already gated when they were authored; and any
-command carrying `--abort`, `--skip`, `--quit` or `--dry-run`, none of which
-can create a commit (`git rebase --abort` must always work, especially
-mid-conflict). `--continue` **is** gated on the subcommands above, because
-it writes the commit the conflicted operation stopped short of.
+replay commits that were already gated when they were authored; `reset`,
+`restore`, `push`, `add` and anything read-only, which author no commit; and
+any command carrying `--abort`, `--skip`, `--quit` or `--dry-run` outside
+quotes, none of which can create a commit (`git rebase --abort` must always
+work, especially mid-conflict). `--continue` **is** gated on the subcommands
+above, because it writes the commit the conflicted operation stopped short of,
+and so is `--amend`: an amend writes a new commit whose content is whatever is
+staged, so allowing it would launder `git add unreviewed.py` through a spent
+artifact.
 
 The gate acts only in repos carrying the `.delegation/` **opt-in marker**
-directory (created by the `delegating` skill at loop start). A marker that
-is **tracked in git** is not an opt-in: it arrived with the clone rather
-than from anyone in that working copy choosing it, so the gate warns once
-and allows. Honest framing, the gate has five limits: it verifies the
-artifact, not the review's rigor; it only fires where hooks are enabled with
-`python3` on PATH; it gates only the local tree; matcher evasion is possible
-and an unresolvable path falls back to gating the hook's own repo; and being
+directory (created by the `delegating` skill at loop start) **that the HEAD
+commit does not carry**. A marker HEAD carries is not an opt-in: it arrived
+with the repository rather than from anyone in that working copy choosing it,
+so the gate warns and stands down, and the warning repeats on every gated
+command by decision. Honest framing, the gate has five limits: it verifies the
+artifact, not the review's rigor; it only fires where hooks are enabled and a
+Python 3.7+ interpreter answers to `python3`, `python` or `py -3`; it gates
+only the local tree; matcher evasion is possible and an unresolvable path falls
+back to gating the hook's own repo, saying so in the deny; and being
 session-global it is scoped by the opt-in marker yet can still
 false-positive on compound commands, quoted separators, and heredocs. Every
 deny prints the three escape hatches and this schema: write the artifact,

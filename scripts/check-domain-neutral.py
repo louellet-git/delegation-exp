@@ -28,7 +28,7 @@ The grep catches the obvious leaks. Subtler domain-shaped *assumptions* can stil
 slip past a token match — those are policed by adversarial review, not by this
 script. Two distinct mechanisms; this one is only the mechanical half.
 
-Usage: python scripts/check-domain-neutral.py [repo-root]
+Usage: python3 scripts/check-domain-neutral.py [repo-root]
 Exit codes: 0 = clean (or inert), 1 = denylist hits found, 2 = usage/IO error.
 """
 
