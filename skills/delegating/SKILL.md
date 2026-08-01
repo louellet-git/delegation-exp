@@ -307,9 +307,14 @@ here is the connective tissue around it:
 - **Give each reviewer what it needs to be adversarial**: the deliverable, the
   end goal the work was supposed to move, and the claim the work makes. A
   reviewer with no stated end goal returns line-coverage nitpicking.
-- **Receiving a finding is not the same as accepting it.** You adjudicate.
-  A numbered BLOCKING item either enters the fix round or gets an explicit,
-  recorded reason for rejection. Two lenses demanding opposite fixes get
+- **Receiving a finding is not the same as accepting it.** You adjudicate,
+  and the procedure has a name and a yardstick: the **fluff gate**
+  ([`../consolidating-review/SKILL.md`](../consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate)).
+  Every numbered BLOCKING item is adjudicated REAL (it gates; into the fix
+  round) or FLUFF (demoted to non-blocking or discarded, with a written
+  reason the original reviewer gets exactly one structured round to rebut),
+  and the adjudication record is written before the fix round is
+  dispatched. No silent demotions. Two lenses demanding opposite fixes get
   resolved by you *before* dispatch, or the fix agent will thrash.
 - **The fix round is dispatched, not performed by you**, and the fix agent is
   bound by the same posture rules as any implementer. Its brief comes from the
@@ -411,8 +416,8 @@ Both are load-bearing; hold both or the commit gate gates nothing:
   *within* a slice: an implementation agent runs to DONE without check-ins.
   But the manager does **not** commit on a DONE report. Between "slice DONE"
   and "commit" sits the panel gate: attach ≥1 skeptic → consolidate BLOCKING →
-  fix round → re-review dissenters → manager inspects the integrated tree →
-  *then* commit.
+  adjudicate (the fluff gate) → fix round → re-review dissenters → manager
+  inspects the integrated tree → *then* commit.
 - **Rule 2, the implementer does not self-commit (the commit gate depends on
   this).** The implementation agent does NOT commit or push. It leaves work in
   the tree and **only the manager commits**, after the panel. General-purpose
@@ -485,14 +490,19 @@ slow directional drift, so **save each returned scorecard to
 ```
 DECOMPOSE → IMPLEMENT (fresh subagent per task, parallel where safe)
           → REVIEW PANEL (skeptical-review: 2–7 skeptics, swarm/deep/hybrid)
-          → CONSOLIDATE BLOCKING (consolidating-review) → FIX ROUND
+          → CONSOLIDATE BLOCKING (consolidating-review)
+          → ADJUDICATE (the fluff gate: real findings gate; fluff is demoted
+            on the record, one rebuttal round) → FIX ROUND
           → RE-REVIEW dissenters → until every reviewer is PLEASED
           → MANAGER INSPECTS → COMMIT (gate checks the artifact)
 ```
 
-- Each named step has a procedure above:
+- Each named step has a procedure above or in the skill it names:
   [DECOMPOSE](#decompose-the-procedure), the
-  [BLOCKED branch](#blocked-the-procedure) of the status contract, and
+  [BLOCKED branch](#blocked-the-procedure) of the status contract,
+  [ADJUDICATE](../consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate)
+  (the fluff gate: yardstick, rebuttal round, and the required
+  adjudication record at `.delegation/adjudications/`), and
   [MANAGER INSPECTS](#manager-inspects-the-procedure).
 - Review the whole integrated tree, never half-written slices, and land it in
   **one** commit: the artifact binds to one HEAD.

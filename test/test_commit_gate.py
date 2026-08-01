@@ -1180,7 +1180,8 @@ class TestFix5And6HookWiring(GateTestCase):
             for matcher in event:
                 for hook in matcher["hooks"]:
                     commands.append(hook["command"])
-        self.assertEqual(len(commands), 3)
+        # SessionStart, SubagentStop, Stop, PreToolUse — one command each.
+        self.assertEqual(len(commands), 4)
         return commands
 
     def test_interpreter_chain_order(self):

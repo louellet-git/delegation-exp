@@ -120,8 +120,11 @@ The manager:
 - Spawns the skeptic panel (sizing it 2–3 small / 5–7 batch; choosing
   swarm / deep / hybrid per
   [`../skills/skeptical-review/SKILL.md`](../skills/skeptical-review/SKILL.md)),
-  consolidates BLOCKING findings, drives the fix loop, and re-reviews the
-  dissenters to convergence.
+  consolidates BLOCKING findings, **adjudicates every one through the fluff
+  gate** (real defects gate; fluff is demoted on the record, with one
+  rebuttal round for the original reviewer — no silent demotions; see
+  [`../skills/consolidating-review/SKILL.md`](../skills/consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate)),
+  drives the fix loop, and re-reviews the dissenters to convergence.
 - Spawns and stays in dialogue with the steward, the flat-sibling check
   that keeps it on track, and auto-consults it at execution checkpoints.
 - Integrates the results and reviews the whole integrated tree, never a
@@ -201,9 +204,13 @@ only to the stated end goal. It:
   dispatch briefs, `.delegation/` artifacts) and judges; it never edits,
   dispatches, decomposes, or spawns.
 - Depends on the manager having **persisted** that record. It reconciles what
-  landed against the dispatch briefs saved under `.delegation/briefs/`, and it
+  landed against the dispatch briefs saved under `.delegation/briefs/`, it
   compares each checkpoint against its own earlier scorecards saved under
-  `.delegation/steward/`. With no briefs on disk its DELEGATION line is
+  `.delegation/steward/`, and it reads the fluff-gate record under
+  `.delegation/adjudications/` — judging a demotion is judging the manager's
+  conduct, not the deliverable, so a round where most of a BLOCKING list was
+  ruled FLUFF is in its scope, not a panel verdict it is relitigating. With no
+  briefs on disk its DELEGATION line is
   unrecoverable for that window, and it says so rather than inventing one from
   authorship (in this model only the manager commits, so authorship attributes
   everything to the manager and proves nothing).
@@ -268,7 +275,10 @@ flat-sibling worker the manager spawns; it cannot spawn. It:
   derives a verdict.
 - Rates each finding's usefulness toward the end goal, not line coverage.
 - Returns `VERDICT: PLEASED | NOT PLEASED` and a numbered `BLOCKING` list per
-  [`rubric.md`](rubric.md).
+  [`rubric.md`](rubric.md). Writes each BLOCKING finding to survive
+  adjudication (a concrete failure, a violated written contract, an
+  exposure, or a reproduced defect — not taste), and on a demotion owes
+  exactly one structured rebuttal: concede, or stand with new evidence.
 - In swarm mode, may escalate: flag a thread as needing a deep specialist
   review (which the *manager* then spawns). Escalation is a first-class output,
   not a failure.

@@ -1,7 +1,7 @@
 # Worked example: one delegation, end to end
 
 A domain-neutral walkthrough of the full loop: decompose → implement →
-panel → consolidate → fix → re-review → commit. The deliverable is
+panel → consolidate → adjudicate → fix → re-review → commit. The deliverable is
 deliberately generic (a small web service gaining three unrelated
 improvements) so you see the machinery without inheriting anyone's domain
 assumptions.
@@ -119,11 +119,30 @@ Panel returns:
   over-the-limit test; usefulness 3/5).
 - honesty/overclaim: **PLEASED**.
 
-## 4. CONSOLIDATE → FIX ROUND
+## 4. CONSOLIDATE → ADJUDICATE → FIX ROUND
 
-Two blocking findings, in disjoint slices; `consolidating-review` reconciles
-them into **one** fix round and dispatches it grouped by slice owner, a fresh
-agent per group:
+Two blocking findings, in disjoint slices, deduplicated into one consolidated
+list. A BLOCKING tag does not gate work by itself, so before any fix is
+dispatched the manager adjudicates both against
+[the fluff-gate yardstick](../skills/consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate):
+
+- The empty-dataset crash is **REAL** — a reproducible defect with evidence
+  (REAL head 4): the reviewer named the unguarded header write and the
+  zero-row input that reaches it, and the green suite's silence on exactly
+  that input is the finding's own MISS line.
+- The window-boundary burst is **REAL** — a concrete user-visible failure
+  (REAL head 1): a named caller, bursting across a minute boundary, passes
+  twice the limit; and the limit is the slice's own written acceptance
+  condition, so head 2 holds too.
+
+Nothing demoted, so there is no rebuttal round to run — but the record is
+written anyway, **before** the fix briefs, because an absent record must never
+be ambiguous between "nothing demoted" and "demotions nobody wrote down".
+`.delegation/adjudications/round-1.md`, in full: *"all findings adjudicated
+REAL; nothing demoted."*
+
+`consolidating-review` then reconciles the two survivors into **one** fix
+round and dispatches it grouped by slice owner, a fresh agent per group:
 
 - **A-fix** (`export/`): add the empty-dataset guard plus a red-first
   regression test.
@@ -317,8 +336,13 @@ brief-id exposes.
 - A green suite hiding two real bugs (an empty dataset, a rate-limit window
   boundary) that adversarial `correctness` and `overfit/generalization` lenses
   caught, which is the reason the panel exists.
-- One consolidated fix round covering both findings, dissenter-only re-review,
-  convergence with every reviewer PLEASED before any artifact was written.
+- Both BLOCKING findings adjudicated through the fluff gate before any fix was
+  dispatched — both REAL, each pinned to a yardstick head, and the
+  adjudication record written first even with nothing demoted, so what gated
+  had earned it and the record says so.
+- One consolidated fix round covering both surviving findings, dissenter-only
+  re-review, convergence with every reviewer PLEASED before any artifact was
+  written.
 - Both posture rules: no auto-commit on DONE; implementers never
   self-commit; the manager committed once, after the gate.
 - One panel, one commit: the whole batch integrated, reviewed as a tree, and

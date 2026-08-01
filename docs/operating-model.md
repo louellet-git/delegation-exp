@@ -30,7 +30,8 @@ hook cannot know an off-tree research deliverable went unreviewed.
 
 ```
 DECOMPOSE → IMPLEMENT (parallel where safe) → REVIEW PANEL (2–7 skeptics, swarm/deep/hybrid)
-          → CONSOLIDATE BLOCKING → FIX ROUND → RE-REVIEW the dissenters
+          → CONSOLIDATE BLOCKING → ADJUDICATE (the fluff gate: real gates, fluff demoted on the record)
+          → FIX ROUND → RE-REVIEW the dissenters
           → until every reviewer is PLEASED → MANAGER INSPECTS → COMMIT
 ```
 
@@ -81,12 +82,32 @@ DECOMPOSE → IMPLEMENT (parallel where safe) → REVIEW PANEL (2–7 skeptics, 
   reporting up to the owner.
 - Review the whole integrated tree, not half-written slices. Reviewing a
   tree an agent is still writing produces noise, not findings.
-- Batch blocking issues into one reconciled fix round
+- **A BLOCKING finding must earn its gate.** Before any fix round is
+  dispatched, the manager adjudicates every consolidated BLOCKING item
+  against the fluff-gate yardstick
+  ([`../skills/consolidating-review/SKILL.md`](../skills/consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate)):
+  REAL (a concrete user-visible failure, a violated written
+  contract/invariant, a data/money/privacy/security exposure, or a
+  reproducible defect with evidence) gates; FLUFF (taste, scope creep, a
+  hypothetical without a trigger, an accepted limit restated, an
+  improvement framed as a defect) is demoted to non-blocking or discarded —
+  with a written reason, one structured rebuttal round for the original
+  reviewer (concede, or stand with new evidence), and a mandatory
+  adjudication record at `.delegation/adjudications/round-<N>.md`. No
+  silent demotions; doubt resolves toward REAL; judgment stays
+  manager-owned, and the record is what makes it auditable.
+- Batch the surviving blocking issues into one reconciled fix round
   ([`../skills/consolidating-review/SKILL.md`](../skills/consolidating-review/SKILL.md))
   rather than dispatching piecemeal.
 - Re-verify, don't trust the fix report. Re-run the *specific* reviewers
-  who were NOT PLEASED; have them probe for inputs that still slip through,
-  not just confirm the diff.
+  who were NOT PLEASED, with the fix report **and the adjudication
+  record**; have them probe for inputs that still slip through, not just
+  confirm the diff. Closure is PLEASED on the *surviving* findings: a spent
+  demotion is an accepted, recorded limit and belongs in the body as
+  non-blocking, while genuinely new evidence is a new finding, adjudicated
+  fresh. A reviewer that still holds NOT PLEASED with every rebuttal spent
+  is an unresolved dispute, and it escalates to the owner rather than being
+  ground down or written around.
 - **Loop-convergence stop-rule:** the loop converges. Each re-review should
   find strictly less than the round before. If late rounds surface only
   one-line nits, you may close without convening another *full* panel: send

@@ -5,8 +5,9 @@ description: >-
   Owner-facing: the owner (human) interacts with the manager and nothing below
   it. The manager decomposes the work into scoped, disjoint slices, spawns
   workers (implementers, skeptics, researchers) as FLAT SIBLINGS, runs the
-  adversarial review panel, integrates, and commits after the panel is
-  all-PLEASED and its own inspection. It also spawns exactly one STEWARD
+  adversarial review panel, adjudicates its BLOCKING findings through the
+  fluff gate (real defects gate; fluff is demoted on the record), integrates,
+  and commits after the panel is all-PLEASED and its own inspection. It also spawns exactly one STEWARD
   as a flat sibling and stays in continuous dialogue with it — the steward's
   standing job is to keep the manager on track (VISION + DELEGATION) and stop it
   going too deep / losing the plot. First-class runtime rule: spawning is
@@ -128,7 +129,9 @@ before you dispatch anything. In outline:
 ```
 DECOMPOSE → IMPLEMENT (spawn implementers, parallel where safe)
           → REVIEW PANEL (spawn 2–7 skeptics, swarm/deep/hybrid)
-          → CONSOLIDATE BLOCKING → FIX ROUND → RE-REVIEW the dissenters
+          → CONSOLIDATE BLOCKING → ADJUDICATE (the fluff gate: real gates,
+            fluff demoted on the record) → FIX ROUND
+          → RE-REVIEW the dissenters
           → until every reviewer is PLEASED → YOU INSPECT the integrated tree
           → COMMIT
 ```
@@ -167,6 +170,20 @@ DECOMPOSE → IMPLEMENT (spawn implementers, parallel where safe)
 - **Spawn the skeptic panel.** Every deliverable carries at least one
   adversarial skeptic; the floor is one; no exceptions. Size 2–3 for a small
   change, 5–7 for a feature batch, with diverse lenses.
+- **Adjudicate before you fix: you hold the fluff gate.** A reviewer's
+  BLOCKING tag is a claim, not a verdict on your loop. Before dispatching
+  any fix round, adjudicate every consolidated BLOCKING item REAL or FLUFF
+  against the yardstick
+  ([`../skills/consolidating-review/SKILL.md`](../skills/consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate)):
+  real defects gate; taste, scope creep and triggerless hypotheticals are
+  demoted with a written reason. No silent demotions — the original
+  reviewer gets the reason and exactly one rebuttal round (concede, or
+  stand with new evidence) — and the adjudication record at
+  `.delegation/adjudications/round-<N>.md` is written before the fix round
+  goes out, every round, even when nothing was demoted. Doubt resolves
+  toward REAL. Consult the steward on close calls; a standoff that
+  survives a spent rebuttal escalates to the owner. This judgment is
+  yours, and the record is what keeps it honest.
 - Integrate and review the whole tree, never a half-written slice.
 - Own the reserved shared files (indexes, front-door routing docs,
   capability maps) and wire them at integration. That direct work is legitimate;

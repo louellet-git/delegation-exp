@@ -110,8 +110,22 @@ required keys:
   ]
 ```
 
-That array is for the manager, the steward and the next reader, not for the
-gate: the gate neither requires it nor validates it. Do not invent other fields
+The same holds for the optional `adjudications` array, which summarizes the
+on-disk adjudication record (`.delegation/adjudications/round-<N>.md`,
+format in
+[`../consolidating-review/SKILL.md`](../consolidating-review/SKILL.md#4-the-adjudication-record-a-required-artifact))
+when any BLOCKING finding was demoted as fluff on the way to this artifact:
+
+```json
+  "adjudications": [
+    {"finding": "<#: one line>", "lens": "<lens>", "ruling": "FLUFF",
+     "reason": "<the written reason>", "rebuttal": "conceded | stood: <new evidence>",
+     "final": "demoted to non-blocking | discarded | gates (rebuttal flipped it) | escalated to owner"}
+  ]
+```
+
+Both arrays are for the manager, the steward and the next reader, not for the
+gate: the gate neither requires nor validates them. Do not invent other fields
 and expect them to mean anything.
 
 The PreToolUse commit gate denies the git commands that **author a new
@@ -153,7 +167,10 @@ to `.delegation/history/`.
 ## Reading the panel
 
 - Any NOT PLEASED → hand the numbered BLOCKING lists to
-  [`../consolidating-review/SKILL.md`](../consolidating-review/SKILL.md) for
-  one reconciled fix round; re-review the dissenters only.
+  [`../consolidating-review/SKILL.md`](../consolidating-review/SKILL.md),
+  which adjudicates every BLOCKING item against the fluff-gate yardstick
+  (real defects gate; fluff is demoted on the record, with one rebuttal
+  round for the reviewer) before one reconciled fix round; re-review the
+  dissenters only.
 - All PLEASED → write the artifact, then the **manager still inspects** —
   a unanimous panel is necessary, not sufficient.

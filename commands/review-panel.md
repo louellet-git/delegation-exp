@@ -12,8 +12,12 @@ $ARGUMENTS
    triage the mode (swarm / deep / hybrid by breadth-vs-depth × risk), and
    dispatch, reviewing the whole integrated tree, not half-written slices.
 2. If any reviewer is NOT PLEASED, use the
-   **delegation-framework:consolidating-review** skill: batch all BLOCKING
-   findings into one reconciled fix round, then re-review only the
+   **delegation-framework:consolidating-review** skill: consolidate the
+   BLOCKING findings, adjudicate every one through the fluff gate (real
+   defects gate; taste, scope creep and triggerless hypotheticals are
+   demoted with a written reason, one rebuttal round for the reviewer, and
+   the adjudication record written before any fix is dispatched), batch the
+   survivors into one reconciled fix round, then re-review only the
    dissenters, converging (each round finds strictly less).
 3. When every reviewer is PLEASED, write the review artifact so the commit
    gate will pass, filling `head_sha` from `git rev-parse HEAD` **last**, once

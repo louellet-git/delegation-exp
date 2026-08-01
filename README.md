@@ -23,7 +23,7 @@ anything get committed.
 | Word | What it means |
 |------|---------------|
 | `PLEASED` / `NOT PLEASED` | The only two verdicts a skeptic returns. There is no "PLEASED with reservations", and every reviewer must be `PLEASED` before the commit. Format: [`docs/rubric.md`](docs/rubric.md). |
-| `BLOCKING` | A numbered finding that must be fixed before that commit. Everything else is non-blocking and does not gate. Format: [`docs/rubric.md`](docs/rubric.md). |
+| `BLOCKING` | A numbered finding that must be fixed before that commit. Everything else is non-blocking and does not gate. A BLOCKING tag is itself adjudicated before it may gate: the manager runs every one through the **fluff gate** ([`skills/consolidating-review/SKILL.md`](skills/consolidating-review/SKILL.md)) — real defects gate, fluff is demoted on the record with one rebuttal round for the reviewer. Format: [`docs/rubric.md`](docs/rubric.md). |
 | `swarm` \| `deep` \| `hybrid` | The three panel modes: many reviewers skimming broadly, one or a few tracing deeply, or both. You pick one per panel and it is recorded in the review artifact. |
 | `lens` | The adversarial angle one skeptic is assigned (`correctness`, `evidence-vs-claim`, `honesty/overclaim`, `derived-output/ranking`, and the rest). A panel diversifies them. Catalogue: [`docs/lenses.md`](docs/lenses.md). |
 
@@ -83,8 +83,9 @@ git repo at all, and the warning says which. Remove `.delegation/` afterwards
 if you were only testing.
 
 **The worked example.** [`docs/example-run.md`](docs/example-run.md) is one
-delegation start to finish: decompose, fan out, panel, consolidate, fix,
-re-review, artifact, commit, plus two steward scorecards on the same run. If you
+delegation start to finish: decompose, fan out, panel, consolidate,
+adjudicate, fix, re-review, artifact, commit, plus two steward scorecards on
+the same run. If you
 read one more thing before your first `/delegate`, read that.
 
 ## Who this is for (read this before you install)
@@ -222,16 +223,29 @@ Around that loop it adds the parts that are the actual reason to install it:
    a feature batch, with diverse lenses.
 3. **The lens catalogue + PLEASED / NOT PLEASED rubric.** Named adversarial
    lenses (code *and* non-code) and a numbered-BLOCKING verdict format.
-4. **The reliability / stall rules.** Silence ≠ progress; watch file
+4. **The fluff gate (blocker adjudication).** An adversarial panel earns its
+   keep by finding real defects, and it pays for that by also producing
+   taste, scope creep, and triggerless hypotheticals dressed as blockers. So
+   a BLOCKING tag does not gate work by itself: after a panel returns NOT
+   PLEASED, the manager adjudicates every BLOCKING finding REAL or FLUFF
+   against an explicit yardstick before any fix round is dispatched
+   ([`skills/consolidating-review/SKILL.md`](skills/consolidating-review/SKILL.md)).
+   Real defects gate; fluff is demoted with a written reason the original
+   reviewer gets exactly one structured round to rebut — concede, or stand
+   with new evidence. No silent demotions, no endless ping-pong, and the
+   adjudication record is a required artifact, so a manager that bulldozes
+   real findings does it in writing, where the steward and the owner can
+   read it.
+5. **The reliability / stall rules.** Silence ≠ progress; watch file
    activity, not completion notifications; concrete re-briefs for stalled
    agents; integrate the slices, run one panel over the integrated tree, and
    land the batch in **one** commit (the review artifact binds to a single
    HEAD, and the framework's own rule is to review the integrated tree rather
    than half-written slices).
-5. **Doc-collision avoidance.** Reserved index files, pre-assigned doc
+6. **Doc-collision avoidance.** Reserved index files, pre-assigned doc
    numbers, and a fill-before-you-fan-out conflict checklist.
-6. Swarm vs. deep review modes with a dual-placement selection rule.
-7. **The steward.** A standing, read-only adversarial flat sibling the
+7. Swarm vs. deep review modes with a dual-placement selection rule.
+8. **The steward.** A standing, read-only adversarial flat sibling the
    manager spawns, whose whole purpose is to stop the manager going too deep
    and losing the plot. It reviews the *manager* (not deliverables): it scores
    VISION (on-prize vs drifting into motion) and DELEGATION (orchestrating vs
@@ -615,7 +629,8 @@ agents/skeptic.md              the reusable adversarial reviewer of deliverables
 agents/steward.md              the reusable adversarial reviewer of the MANAGER, a flat sibling the manager spawns (spawnable, standing)
 skills/delegating/             the manager's loop: mechanics, the rules on top of them, the commit gate
 skills/skeptical-review/       run a panel; lenses; swarm/deep/hybrid modes
-skills/consolidating-review/   batch BLOCKING findings; drive convergence
+skills/consolidating-review/   adjudicate BLOCKING findings (the fluff gate);
+                               batch the survivors; drive convergence
 commands/                      /delegate, /skeptic-review, /review-panel
 hooks/hooks.json               reminder hooks; the commit gate
 scripts/                       gate + validation scripts (portable Python)

@@ -8,7 +8,7 @@
     {
       "name": "delegation-framework",
       "source": "./",
-      "description": "Manager -> implementer -> skeptic operating model as a standalone plugin: the fresh-subagent-per-task loop, skeptic pairing, review panels, lenses/rubric, reliability rules, and a review-artifact commit gate."
+      "description": "Manager -> implementer -> skeptic operating model as a standalone plugin: the fresh-subagent-per-task loop, skeptic pairing, review panels, lenses/rubric, blocker adjudication (the fluff gate), reliability rules, and a review-artifact commit gate."
     }
   ]
 }

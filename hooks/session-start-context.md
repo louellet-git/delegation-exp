@@ -15,7 +15,7 @@ builds where independent review adds real safety. An orchestration that spawns
 agents for work you could have done directly is the framework failing, not
 succeeding.
 
-**Five rules that hold whenever the loop is running:**
+**Six rules that hold whenever the loop is running:**
 
 1. **Every work agent gets at least one skeptic.** No exceptions. A green
    checkmark, a passing suite and confident prose each prove nothing on their
@@ -33,7 +33,12 @@ succeeding.
    it is done. Quote the command and its output. A test that was never run
    against the unfixed code has not been shown to fail, and a test that cannot
    fail is not a test.
-5. **The commit gate reads the review artifact.** Do not commit on a panel that
+5. **A BLOCKING finding gates only after it survives adjudication.** The
+   manager runs every one through the fluff gate before any fix round: real
+   defects enter it; fluff is demoted with a written reason the original
+   reviewer gets exactly one round to rebut, and the adjudication record is
+   written either way. No silent demotions.
+6. **The commit gate reads the review artifact.** Do not commit on a panel that
    has not converged, and do not resolve a BLOCKING finding by restating it.
 
 Fan out by **disjoint write sets** — two agents that can touch the same file
