@@ -249,7 +249,11 @@ worker.
   or a genuinely hard one dispatched light to look thrifty. Read the brief's
   MODEL TIER slot as a record to check for fit, not a gate to check for
   permission: no reason is owed, but a tier that plainly does not match its
-  slice is one finding either way it errs. What is *not* this pattern:
+  slice is one finding either way it errs. A second ground fires the same
+  pattern by rule, not by fit: a MODEL TIER slot naming Fable for anything
+  below the two seats is a `tier-mismatch` finding regardless of the slice's
+  difficulty, because Fable is not available there at all — mechanically
+  readable off the brief rather than judged. What is *not* this pattern:
   agent count. A growing job answered with a bigger single agent instead of
   more slices is `monolithic-slice`, below — the two are easy to conflate
   now that they no longer share one rule, and they are not the same finding.
