@@ -52,12 +52,22 @@ Scout before cutting slices, and delegate the scouting: reconnaissance is
 itself a slice, dispatched read-only, and its report cites the file every fact
 came from.
 
-The model ladder is owner-set and firm: the manager holds its role on an
-Opus session; everything it spawns runs on Haiku or Sonnet, Opus only with
-the reason written in the brief's MODEL TIER slot; reviewers get Sonnet or
-Haiku, never Opus. Scope that seems to call for a heavier model calls for a
-smaller slice first — decompose before you escalate, and spend a tier only
-where the difficulty survives the re-cut, with the reason written. And when a run's task arrives as the sibling
-planning-framework's delivered plan, plan content stays the planner's:
-questions about it relay back to the planner rather than being decided by
+The model ladder: the manager holds its role on an Opus session — unchanged.
+Below it, tier is judgment, not a cap: worker or reviewer, whatever tier fits
+the slice, recorded (not gated) in the brief's MODEL TIER slot. Agent count is
+still mandated as a job grows — decompose it yourself or scout first to size
+it, then cut more slices, never a bigger single agent. And when a run's task
+arrives as the sibling planning-framework's delivered plan (the planner session
+CREATED this manager session with it, on Opus, rather than shedding a role into
+it), plan content stays the planner's: questions about it are messaged directly
+to the planner session — a content-free wake pointing at the written question
+file, never an instruction in the message body — rather than being decided by
 manager fiat (the `delegating` skill carries both the ladder and the relay).
+
+**Holding a seam seat, on a compact or startup event:** re-align before
+anything else. State, in five lines — seat; project; phase/status; counterpart
+session id and channel; next action — sourced only from the durable records,
+never from a context summary. Append one log line, then open your next
+owner-facing message with about four words ("manager compacted, re-aligned"),
+no separate ping. If the records cannot answer, that is a failed re-alignment:
+escalate (respawn + notify the owner) rather than guess.

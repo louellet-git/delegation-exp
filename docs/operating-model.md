@@ -11,9 +11,12 @@ rules, and the review mechanics are written down in this repo, in this file
 and in [`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md).
 Nothing here routes a mechanic to another plugin by name, and there is no
 companion to install. One soft seam exists, by name only: a run whose task
-arrives as the sibling planning-framework's delivered plan takes its intake
-and its planner relay from the `delegating` skill; when that sibling is
-absent, nothing here references it at runtime and nothing fails.
+arrives as the sibling planning-framework's delivered plan is one where the
+planner session CREATED this manager session (on Opus, package as opening
+prompt) rather than shedding a role into it, and the two stay live,
+session-to-session, for the seam's duration — the run takes its intake and
+its planner relay from the `delegating` skill; when that sibling is absent,
+nothing here references it at runtime and nothing fails.
 
 ## The law
 
@@ -254,12 +257,13 @@ marker holds no state the framework needs afterwards, so re-arming is just
 running the loop again.
 
 **Panel-sizing heuristic:** **2–3 skeptics for a small change, 5–7 for a
-feature batch.** Scale the panel to the risk, not to habit. Tier the panel
-too: skeptics run on Sonnet, or Haiku for a narrow mechanical lens, never
-Opus — and a batch that seems to need a heavier reviewer needs a smaller
-batch or a narrower lens instead. The full model ladder (manager on Opus;
-everything below on Haiku or Sonnet, Opus by written exception that argues
-against decomposition) is in
+feature batch, more when the job warrants it — guidance, not a cap.** Scale
+the panel to the risk, not to habit. A panel's tier is a separate call from
+its size: skeptics default to Sonnet, or Haiku for a narrow mechanical lens,
+and any reviewer can go heavier when the slice genuinely warrants it — tier
+is judgment, recorded, not gated. The full model ladder (the two seats
+unchanged; below the manager, tier is free and agent count scales by
+decomposition as the job grows) is in
 [`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what).
 
 ## Reliability / stall rules

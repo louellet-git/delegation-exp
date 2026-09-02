@@ -239,16 +239,27 @@ worker.
   Recover the dispatch order from `.delegation/briefs/` (the files and their
   timestamps) against the checklist, and name the slices that could have run
   together.
-- **Tier inflation.** A brief whose MODEL TIER slot says Opus with no reason
-  written, or a reviewer dispatched on Opus at all: the ladder (in the
-  `delegating` skill) is owner-set — workers on Sonnet by default, reviewers
-  on Sonnet or Haiku. And the ladder's standing order is decompose before
-  escalate, so read the reason, not just its presence: an Opus reason that
-  does not say why a smaller slice would not have sufficed is tier inflation
-  with paperwork — the escalation bought what a re-cut should have. The
-  mirror error is drift too: a genuinely hard slice dispatched on Haiku to
-  look thrifty. Both directions are one finding — the tier did not match the
-  slice, and nobody wrote down why.
+- **Tier mismatch.** Tier itself is judgment now (2026-09-02, issuer note 4):
+  any tier can fit any slice, worker or reviewer alike, and no written case
+  against decomposition is owed for choosing a heavier one. What still
+  earns a flag is a tier that does not fit the slice in front of it, in
+  *either* direction — a routine slice dispatched heavy for no stated reason,
+  or a genuinely hard one dispatched light to look thrifty. Read the brief's
+  MODEL TIER slot as a record to check for fit, not a gate to check for
+  permission: no reason is owed, but a tier that plainly does not match its
+  slice is one finding either way it errs. What is *not* this pattern:
+  agent count. A growing job answered with a bigger single agent instead of
+  more slices is `monolithic-slice`, below — the two are easy to conflate
+  now that they no longer share one rule, and they are not the same finding.
+- **Monolithic slice.** The reader for the rule the owner kept, strengthened,
+  and did not take back: a growing job is supposed to be cut into more
+  agents, never handed to one bigger one. Name a slice that should have been
+  several — its write set spans territory a disjoint cut could have
+  separated, or its brief reads as two or three outcomes stapled together —
+  and check whether a scout ran first to size the total work before the
+  manager committed to one slice, one dispatch. No scout and a slice that
+  grew past what one agent should carry is the pattern; a slice that stayed
+  one slice because decomposing it truly would not separate is not.
 - **Panel mis-sizing.** Two skeptics on a risky feature batch, or seven on a
   cosmetic change. Scale to risk (2–3 small / 5–7 batch). Flag both under- and
   over-sizing, and check lens diversity, since five copies of one lens is one
@@ -259,6 +270,26 @@ worker.
   round in `.delegation/adjudications/` where most of a BLOCKING list was
   ruled FLUFF, a demotion with no written reason, or a demotion the record
   shows no rebuttal round for. The manager bypassing the discipline it owns.
+- **Compacted without realigning.** A compact or startup event fell inside
+  your window (a continuation summary at the head of the manager's context,
+  or a session restart) with no five-line re-alignment statement and no
+  matching one-line log entry afterward. This is a named finding on its own,
+  not folded into anything else: the seat may otherwise look on-track while
+  quietly running on a blurred summary instead of the durable records. Cite
+  the compaction evidence and the absence of the log line; the fix is the
+  seat re-grounding from records before its next act, or (if the seat is
+  simply gone) the dead-seat respawn-and-notify default.
+
+**A gap named honestly, not filled with a fake detector: D24's
+idle-outside-repos rule.** The Stop-hook mechanism (D24) only ever nudges a
+seat toward committing when its shell is inside a repo with a dirty tree; the
+prevention is to idle with the shell parked outside every repo instead. There
+is no reader for this here, and none is invented: the only visible signal is
+a *recurring* commit nudge showing up across a seat's own turns, which is not
+something this scorecard can detect from commits, briefs, or diffs after the
+fact — it is legible only in the seat's own transcript, to the owner watching
+it live. Say so plainly if asked whether this rule is being followed, rather
+than manufacturing a mechanical check this artifact cannot actually perform.
 
 **Check both directions.** Under-delegating and over-spawning are opposite
 failures that can co-occur: the flood of thin make-work agents hides the one
@@ -286,7 +317,7 @@ VISION: on-prize | drifting
   Evidence: <which slices moved the claim, which were local wins; quote the
              stated claim and show the gap if drifting>
 
-DELEGATION: delegating-well | doing-IC-work | over-spawning | under-delegating | over-processing | fake-sub-team | serialized-the-disjoint | tier-inflation
+DELEGATION: delegating-well | doing-IC-work | over-spawning | under-delegating | over-processing | fake-sub-team | serialized-the-disjoint | tier-mismatch | monolithic-slice | compacted-without-realigning
   (name all that apply)
   Spawn count (MANDATORY): <N agents the manager dispatched this window>
   Kept-or-delegated (MANDATORY): <the single highest-risk build in the window,

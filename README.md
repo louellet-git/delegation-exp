@@ -112,13 +112,22 @@ expect to make the cost/thoroughness call yourself. This framework will not make
 for you, because it was built somewhere that never had to.
 
 One default *is* calibrated, and it is firm rather than tuned: the **model
-ladder**. The manager holds its role on an Opus session; every agent it
-spawns runs below it — Sonnet by default, Haiku for mechanical slices, Opus
-only with a written reason in the brief — and reviewers run Sonnet or Haiku,
-never Opus. Panels are extravagant in count, not in tier: seven Sonnet
-skeptics beat two Opus ones here, because breadth is what a panel buys. The
-ladder lives in
+ladder** — amended by its own owner on 2026-09-02, issuer note 4. The
+manager holds its role on an Opus session; the two seats (planner, manager)
+are unchanged. Below the manager, tier is judgment — whatever fits the
+slice, workers and reviewers alike, recorded in the brief and never gated —
+while agent count is the strengthened half: a growing job is cut into more
+agents, never handed to one bigger one, with scouts to size it first. Panels
+stay extravagant in count, not tuned down to it: more slices, more lenses,
+more reviewers is what a panel buys, and tier on any of them is left to
+what the slice in front of it actually needs. The ladder lives in
 [`skills/delegating/SKILL.md`](skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what).
+
+The planner seam has its own standing cost, separate from panel sizing: **one
+idle planner session plus one Opus manager session per project**, both live
+for the run's duration, the planner idling between turns rather than polling
+or scheduling itself awake. That is the seam's fixed price of admission,
+whether or not any single question ever crosses it.
 
 ## The roles at a glance (so any agent knows what they are)
 
@@ -381,13 +390,17 @@ somewhere else, and no version to pin. The manifest
 ([`.claude-plugin/plugin.json`](.claude-plugin/plugin.json)) declares no
 `dependencies`.
 
-One *soft* seam exists, by name only: the sibling planning-framework can
-deliver a finished plan into `/delegate`, in which case the `delegating`
-skill's plan intake and planner relay apply — the plan's leaf cards arrive
-as briefs-in-waiting, and questions about plan content go back to the
-planner rather than being decided by manager fiat. Nothing loads, resolves,
-or validates that sibling; if it is absent, nothing here references it at
-runtime and nothing fails. Standalone stays true.
+One *soft* seam exists, by name only: the sibling planning-framework's
+planner session, when it finishes planning, CREATES this manager session on
+Opus and hands it the plan as its opening prompt — it does not shed its role
+into `/delegate`, and it stays alive, session-to-session, for the seam's
+duration. When the seam is live, the `delegating` skill's plan intake and
+planner relay apply — the plan's leaf cards arrive as briefs-in-waiting, and
+questions about plan content go back to the planner session rather than
+being decided by manager fiat. Nothing loads, resolves, or validates that
+sibling; if it is absent, nothing here references it at runtime and nothing
+fails. Standalone stays true, and the planner-as-front-door inversion is
+scoped to the seam being live, not a rewrite of the standalone story above.
 
 The one external requirement is an interpreter: the hook commands are portable
 Python 3.7+, and each one tries `python3`, then `python`, then `py -3`, then
