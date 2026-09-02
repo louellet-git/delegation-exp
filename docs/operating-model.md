@@ -256,8 +256,10 @@ running the loop again.
 **Panel-sizing heuristic:** **2–3 skeptics for a small change, 5–7 for a
 feature batch.** Scale the panel to the risk, not to habit. Tier the panel
 too: skeptics run on Sonnet, or Haiku for a narrow mechanical lens, never
-Opus — the full model ladder (manager on Opus; everything below on Haiku or
-Sonnet, Opus by written exception) is in
+Opus — and a batch that seems to need a heavier reviewer needs a smaller
+batch or a narrower lens instead. The full model ladder (manager on Opus;
+everything below on Haiku or Sonnet, Opus by written exception that argues
+against decomposition) is in
 [`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what).
 
 ## Reliability / stall rules

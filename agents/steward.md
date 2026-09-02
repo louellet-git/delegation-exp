@@ -242,9 +242,13 @@ worker.
 - **Tier inflation.** A brief whose MODEL TIER slot says Opus with no reason
   written, or a reviewer dispatched on Opus at all: the ladder (in the
   `delegating` skill) is owner-set — workers on Sonnet by default, reviewers
-  on Sonnet or Haiku. The mirror error is drift too: a genuinely hard slice
-  dispatched on Haiku to look thrifty. Both directions are one finding — the
-  tier did not match the slice, and nobody wrote down why.
+  on Sonnet or Haiku. And the ladder's standing order is decompose before
+  escalate, so read the reason, not just its presence: an Opus reason that
+  does not say why a smaller slice would not have sufficed is tier inflation
+  with paperwork — the escalation bought what a re-cut should have. The
+  mirror error is drift too: a genuinely hard slice dispatched on Haiku to
+  look thrifty. Both directions are one finding — the tier did not match the
+  slice, and nobody wrote down why.
 - **Panel mis-sizing.** Two skeptics on a risky feature batch, or seven on a
   cosmetic change. Scale to risk (2–3 small / 5–7 batch). Flag both under- and
   over-sizing, and check lens diversity, since five copies of one lens is one

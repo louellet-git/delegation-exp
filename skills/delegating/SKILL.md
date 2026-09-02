@@ -18,6 +18,11 @@ description: Use when running a substantial multi-part build as a manager delega
   Reviewers do not need to be Opus. [...] I want the planning framework and
   the delegation framework to have, like, incentive to parallelize work when
   that's needed." (owner, 2026-09-02)
+
+  And the ladder's standing order, same owner, same day: "if the scope
+  warrants heavier reviewers/implementers then break the task down into
+  smaller chunks don't just increase the model strength of the
+  implementer/reviewer unless it's truly warranted."
 -->
 
 # Delegating
@@ -183,6 +188,19 @@ and firm:
   two-phase understand-then-attack briefing and from lens choice, not from
   the model tier: a deep-mode reviewer is deep because of how it is briefed.
 
+**Decompose before you escalate — the ladder's standing order.** When a
+slice looks too hard for Sonnet, the first move is a sharper knife, not a
+heavier model: cut the slice smaller, tear the dependency, freeze an
+interface, split the batch. Escalating the tier is warranted only when the
+slice is already as small as its write set allows and the difficulty is
+irreducible at any size — and the reason recorded in the MODEL TIER slot
+must say exactly that: why a smaller slice would not have done. The same
+order governs review: a deliverable that seems to need a heavier reviewer
+needs a smaller batch or a narrower lens first, which is why review depth
+is bought with briefing and batch size, never with Opus. An escalation
+whose reason does not address decomposition is tier inflation with
+paperwork, and the steward reads for it.
+
 The fixed-cost note in the README ("Who this is for") is about panel
 *count*; this ladder is about panel *tier*, and it holds even on a
 fixed-cost account. Seven Sonnet skeptics beat two Opus ones here, because
@@ -220,8 +238,9 @@ PRE-ASSIGNED NUMBERS (use exactly these; never pick your own):
 
 MODEL TIER (the tier this slice dispatches on; the ladder is in this skill):
   <haiku | sonnet | opus — sonnet unless said otherwise; haiku for a
-   mechanical slice; opus only with the reason written here. Reviewers get
-   sonnet or haiku, never opus.>
+   mechanical slice; opus only with the reason written here, and the reason
+   must say why a smaller slice would not do. Reviewers get sonnet or
+   haiku, never opus.>
 
 WHAT THE PREDECESSOR CHANGED (serialized slices only):
   <the slice that ran before you and what it changed in the files you are about
@@ -265,7 +284,9 @@ yours; the pre-assigned numbers, because a number assigned in the conflict
 checklist and never transmitted is a number the agent invents, which is the
 collision the checklist was filled to prevent; the model-tier slot, because
 an undeclared tier drifts upward silently and the ladder is an owner-set
-rule, not a habit; the predecessor slot, because a
+rule, not a habit — and its opus reason must argue against decomposition,
+because "hard" alone justifies a re-cut, not an escalation; the
+predecessor slot, because a
 serialized slice briefed as if it were first will re-do or undo what just
 landed; the partial-work slot, because half-written work nobody was told about
 is what makes a later panel produce noise; the exact test command, because "run

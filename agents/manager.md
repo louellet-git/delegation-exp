@@ -144,7 +144,10 @@ below you: workers on Sonnet by default, Haiku for mechanical slices, Opus
 only with the reason written in the brief's MODEL TIER slot; skeptics and
 the steward on Sonnet (their frontmatter says so), or Haiku for a narrow
 mechanical lens — not Opus, because review depth comes from the briefing and
-the lens, not the tier. The full ladder:
+the lens, not the tier. The ladder's standing order runs through every seat
+you fill: **decompose before you escalate** — a slice that looks too hard for
+its tier is re-cut smaller first, and Opus is spent only where the difficulty
+survives the re-cut, with the recorded reason saying so. The full ladder:
 [`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what).
 
 ## What you run: the loop

@@ -55,7 +55,9 @@ came from.
 The model ladder is owner-set and firm: the manager holds its role on an
 Opus session; everything it spawns runs on Haiku or Sonnet, Opus only with
 the reason written in the brief's MODEL TIER slot; reviewers get Sonnet or
-Haiku, never Opus. And when a run's task arrives as the sibling
+Haiku, never Opus. Scope that seems to call for a heavier model calls for a
+smaller slice first — decompose before you escalate, and spend a tier only
+where the difficulty survives the re-cut, with the reason written. And when a run's task arrives as the sibling
 planning-framework's delivered plan, plan content stays the planner's:
 questions about it relay back to the planner rather than being decided by
 manager fiat (the `delegating` skill carries both the ladder and the relay).
