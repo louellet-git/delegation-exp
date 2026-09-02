@@ -306,10 +306,11 @@ flat-sibling worker the manager spawns; it cannot spawn. It:
   not a failure.
 - Is read-only: it never modifies the deliverable it reviews.
 - Defaults to Sonnet (its frontmatter says so), or Haiku for a narrow
-  mechanical lens; a reviewer is no longer capped below a worker's tier —
-  tier is judgment, the right tool for the job, dispatched and recorded like
-  any other slice. Review depth comes from the two-phase briefing and the
-  lens, not the tier.
+  mechanical lens, up to Opus when the slice is hard enough to warrant it; a
+  reviewer is no longer capped below a worker's tier — tier is judgment,
+  Haiku through Opus, the right tool for the job, dispatched and recorded
+  like any other slice. Review depth comes from the two-phase briefing and
+  the lens, not the tier.
 
 The reusable definition is [`../agents/skeptic.md`](../agents/skeptic.md);
 spawn it with `subagent_type: "skeptic"`, or spawn general-purpose agents

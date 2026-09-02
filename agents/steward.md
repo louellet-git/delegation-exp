@@ -239,9 +239,11 @@ worker.
   Recover the dispatch order from `.delegation/briefs/` (the files and their
   timestamps) against the checklist, and name the slices that could have run
   together.
-- **Tier mismatch.** Tier itself is judgment now (2026-09-02, issuer note 4):
-  any tier can fit any slice, worker or reviewer alike, and no written case
-  against decomposition is owed for choosing a heavier one. What still
+- **Tier mismatch.** Tier itself is judgment now (2026-09-02, issuer note 4;
+  ranged 2026-09-02 ~20:20Z, cycle-3 gate): any tier Haiku through Opus can
+  fit any slice, worker or reviewer alike — Fable stays seat-only, reserved
+  for the planner and manager seats — and no written case against
+  decomposition is owed for choosing a heavier one. What still
   earns a flag is a tier that does not fit the slice in front of it, in
   *either* direction — a routine slice dispatched heavy for no stated reason,
   or a genuinely hard one dispatched light to look thrifty. Read the brief's

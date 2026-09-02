@@ -112,15 +112,15 @@ expect to make the cost/thoroughness call yourself. This framework will not make
 for you, because it was built somewhere that never had to.
 
 One default *is* calibrated, and it is firm rather than tuned: the **model
-ladder** — amended by its own owner on 2026-09-02, issuer note 4. The
-manager holds its role on an Opus session; the two seats (planner, manager)
-are unchanged. Below the manager, tier is judgment — whatever fits the
-slice, workers and reviewers alike, recorded in the brief and never gated —
-while agent count is the strengthened half: a growing job is cut into more
+ladder** — amended by its own owner on 2026-09-02, issuer note 4. The manager
+holds its role on an Opus session; the two seats (planner, manager) are
+unchanged. Below the manager, tier is judgment — Haiku through Opus, Fable
+seat-only, workers and reviewers alike, recorded in the brief and never gated
+— while agent count is the strengthened half: a growing job is cut into more
 agents, never handed to one bigger one, with scouts to size it first. Panels
 stay extravagant in count, not tuned down to it: more slices, more lenses,
-more reviewers is what a panel buys, and tier on any of them is left to
-what the slice in front of it actually needs. The ladder lives in
+more reviewers is what a panel buys, and tier on any of them is left to what
+the slice in front of it actually needs. The ladder lives in
 [`skills/delegating/SKILL.md`](skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what).
 
 The planner seam has its own standing cost, separate from panel sizing: **one

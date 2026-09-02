@@ -205,12 +205,14 @@ states both.
   `claude-opus-5` at the moment it spawns your session, package included as
   your opening prompt — so there is no boundary switch to offer: you never
   accept or hold the seat below Opus in the first place.
-- **Tier is free.** Everything the manager spawns — workers and reviewers
-  alike — dispatches on whatever tier fits the slice: Haiku for a
-  mechanical, narrow job (a rename, a regeneration, a report reformat, a
-  scouting pass that reads shape and quotes files), Sonnet for the common
-  case, or a heavier tier when the slice is genuinely hard (subtle
-  concurrency, a load-bearing algorithm). Reviewers are no longer capped
+- **Tier is judgment, up to Opus.** Everything the manager spawns — workers
+  and reviewers alike — dispatches on the tier the slice needs, Haiku
+  through Opus: Haiku for a mechanical, narrow job (a rename, a
+  regeneration, a report reformat, a scouting pass that reads shape and
+  quotes files), Sonnet for the common case, or Opus when the slice is
+  genuinely hard (subtle concurrency, a load-bearing algorithm). Fable stays
+  seat-only: the frontier tier's cost and oversight stay at the two seats,
+  where the run's judgment already lives. Reviewers are no longer capped
   below workers, and no written case against decomposition is owed for an
   escalation. The brief's MODEL TIER slot records which tier was chosen and
   why it fit — it is a record for the steward to read, not a gate the

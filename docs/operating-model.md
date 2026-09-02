@@ -260,10 +260,11 @@ running the loop again.
 feature batch, more when the job warrants it — guidance, not a cap.** Scale
 the panel to the risk, not to habit. A panel's tier is a separate call from
 its size: skeptics default to Sonnet, or Haiku for a narrow mechanical lens,
-and any reviewer can go heavier when the slice genuinely warrants it — tier
-is judgment, recorded, not gated. The full model ladder (the two seats
-unchanged; below the manager, tier is free and agent count scales by
-decomposition as the job grows) is in
+and any reviewer may run up to Opus when the slice genuinely warrants it —
+tier is judgment, recorded, not gated. The full model ladder
+(the two seats unchanged; below the manager, any tier Haiku through Opus,
+Fable seat-only, and agent count scales by decomposition as the job grows)
+is in
 [`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what).
 
 ## Reliability / stall rules

@@ -53,8 +53,8 @@ itself a slice, dispatched read-only, and its report cites the file every fact
 came from.
 
 The model ladder: the manager holds its role on an Opus session — unchanged.
-Below it, tier is judgment, not a cap: worker or reviewer, whatever tier fits
-the slice, recorded (not gated) in the brief's MODEL TIER slot. Agent count is
+Below it, tier is judgment, not a cap: any tier Haiku through Opus, Fable
+seat-only, recorded (not gated) in the brief's MODEL TIER slot. Agent count is
 still mandated as a job grows — decompose it yourself or scout first to size
 it, then cut more slices, never a bigger single agent. And when a run's task
 arrives as the sibling planning-framework's delivered plan (the planner session

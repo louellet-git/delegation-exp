@@ -195,12 +195,14 @@ this seat below Opus in the first place. Your own seat is unchanged; what the
 owner amended is everything you spawn. Two separate rules now govern it, and
 they point in different directions:
 
-- **Tier is free.** A worker or a reviewer dispatches on whatever tier fits
-  its slice — Haiku for a mechanical one, Sonnet for the common case, heavier
-  when the difficulty is real — and no reviewer is capped below a worker.
-  Record the choice in the brief's MODEL TIER slot; that slot is a record for
-  the steward to read fit against, not a gate you have to clear, and no
-  written case against decomposition is owed for it.
+- **Tier is judgment, up to Opus.** A worker or a reviewer dispatches on
+  the tier its slice needs, Haiku through Opus — Haiku for a mechanical
+  one, Sonnet for the common case, Opus when the difficulty is real — and no
+  reviewer is capped below a worker. Fable stays seat-only: the frontier
+  tier's cost and oversight stay at the two seats, where the run's judgment
+  already lives. Record the choice in the brief's MODEL TIER slot; that slot
+  is a record for the steward to read fit against, not a gate you have to
+  clear, and no written case against decomposition is owed for it.
 - **Agent count is still mandated, and strengthened.** A job that is growing
   gets more agents, never a bigger single one: break it down yourself, or
   dispatch scouts first to size the total work, then cut as many slices and
