@@ -466,6 +466,23 @@ title when a reply ran overdue, not by any poke ever arriving. That is why
 written state plus status polling, not the poke channel alone, is the
 reliable layer.
 
+**Wakes are fired bare, always (D27).** Every wake in this section is
+content-free by design, and that design has teeth now: a `fire_trigger` call
+that carries `text` runs in a fresh minted session on this platform instead
+of reaching the bound seat, and never surfaces there — that is what emptied
+every wake that vanished on 2026-09-02, in both directions, including this
+relay's own "report landed" wakes. Anything a seat wants its counterpart to
+know goes in the question file, the commit, or the title, never in the
+firing itself. A wake that carries text is the incident, not the platform.
+
+This wake mechanic is also how the standing watchdog session (S5 v2) talks
+to both seats — it wakes you or the planner content-free the same way, on
+its own hourly schedule, never carrying a question or a ruling. Full
+doctrine — its rubric, lifecycle, the two title tokens it reads (D26), and
+its cost — lives in
+[`../../agents/manager.md`](../../agents/manager.md#the-watchdog-a-third-seat-standing-s5-v2),
+not repeated here.
+
 **What does not relay.** A dispute (an owner matter, as ever); a decision
 the card already made, re-asked in the hope of a different answer; and
 chatter. Batch questions that arrive together, and if the same slice relays

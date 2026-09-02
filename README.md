@@ -129,6 +129,15 @@ for the run's duration, the planner idling between turns rather than polling
 or scheduling itself awake. That is the seam's fixed price of admission,
 whether or not any single question ever crosses it.
 
+Liveness across that seam has a second, separate cost (F36): **one idle
+Sonnet watchdog session held open for the run, plus one Routine firing per
+hour while the run is live.** Neither seat can see whether its counterpart
+has stalled or finished, so a standing watchdog session — created by the
+planner at handoff, deleted with its Routine at project close — reads both
+seats' titles hourly (the platform's floor for a Routine) and wakes a seat,
+raises a stall to the owner, or does nothing. Full doctrine, the rubric, and
+the two title tokens it reads: [`agents/manager.md`](agents/manager.md#the-watchdog-a-third-seat-standing-s5-v2).
+
 ## The roles at a glance (so any agent knows what they are)
 
 A flat org with one spawner: the owner talks only to the manager; the manager

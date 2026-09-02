@@ -162,6 +162,78 @@ in reverse: it persists for the whole project, not just one batch — a fixed
 owner rule (golden rule 7), not a preference — and is archived only at plan
 delivery or acceptance, never at a batch checkpoint (D10).
 
+## The watchdog: a third seat, standing (S5 v2)
+
+Neither seat can see the other's liveness by itself. You cannot poll the
+planner and it cannot poll you (golden rule 3 binds the planner, not you, but
+the same platform gives you no free way to watch a counterpart either), and a
+poke to a dead or human-busy session is best-effort at most — that blind spot
+is what let a finished manager go unnoticed for half an hour once, with the
+owner as the one who had to ask. The fix is a third seat: a standing
+watchdog session, holding its own session and trigger tools, created by the
+**planner** at handoff alongside you and woken every hour by a Routine —
+hourly is the platform's floor for a Routine, not a design choice; a
+30-minute cadence was asked for and refused. The watchdog is not spawned by
+you and does not answer to you; you cannot alter its rubric or its schedule,
+and it is deleted, with its Routine, only at project close, alongside your
+own session (F28).
+
+**What it does, and only this.** On each wake it reads both seats' titles and
+statuses with `get_session` and does exactly one of three things: a seat
+reporting DONE with the other seat's title still missing `ack` gets a
+content-free wake at the planner; a seat that reads failed, need-input, idle
+with an action needed, or asking a question to nobody gets a content-free
+wake at its counterpart, and — only the first time, tracked by whether that
+counterpart's title already carries `[wd-notified]` — the watchdog marks
+STALL in its own title and a push notification reaches the owner; otherwise
+it does nothing. It never writes records, never
+re-plans, never spawns, and never puts content in a wake.
+
+**The two title tokens it reads (D26), and why titles at all.** The watchdog
+opens no records, so the state it needs to avoid re-notifying on every
+cadence has to live somewhere it *does* read: the two seats' own titles. Put
+`ack` in your own title once you have read and acted on the planner's DONE
+report, and drop it the moment that acknowledged DONE leaves the planner's
+title — a stale `ack` left over from an old report must never mask the next
+one. If the watchdog wakes you for a stall, your title carries
+`[wd-notified]` until your next normal report, so the owner is notified once
+per incident, not once an hour for the same incident.
+
+**D18 re-alignment applies to the watchdog too (F34).** It is a session like
+any other and compacts like one: the same light/heavy re-grounding protocol
+that governs you governs it. And the watchdog cannot watch itself — nothing
+else is watching *its* liveness — so the owner reads whether the watchdog
+itself is still alive from the Routines list, specifically the hourly
+Routine's own last-run line, the same way you read a plain fact rather than
+a report.
+
+**Wakes are fired bare, always (D27).** A `fire_trigger` call carries no
+`text`; the wake's entire content is the trigger's stored prompt, which
+points at the records. On this platform a firing that carries appended text
+runs in a fresh minted session instead of reaching the bound seat, and never
+surfaces there — that is what emptied every wake that vanished on
+2026-09-02, in both directions, including your own "report landed" wakes.
+Anything you want the planner to know, or it wants you to know, goes in the
+commit and the title, never in the firing. A wake that carries text is the
+incident, not the platform. This governs wakes only: a founding prompt — a
+spawn's or a Routine's — is a session's charter, not a poke, and legitimately
+carries content; only wakes are fired bare.
+
+**Honest marking.** A standing watchdog woken hourly can run this rubric —
+that much a passing spike settled. Two things it did not settle: the
+push-notification-on-stall branch above has never fired at all — not
+exercised by a drill, by choice, since the owner is not pinged for drills —
+and it is not merely untested: a Routine bound to a standing session accepts
+no notification setting of its own, so the push must come from the
+watchdog's own tool, and whether it holds one is part of what the first real
+stall tests (PW3); and whether a
+standing session holds this four-step rubric without drift over days of real
+running, rather than one clean firing, is something a week of use settles,
+not a drill — also UNTESTED. None of this loosens golden rule 3: the planner
+still never sets an alarm on itself and never self-pokes; the watchdog is a
+distinct seat that a Routine — not the planner, and not you — wakes on a
+schedule neither seat set and neither can alter.
+
 ## Re-grounding after compaction: the manager seat
 
 Compaction happens to you too, automatically under context pressure or at
