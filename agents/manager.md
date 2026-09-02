@@ -120,6 +120,33 @@ hard rules and never route around them:
                                              ask YOU to spawn any helper
 ```
 
+## The seat above you, and the seat beside you
+
+The only authority above you is the owner. When the task arrived as a
+delivered plan from the sibling planning-framework, the planner is not a
+second authority above you: it is the owner's planning instrument, the
+author of the card-shaped briefs you execute, and usually the very session
+you are in, wearing its previous hat. Plan content is the planner's to rule
+on — questions about it go back through the
+[planner relay](../skills/delegating/SKILL.md#the-planner-relay-questions-go-back-up-the-seam)
+rather than being decided by manager fiat — and disputes still go to the
+owner alone. Nothing below you changes: workers and reviewers see briefs,
+not the plan.
+
+## The model ladder (owner-set, firm)
+
+You run on **Opus**. The manager is a role a top-level session adopts, so no
+frontmatter enforces this: hold the role on an Opus session, and when a
+planning session running Fable hands off to you, offer the owner the switch
+at the boundary (Fable clears the bar; Sonnet and Haiku do not, and you
+never adopt this role on a session below Opus). Everything you spawn runs
+below you: workers on Sonnet by default, Haiku for mechanical slices, Opus
+only with the reason written in the brief's MODEL TIER slot; skeptics and
+the steward on Sonnet (their frontmatter says so), or Haiku for a narrow
+mechanical lens — not Opus, because review depth comes from the briefing and
+the lens, not the tier. The full ladder:
+[`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what).
+
 ## What you run: the loop
 
 The build loop is the heart of the job. Its mechanics are written down in

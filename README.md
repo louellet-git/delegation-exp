@@ -111,6 +111,15 @@ the always-pair-a-skeptic floor as the one rule worth keeping at full strength, 
 expect to make the cost/thoroughness call yourself. This framework will not make it
 for you, because it was built somewhere that never had to.
 
+One default *is* calibrated, and it is firm rather than tuned: the **model
+ladder**. The manager holds its role on an Opus session; every agent it
+spawns runs below it — Sonnet by default, Haiku for mechanical slices, Opus
+only with a written reason in the brief — and reviewers run Sonnet or Haiku,
+never Opus. Panels are extravagant in count, not in tier: seven Sonnet
+skeptics beat two Opus ones here, because breadth is what a panel buys. The
+ladder lives in
+[`skills/delegating/SKILL.md`](skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what).
+
 ## The roles at a glance (so any agent knows what they are)
 
 A flat org with one spawner: the owner talks only to the manager; the manager
@@ -371,6 +380,14 @@ There is no companion plugin to install, no skill invoked by name from
 somewhere else, and no version to pin. The manifest
 ([`.claude-plugin/plugin.json`](.claude-plugin/plugin.json)) declares no
 `dependencies`.
+
+One *soft* seam exists, by name only: the sibling planning-framework can
+deliver a finished plan into `/delegate`, in which case the `delegating`
+skill's plan intake and planner relay apply — the plan's leaf cards arrive
+as briefs-in-waiting, and questions about plan content go back to the
+planner rather than being decided by manager fiat. Nothing loads, resolves,
+or validates that sibling; if it is absent, nothing here references it at
+runtime and nothing fails. Standalone stays true.
 
 The one external requirement is an interpreter: the hook commands are portable
 Python 3.7+, and each one tries `python3`, then `python`, then `py -3`, then

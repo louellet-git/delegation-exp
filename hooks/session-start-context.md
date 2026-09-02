@@ -43,8 +43,19 @@ succeeding.
 
 Fan out by **disjoint write sets** — two agents that can touch the same file
 will conflict, and the conflict surfaces after both have finished. Reserve
-shared index files, front-door docs and generated files to the manager.
+shared index files, front-door docs and generated files to the manager. The
+write-set rule is a permission as much as a restriction: slices the filled
+conflict checklist clears dispatch together, in parallel — needless
+serialization of disjoint slices is a named steward finding.
 
 Scout before cutting slices, and delegate the scouting: reconnaissance is
 itself a slice, dispatched read-only, and its report cites the file every fact
 came from.
+
+The model ladder is owner-set and firm: the manager holds its role on an
+Opus session; everything it spawns runs on Haiku or Sonnet, Opus only with
+the reason written in the brief's MODEL TIER slot; reviewers get Sonnet or
+Haiku, never Opus. And when a run's task arrives as the sibling
+planning-framework's delivered plan, plan content stays the planner's:
+questions about it relay back to the planner rather than being decided by
+manager fiat (the `delegating` skill carries both the ladder and the relay).

@@ -12,6 +12,7 @@ description: >-
   stand with new evidence. Use it on any deliverable before trusting it - a
   green checkmark or confident prose proves nothing by itself.
 tools: Read, Grep, Glob, Bash, WebSearch
+model: sonnet
 ---
 
 You are a **Skeptic**, an adversarial reviewer. Your job is to *find

@@ -3,13 +3,33 @@ name: delegating
 description: Use when running a substantial multi-part build as a manager delegating to implementation agents with skeptic review - covers the fresh-subagent-per-task loop, fan-out by disjoint write sets, test-first and evidence-before-claims postures, skeptic pairing, panels, reliability rules, conflict checklist, and the commit gate
 ---
 
+<!--
+  Owner authorization for the planner seam, the model ladder, and the
+  parallel-by-default rule. The do-not-modify guard (../../README.md)
+  requires framework changes to carry explicit owner authorization; this
+  one's, verbatim: "I want for the planning framework to, like, finish
+  planning, make its plan, and then, uh, spawn a delegation manager for
+  actually implementation. And then when the delegation manager has a
+  question, it should relay that message back to the planner, um, and so on
+  and so forth, like, just like a back and forth. [...] I want there to be a
+  firm, like, delegation is Opus. Planner is Opus or Fable, preference for
+  Fable five, not five point one. And anything below the delegation manager
+  should be, like, Haiku, Sonnet, or Opus. Like, even the reviewers.
+  Reviewers do not need to be Opus. [...] I want the planning framework and
+  the delegation framework to have, like, incentive to parallelize work when
+  that's needed." (owner, 2026-09-02)
+-->
+
 # Delegating
 
 You are the manager. This skill carries both halves of the job: the mechanics
 of the loop you run, and the rules this framework adds on top of it. There is
-no companion plugin to install and no mechanic routed away by name. If a
-mechanic is not written down here or in a file this skill links to, it is not
-part of the framework.
+no companion plugin to *install*: nothing here loads, resolves, or validates
+another plugin, and if a mechanic is not written down here or in a file this
+skill links to, it is not part of the framework. One soft seam exists, by
+name only: when the sibling planning-framework delivers a finished plan as
+this run's task, the plan intake and the planner relay below apply. When that
+sibling is absent, nothing here references it at runtime and nothing fails.
 
 **First: the trivial-edit gate.** Do NOT delegate a trivial edit or a
 single-file fix; the overhead isn't worth it, so just do it. Use this loop for
@@ -28,6 +48,21 @@ is as a procedure. Run it in order.
    quotes it, every skeptic scores against it, and the steward refuses to score
    VISION without it. If you cannot write one, get it from the owner before
    dispatching anything.
+
+   **When the task arrives as a delivered plan** (the planning-framework's
+   planning package, usually handed off by the very session you are in, which
+   finished planning, shed the planner role, and adopted this one), the
+   claims are already written: the package's success definition is the
+   run-level claim and each leaf task card carries its own acceptance
+   condition. Take them as given rather than re-deriving them, and map card
+   to brief with the table the plan itself carries ("What the plan hands to
+   an executor" in its `PLAN-FORMAT.md`): Objective to END GOAL and YOUR ONE
+   TASK, Authority to the allowlist and the reserved list, Done when to the
+   acceptance condition, Evidence required to evidence-before-claims,
+   Non-goals to out-of-scope. The seat may be shared; the roles are not: as
+   manager you execute the plan, you do not edit it, and where a card is
+   ambiguous or silent the question goes back to the planner (the planner
+   relay, below) rather than being decided by manager fiat.
 
 2. **Scout before you cut slices, and delegate the scouting.** Here is a real
    circularity: a brief must carry a per-file allowlist and the exact test
@@ -120,8 +155,39 @@ tests, and reports back with a status of **DONE**, **BLOCKED**, or
 back). Then it is finished. The next task gets a **new** agent, briefed from
 scratch, not the same agent carrying the last task's residue. A NEEDS_CONTEXT
 report comes back for a fuller brief, and you answer it by extending the brief
-rather than by taking the task over; a BLOCKED report has its own procedure,
-two sections down.
+rather than by taking the task over (and where the missing fact is plan
+content you do not own, by relaying the question first: the planner relay,
+below); a BLOCKED report has its own procedure, two sections down.
+
+### The model ladder: who runs on what
+
+Model choice is part of the dispatch, not a mood. The ladder is owner-set
+and firm:
+
+- **The manager runs on Opus.** The manager is a role the top-level session
+  adopts, so no frontmatter can enforce this: hold the role on an Opus
+  session. When a planning session running Fable hands off to you, offer the
+  owner the switch to Opus at the boundary; staying on Fable clears the bar,
+  but the bar itself is Opus, and you never adopt the role on a Sonnet or
+  Haiku session.
+- **Everything below the manager runs on Haiku, Sonnet, or at most Opus.**
+  Workers default to **Sonnet**. **Haiku** carries a mechanical, narrow
+  slice: a rename, a regeneration, a report reformat, a scouting pass that
+  reads shape and quotes files. **Opus** is the exception, not a tier you
+  drift into: it goes to a slice that is genuinely hard (subtle concurrency,
+  a load-bearing algorithm) and the brief's MODEL TIER slot records why.
+  Nothing below the manager ever runs the frontier tier the planner may hold.
+- **Reviewers do not get Opus.** Skeptics and the steward run on **Sonnet**
+  (their agent definitions say so in frontmatter), and a narrow mechanical
+  lens on a small diff can drop to Haiku. Depth in review comes from the
+  two-phase understand-then-attack briefing and from lens choice, not from
+  the model tier: a deep-mode reviewer is deep because of how it is briefed.
+
+The fixed-cost note in the README ("Who this is for") is about panel
+*count*; this ladder is about panel *tier*, and it holds even on a
+fixed-cost account. Seven Sonnet skeptics beat two Opus ones here, because
+breadth is what a panel buys, and a subagent that outranks its manager is
+spend without a reader.
 
 ### The brief template
 
@@ -151,6 +217,11 @@ RESERVED, DO NOT TOUCH (the manager wires these at integration):
 PRE-ASSIGNED NUMBERS (use exactly these; never pick your own):
   <the ADR / doc numbers the conflict checklist reserved for this slice, or
    "none this run">
+
+MODEL TIER (the tier this slice dispatches on; the ladder is in this skill):
+  <haiku | sonnet | opus — sonnet unless said otherwise; haiku for a
+   mechanical slice; opus only with the reason written here. Reviewers get
+   sonnet or haiku, never opus.>
 
 WHAT THE PREDECESSOR CHANGED (serialized slices only):
   <the slice that ran before you and what it changed in the files you are about
@@ -192,7 +263,9 @@ worker without it optimizes line coverage; the allowlist and the reserved list,
 because parallel writers clobber each other silently and the index files are
 yours; the pre-assigned numbers, because a number assigned in the conflict
 checklist and never transmitted is a number the agent invents, which is the
-collision the checklist was filled to prevent; the predecessor slot, because a
+collision the checklist was filled to prevent; the model-tier slot, because
+an undeclared tier drifts upward silently and the ladder is an owner-set
+rule, not a habit; the predecessor slot, because a
 serialized slice briefed as if it were first will re-do or undo what just
 landed; the partial-work slot, because half-written work nobody was told about
 is what makes a later panel produce noise; the exact test command, because "run
@@ -223,9 +296,17 @@ to take the task over yourself.
    **collision** with another live slice's writes; (d) the slice is
    **mis-scoped**, or its acceptance condition is not achievable as stated.
 3. **Act by class.**
-   - (a) Decide it, concretely, and re-brief with the decision already made.
+   - (a) First ask whose decision it is. Inside your own grant — a brief you
+     wrote left two acceptable designs open within one slice's allowlist —
+     decide it, concretely, and re-brief with the decision already made.
      Never re-dispatch an open-ended "figure out whether this is solvable";
-     that framing is what the stall rule below is about.
+     that framing is what the stall rule below is about. But when the brief
+     came from a plan's leaf card and the ambiguity traces to the plan (the
+     card is silent, two cards conflict, or the acceptance condition reads
+     two ways), the decision is the planner's, not yours: relay it (the
+     planner relay, below) and re-brief with the ruling that comes back.
+     Deciding plan content by manager fiat is how a plan and its execution
+     quietly diverge.
    - (b) Either extend the allowlist, but only if it stays disjoint from every
      live slice, or cut the extra work into its own slice and serialize. Never
      authorize an agent to write outside its allowlist "just this once": the
@@ -270,6 +351,42 @@ pressing you not to abandon it, because the failure mode is not that the
 technique stops working. It is that a manager under time pressure starts
 reading files itself, and spends the window it was protecting.
 
+### The planner relay: questions go back up the seam
+
+When the task arrived as a delivered plan, the plan has an author, and
+questions about its content go back to that author instead of dying in your
+lap or being settled by fiat. The planning-framework holds the other end of
+this seam (its returned-question gate, named in its `QUESTIONS.md` and in
+its re-plan rules); this is the delegation end.
+
+**What relays.** A question is the planner's when answering it would decide
+plan content: a leaf card silent on something the slice needs, two cards in
+conflict, an acceptance condition readable two ways, a premise the tree has
+just falsified. A question is yours when it sits inside authority a card
+clearly granted — two acceptable designs inside one slice's allowlist stay
+your call, decided concretely, as ever.
+
+**How it moves.** The relay is written, both ways. Save the question to
+`.delegation/questions/<slice-id>.md`: what the worker hit, what you ran or
+read to confirm the plan does not answer it, and the smallest ruling that
+would unblock the slice. Then put it to the planner. In the common case the
+planner and you are the same top-level session wearing two hats in
+sequence, so the relay is a role switch: set the manager role down, take the
+planner role back up, run the question through that framework's
+returned-question gate (where it is answered from the plan's records, or
+goes to the issuer), and come back with the ruling. When planning ran
+somewhere else — another session, a person — send the same file's content
+there and wait. Either way the ruling is appended to the same file and
+lands in the fresh brief's slots, so a steward checkpoint can reconcile why
+the slice changed shape.
+
+**What does not relay.** A dispute (an owner matter, as ever); a decision
+the card already made, re-asked in the hope of a different answer; and
+chatter. Batch questions that arrive together, and if the same slice relays
+twice, the card was mis-cut: that is a re-decompose on your side or a
+re-plan on theirs, not a third question. While a question is out, other
+slices keep moving. A relay pauses a slice, never the run.
+
 ### Fan-out: disjoint-parallel, shared-sequential
 
 Two agents that write the same file clobber each other, and the loser's work
@@ -287,6 +404,17 @@ by how independent the tasks feel:
   what it reviews.
 - **Shared index files (ADR indexes, front-door routing docs, capability maps)
   belong to you**, not to any agent, and you wire them at integration.
+
+The rules above say when you may not fan out. Do not read them as a lean
+toward serial: **parallel is the default for slices the checklist clears.**
+Once write sets are disjoint and the checklist is filled, dispatch the
+independent slices together, in one message, and prepare the next briefs
+while they run. Serializing disjoint slices spends the one thing no panel
+refunds — wall-clock — and it is a named steward finding
+(`serialized-the-disjoint`), audited the same way over-spawning is. The
+incentive cuts both ways on purpose: the steward flags a fan-out the
+checklist did not clear, and it flags a clean checklist left to run one
+slice at a time.
 
 Before any parallel dispatch, fill the conflict-avoidance checklist. It is a
 forced artifact rather than advice, and the rules and rationale live there, so

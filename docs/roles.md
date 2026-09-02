@@ -96,6 +96,14 @@ is the only authority that may authorize a change to this framework itself
 independent orchestrator for genuinely-parallel deep work is a new session the
 owner starts and coordinates, not something an agent nests below itself.
 
+One instrument sits beside this hierarchy without changing it: when the
+sibling planning-framework delivered the run's task as a plan, the planner
+is the owner's planning instrument — usually the same top-level session that
+now holds the manager role, wearing its previous hat. Plan content is the
+planner's to rule on, so plan-content questions go back to it through the
+[planner relay](../skills/delegating/SKILL.md#the-planner-relay-questions-go-back-up-the-seam);
+final judgment and disputes stay the owner's alone, exactly as above.
+
 ## Manager
 
 The single top-level orchestrator, the owner-facing agent, and the **only
@@ -193,10 +201,14 @@ only to the stated end goal. It:
   not move the prize? **DELEGATION**: is the manager orchestrating
   rather than doing implementer work, right-sizing panels to risk, neither
   over-spawning make-work nor under-delegating the substantive builds (and not
-  dressing solo work up as a delegated sub-team)?
+  dressing solo work up as a delegated sub-team), dispatching in parallel the
+  slices a clean checklist cleared rather than serializing them, and holding
+  the model ladder (tiers matched to slices, with Opus exceptions written
+  down)?
 - Returns a blunt **MANAGER SCORECARD**: a VISION line (on-prize / drifting),
   a DELEGATION line (delegating-well / doing-IC-work / over-spawning /
-  under-delegating / fake-sub-team), each with cited evidence, plus one concrete
+  under-delegating / fake-sub-team / serialized-the-disjoint /
+  tier-inflation), each with cited evidence, plus one concrete
   recommendation.
 - Is a standing role, consulted repeatedly across a run (at checkpoints,
   before a big fan-out), not a one-shot.
@@ -244,7 +256,10 @@ is defined entirely by its brief, one per slice, so there is nothing reusable to
 put in a file (`validate-structure.py` actively fails if such a file appears).
 Spawn implementers as the runtime's **general-purpose worker subagent** (in
 Claude Code, `subagent_type: "general-purpose"`) with the whole brief in the
-prompt. Never grant a worker a spawn tool. The brief itself is written from the
+prompt. Never grant a worker a spawn tool. Dispatch each one on the tier its
+brief's MODEL TIER slot names: Sonnet by default, Haiku for a mechanical
+slice, Opus only with the reason written in the brief — the ladder is in
+[`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what). The brief itself is written from the
 canonical template, which carries the allowlist, the reserved files, the exact
 test command, the acceptance condition, the postures, the no-self-commit
 re-brief, and the status contract:
@@ -283,6 +298,9 @@ flat-sibling worker the manager spawns; it cannot spawn. It:
   review (which the *manager* then spawns). Escalation is a first-class output,
   not a failure.
 - Is read-only: it never modifies the deliverable it reviews.
+- Runs on Sonnet (its frontmatter says so), or Haiku for a narrow mechanical
+  lens — never Opus. Review depth comes from the two-phase briefing and the
+  lens, not the tier.
 
 The reusable definition is [`../agents/skeptic.md`](../agents/skeptic.md);
 spawn it with `subagent_type: "skeptic"`, or spawn general-purpose agents

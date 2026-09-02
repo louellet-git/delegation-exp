@@ -9,7 +9,9 @@ the edit directly. The overhead is only worth it for substantial,
 multi-part work.
 
 Otherwise, use the **delegation-framework:delegating** skill to run the full
-loop for this task:
+loop for this task (which may be a delivered planning-framework package — the
+skill's plan intake says how its leaf cards become briefs, and its planner
+relay is where plan-content questions go back):
 
 $ARGUMENTS
 

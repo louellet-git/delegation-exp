@@ -10,7 +10,10 @@ This model is standalone. The per-task implement/review loop, the fan-out
 rules, and the review mechanics are written down in this repo, in this file
 and in [`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md).
 Nothing here routes a mechanic to another plugin by name, and there is no
-companion to install.
+companion to install. One soft seam exists, by name only: a run whose task
+arrives as the sibling planning-framework's delivered plan takes its intake
+and its planner relay from the `delegating` skill; when that sibling is
+absent, nothing here references it at runtime and nothing fails.
 
 ## The law
 
@@ -69,7 +72,10 @@ DECOMPOSE → IMPLEMENT (parallel where safe) → REVIEW PANEL (2–7 skeptics, 
 - **Fan-out is decided by write set**, not by how independent two tasks feel:
   disjoint write sets run in parallel, overlapping ones serialize, shared
   reads are fine, and reviewers always parallelize safely because they never
-  write. The forced checklist that holds this is
+  write. Parallel is the default once the checklist clears: slices with
+  disjoint write sets dispatch together, and needless serialization is a
+  named steward finding (`serialized-the-disjoint`). The forced checklist
+  that holds this is
   [`conflict-avoidance-checklist.md`](conflict-avoidance-checklist.md); the
   rules behind it are [below](#conflict-avoidance-hard-won).
 - **Implementation is test-first where the deliverable is code** (write the
@@ -248,7 +254,11 @@ marker holds no state the framework needs afterwards, so re-arming is just
 running the loop again.
 
 **Panel-sizing heuristic:** **2–3 skeptics for a small change, 5–7 for a
-feature batch.** Scale the panel to the risk, not to habit.
+feature batch.** Scale the panel to the risk, not to habit. Tier the panel
+too: skeptics run on Sonnet, or Haiku for a narrow mechanical lens, never
+Opus — the full model ladder (manager on Opus; everything below on Haiku or
+Sonnet, Opus by written exception) is in
+[`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what).
 
 ## Reliability / stall rules
 
