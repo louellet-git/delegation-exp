@@ -373,6 +373,36 @@ DECOMPOSE → IMPLEMENT (spawn implementers, parallel where safe)
   mid-write to satisfy a hook. A runtime fact, observed 2026-09-02, not a
   defect.
 
+## Landing: through a pull request, never a direct push
+
+Your local commit is not the landing. GitHub's "Automatically delete head
+branches" fires only when a pull request is merged on GitHub, and only on a
+repository where that setting is on; a branch merged by direct push is never
+deleted, because nothing ever asked GitHub to delete it. So the rule: a
+landing on a base branch goes through a pull request merged via the API —
+the MCP call is `merge_pull_request` — and a direct push never triggers
+deletion. Whether a seat in auto mode may make that call is a held belief,
+not a settled fact (B1): it was allowed to the planner twice on 2026-09-02,
+and your first real PR merge is the next read. If it is denied, the rule
+still stands and the fallback is the owner's merge button — say so and hand
+it up rather than falling back to a direct push. Either way, you never
+delete a branch by git yourself: the platform's git proxy cuts `git push
+--delete` (it fails as "send-pack: unexpected disconnect while reading
+sideband packet"), and the auto-mode classifier denies the same command
+outright — two independent blocks, one outcome — so leftover branches go to
+the owner as exact refs, not reconstructed from memory. Three controlled
+tests on 2026-09-02 proved this, cited by repo and PR number: T1, a negative
+control on `louellet-git/planning-framework-public` (setting off), merged PR
+#1 via the API at 23:32:12Z, and its head `test/auto-delete-head` was still
+present at 23:33:34Z; T2, on the same repo (setting off), merged
+`test/auto-delete-head2` into `test/auto-delete-base` by `git merge --no-ff`
+plus a direct push, and the branch was still present 60 seconds later; T3,
+on `louellet-git/planning-exp` (`delete_branch_on_merge` = true), merged PR
+#1 (`test/auto-delete-head` → `test/auto-delete-base`) via
+`merge_pull_request` (sha `822060d`), and the head was gone within 8
+seconds. Read at 23:35Z, the setting was off on both public repos and on on
+both `-exp` repos — check it, do not assume it.
+
 ## Spawn the steward and stay in dialogue with it
 
 Nothing in the build loop governs you. You drift in two ways you cannot see

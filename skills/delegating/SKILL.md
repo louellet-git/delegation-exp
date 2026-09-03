@@ -768,7 +768,13 @@ slow directional drift, so **save each returned scorecard to
   a large pile of unreviewed work accumulate in the tree, because a huge diff
   is a diff no panel really reads. Honour it by keeping the *batch* small,
   fewer slices per panel and panels more often, not by slipping single slices
-  past the gate.
+  past the gate. **That commit is not the landing.** The batch still has to
+  land through a pull request merged via the API (`merge_pull_request`) onto
+  the base branch, never a direct push — GitHub's "Automatically delete head
+  branches" only fires on a pull request merged on GitHub, so a direct push
+  leaves the branch behind. Full mechanism, the B1 fallback, and the T1/T2/T3
+  evidence:
+  [`../../agents/manager.md`](../../agents/manager.md#landing-through-a-pull-request-never-a-direct-push).
 - **A runtime commit nudge is not commit authority (D24).** The cloud
   runtime's Stop hook — provisioned into every session container, not the
   owner's to disable — blocks a stop once per idle when the tree is dirty
