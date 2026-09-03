@@ -287,6 +287,18 @@ worker.
   row, or a row filed too late to have been there by the report. Cite the
   report and the branch name; check `OWNER-ACTIONS.md` and the PR/commit
   before writing the finding, not from the report's own say-so.
+  **No deadline wake named, or a wake that carries text, is this same
+  failure read off a different pair of records — a mechanical reader, not a
+  judgment call.** Two triggers, either one enough on its own: a dispatch
+  page (`DISPATCH.md`) or a landing report that names no deadline wake — no
+  trigger id, no time — is a finding, because the deadline wake is the whole
+  fix for a connector lost at completion (D30) and a page silent on it has
+  silently chosen not to have one; and any wake, either seat's, fired or
+  scheduled, that carries text is the other trigger, because a `fire_trigger`
+  call with `text` mints a fresh session on this platform instead of reaching
+  the bound seat, so a wake that carries text is proof that content, not the
+  platform, broke the delivery. Cite the page or the report by path for the
+  first trigger, and the trigger id for the second.
 - **Compacted without realigning.** A compact or startup event fell inside
   your window (a continuation summary at the head of the manager's context,
   or a session restart) with no five-line re-alignment statement and no

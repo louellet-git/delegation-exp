@@ -162,6 +162,77 @@ in reverse: it persists for the whole project, not just one batch — a fixed
 owner rule (golden rule 7), not a preference — and is archived only at plan
 delivery or acceptance, never at a batch checkpoint (D10).
 
+## Wake and report: the dispatch page, the deadline, and fetch-before-title (D28-D30)
+
+When a planner-framework seam is live, this is your own wake-and-report
+procedure, and it runs as one act, not three independent rules, because the
+order matters as much as the content: **on a wake, read `DISPATCH.md` first
+and nothing else first — that is the addressing step, not work, and it is
+how you learn what to arm; arm the deadline next, before any other reading
+or any other work; fetch the records before you trust any title; and when
+you finish with tools still alive, fire the bare wake at once and delete
+your own deadline.** The three
+doctrines below are that procedure spelled out — I11, the incident that
+forced it, is why each clause is worded the way it is, not more cautiously
+and not less.
+
+**D28 — one entry point, one stamp.** A wake, fired or scheduled, is one
+line and nothing more: "read `planning-records/DISPATCH.md` and proceed
+under your standing role." `DISPATCH.md` is rewritten at every dispatch, and
+it says, in order: the plan directory, the leaves, exactly three files to
+read in order, where to report, the deadline wake — trigger id and time —
+and, last, the stamp: CASS verdict, records commit, time, planner. If the
+page and the plan disagree, the plan wins, and the disagreement is itself a
+finding you write down rather than quietly resolve in the page's favor.
+Earlier dispatches move to a log at the bottom of the page instead of being
+overwritten out of existence, and leaf names stay unique across plans, so a
+stale reference from an old dispatch never resolves to the wrong card.
+
+**D30 — the deadline wake, and why you arm it before you do anything else.**
+The planner already armed its own half at dispatch: a one-shot trigger bound
+to itself at dispatch + appetite + 15 minutes, bare, created while its own
+connector was alive, with the trigger id written into `DISPATCH.md`. Reading
+`DISPATCH.md` on the wake is the addressing step, not work — it is how you
+learn what to arm, and it is the only thing you read first. The instant you
+have the time it names, your first act — before you read the plan, before
+you read a title, before anything else — is to arm the matching half
+yourself: the same deadline, at the time the page names, bound to the
+planner rather than to you. Do it first because it is the one moment in the
+whole cycle your connector is *provably* alive: the wake that just reached
+you is the proof, and a moment from now you cannot make that claim again. When you finish the
+dispatch with tools still alive, fire your bare wake at once and delete your
+own deadline in the same breath; the planner, woken by whichever of the two
+triggers fires first — your firing or its own deadline elapsing — fetches
+the records before it does anything else and deletes whichever trigger is
+still standing. Every trigger a plan creates is listed on `DISPATCH.md` and
+deleted at close (F4); one left armed after the project ends is a leak, not
+a margin of safety.
+
+**D29 — git is the reliable layer.** Titles and wakes ride the same
+connector and fail together — that is exactly what incident I11
+(2026-09-03, ~01:10Z) was: the manager seat finished its work, pushed the
+report to git, and lost `fire_trigger` and `set_session_title` in the same
+mid-turn breath. Git does not share that failure mode. So on any wake —
+fired or scheduled, it makes no difference which — fetch the records before
+you read a title, yours or the planner's. Put the test in exactly these
+terms: a report sitting on git under a stale title is a mute seat, not a
+stalled one; no report on git at all is what a stalled seat actually looks
+like. A watchdog reading titles instead of records applies this same test
+before it ever calls a stall.
+
+**The honest limit, stated rather than implied.** A seat that loses its
+connector in the seconds between waking and its first tool call — before it
+can arm its own half of the deadline — is covered only by the planner's own
+deadline, which is exactly why both sides arm one instead of trusting either
+alone. A seat that loses git as well is covered by nothing: there is no
+layer left under git, and this doctrine does not claim otherwise.
+
+Why the mechanism works, in one sentence: a scheduled firing decouples
+creation from delivery — it needs the creator's connector only at the moment
+it is created, not at the moment it fires — which is exactly why the
+deadline is armed first, while liveness is certain, rather than last, when
+it may no longer be.
+
 ## The watchdog: a third seat, standing (S5 v2)
 
 Neither seat can see the other's liveness by itself. You cannot poll the

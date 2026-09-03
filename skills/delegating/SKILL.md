@@ -483,6 +483,20 @@ its cost — lives in
 [`../../agents/manager.md`](../../agents/manager.md#the-watchdog-a-third-seat-standing-s5-v2),
 not repeated here.
 
+**The dispatch page and the deadline wake (D28-D30), pointer only.** A
+planner-framework dispatch to you is that same content-free wake, one line:
+"read `planning-records/DISPATCH.md` and proceed under your standing role."
+Both seats arm a deadline for it — a one-shot `run_once_at` trigger, the
+planner's bound to itself at dispatch and yours bound to the planner as your
+first act on waking, so a connector lost on either side still leaves the
+other with a clock — and because titles ride the same connector as wakes and
+fail with it while git does not, the seat that wakes fetches the records
+before it trusts a title. The full doctrine — the page's exact fields, who
+arms which half and when, the mute-vs-stalled test, and the honest limit on
+what none of this covers — is your own procedure, kept once, in
+[`../../agents/manager.md`](../../agents/manager.md#wake-and-report-the-dispatch-page-the-deadline-and-fetch-before-title-d28-d30),
+not repeated here.
+
 **What does not relay.** A dispute (an owner matter, as ever); a decision
 the card already made, re-asked in the hope of a different answer; and
 chatter. Batch questions that arrive together, and if the same slice relays
