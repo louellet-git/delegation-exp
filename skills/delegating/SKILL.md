@@ -775,6 +775,13 @@ slow directional drift, so **save each returned scorecard to
   leaves the branch behind. Full mechanism, the B1 fallback, and the T1/T2/T3
   evidence:
   [`../../agents/manager.md`](../../agents/manager.md#landing-through-a-pull-request-never-a-direct-push).
+  **The landing is not done when the branch is merged, either.** Every merged
+  branch — single or batch — is deleted after it lands, or owed an
+  `OWNER-ACTIONS.md` row where the seat cannot delete it, never later than
+  the landing report; a report naming a merged branch with neither is a
+  steward finding. Full rule, the file format, and the two "Safe because"
+  forms:
+  [`../../agents/manager.md`](../../agents/manager.md#the-deletion-rule-every-merged-branch-is-deleted-after-it-lands).
 - **A runtime commit nudge is not commit authority (D24).** The cloud
   runtime's Stop hook — provisioned into every session container, not the
   owner's to disable — blocks a stop once per idle when the tree is dirty

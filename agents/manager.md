@@ -403,6 +403,45 @@ on `louellet-git/planning-exp` (`delete_branch_on_merge` = true), merged PR
 seconds. Read at 23:35Z, the setting was off on both public repos and on on
 both `-exp` repos — check it, do not assume it.
 
+### The deletion rule: every merged branch is deleted after it lands
+
+Every merged branch — single or batch-merged — is deleted after it lands. A
+landing through a pull request on a repository with "Automatically delete
+head branches" on gets this for free, as T3 showed; any other landing owes a
+deletion. A batch is no exception: it lands as one commit through one pull
+request, but every branch folded into that batch still owes its own
+deletion or its own row — landing the batch does not discharge it.
+
+Where the seat cannot delete — a direct-push landing; the platform's git
+proxy cutting `git push --delete`; the auto-mode classifier denying the same
+REST delete — the seat appends one `OWNER-ACTIONS.md` row per branch, with
+the proof, in the landing commit or the next one, never later than the
+landing report. A landing report that names a merged branch with neither a
+deletion nor an owner-actions row is a finding (the steward's reader, in
+[`steward.md`](steward.md)). A branch GitHub deleted on merge needs no row;
+the report says "deleted on merge" and names the PR.
+
+`OWNER-ACTIONS.md` lives at the repository root, append-only: a seat never
+edits an earlier row, and the owner strikes a row by running it locally.
+Header and row format, verbatim:
+
+```
+# Owner actions — what a seat could not do, and why each line is safe to run
+
+Append-only. One row per branch. Run a row's command locally; nothing else is needed.
+
+| Date (UTC) | Repository | Branch | Why the seat could not | Safe because | Command |
+|---|---|---|---|---|---|
+```
+
+"Safe because" is one of exactly two forms, no third: `tip <sha> is an
+ancestor of <target ref> at <sha>` (verified with
+`git merge-base --is-ancestor`), or `throwaway from <plan/test>: adds only
+<files>`. The command is always
+`git push https://github.com/louellet-git/<repo> --delete <branch>`. A batch
+landing writes one row per branch under the same date, not one row for the
+batch.
+
 ## Spawn the steward and stay in dialogue with it
 
 Nothing in the build loop governs you. You drift in two ways you cannot see

@@ -276,6 +276,17 @@ worker.
   round in `.delegation/adjudications/` where most of a BLOCKING list was
   ruled FLUFF, a demotion with no written reason, or a demotion the record
   shows no rebuttal round for. The manager bypassing the discipline it owns.
+  **A landing report that names a merged branch with neither a deletion nor
+  an `OWNER-ACTIONS.md` row is this same failure, and read it just as
+  mechanically:** every merged branch, single or batch, is either deleted or
+  owed one owner-actions row with its proof, filed by the landing commit or
+  the next one — never later than the report. "Deleted on merge" with a PR
+  number satisfies it; so does a row citing the branch, in `OWNER-ACTIONS.md`
+  at the repo root. Anything less — a branch the report names and then goes
+  silent on — is a finding, whether the gap is a missing deletion, a missing
+  row, or a row filed too late to have been there by the report. Cite the
+  report and the branch name; check `OWNER-ACTIONS.md` and the PR/commit
+  before writing the finding, not from the report's own say-so.
 - **Compacted without realigning.** A compact or startup event fell inside
   your window (a continuation summary at the head of the manager's context,
   or a session restart) with no five-line re-alignment statement and no
