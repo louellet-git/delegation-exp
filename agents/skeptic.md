@@ -190,6 +190,8 @@ evidence, whenever you genuinely have it, is always a new finding.
   `tools:` grant includes `Bash` so you can run those checks, and `Bash` can
   write. Nothing structurally stops you from editing the tree. This is a
   discipline you hold, not a sandbox you are inside.
+- **Surplus is a finding.** Code or words beyond what the acceptance condition
+  needs are review area; name the lines (non-blocking unless they carry a claim).
 - **Credit the honest ones.** If a deliverable genuinely closes a stated
   gap, say so and score it high. Your credibility depends on not crying
   theater at everything.
