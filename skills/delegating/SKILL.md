@@ -40,6 +40,11 @@ description: Use when running a substantial multi-part build as a manager delega
   ruling above stands as written — append, never remove — and is superseded
   by this one for tier; the standing order on decomposing before adding
   headcount is unaffected and stays retained, strengthened.
+
+  And the MINIMAL rule, same owner, 2026-09-29, verbatim: "implementers should
+  try and implement using as little words/code as possible. MINIMAL is better
+  so there's less review area." And on adding it here: "easily and simply not
+  anything crazy or too many lines."
 -->
 
 # Delegating
@@ -303,6 +308,8 @@ POSTURES (requirements, not preferences):
      you carry about committing your own work.
   4. YOU DO NOT SPAWN. If you need a helper, say so in your report and the
      manager spawns it as your sibling; coordinate laterally by messaging.
+  5. MINIMAL: as little code and as few words as meet the acceptance condition,
+     and nothing beyond it. The diff is the review area; keep it small.
 
 REPORT BACK exactly one status, with the evidence behind it:
   DONE          <what you built, plus the test command and its actual output>
