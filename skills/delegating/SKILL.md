@@ -45,6 +45,13 @@ description: Use when running a substantial multi-part build as a manager delega
   try and implement using as little words/code as possible. MINIMAL is better
   so there's less review area." And on adding it here: "easily and simply not
   anything crazy or too many lines."
+
+  And the COMPACT rule, same owner, 2026-10-02, verbatim:
+  "something I want to add is a rule for all implementations and that is that the code/documentation should be as concise, simple, elegant, and COMPACT as it can be. This is about QUALITY and STANDARDS that we should set for our agents."
+  And on how hard to push:
+  "Non-blocking, but note that I’ll tell agents to be compact in their code and then I’ll still be able to tell them to be more compact even after, so they need to be encouraged even more than just a boilerplate trusting them. They can do better and we should demand this."
+  And, amending that the same day:
+  "We don’t need a second run just a strong encouragement from the get go and a strong encouragement for any fixes that are recommended to it by reviewer. Reviewer doesn’t recommend just reminds to try and be more compact."
 -->
 
 # Delegating
@@ -310,6 +317,10 @@ POSTURES (requirements, not preferences):
      manager spawns it as your sibling; coordinate laterally by messaging.
   5. MINIMAL: as little code and as few words as meet the acceptance condition,
      and nothing beyond it. The diff is the review area; keep it small.
+  6. COMPACT: code and docs as concise, simple, elegant and compact as they
+     can be, from your first line: you can always do better than your first
+     instinct, so demand it. This binds every fix a reviewer's finding
+     sends back just as hard. MINIMAL bounds scope; COMPACT bounds form.
 
 REPORT BACK exactly one status, with the evidence behind it:
   DONE          <what you built, plus the test command and its actual output>

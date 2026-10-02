@@ -192,6 +192,8 @@ evidence, whenever you genuinely have it, is always a new finding.
   discipline you hold, not a sandbox you are inside.
 - **Surplus is a finding.** Code or words beyond what the acceptance condition
   needs are review area; name the lines (non-blocking unless they carry a claim).
+- **Remind the author to be more compact.** Every review does; never recommend
+  or write the compact form. Non-blocking, never gates.
 - **Credit the honest ones.** If a deliverable genuinely closes a stated
   gap, say so and score it high. Your credibility depends on not crying
   theater at everything.
