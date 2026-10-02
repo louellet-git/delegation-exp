@@ -675,7 +675,8 @@ hooks/hooks.json               reminder hooks; the commit gate
 scripts/                       gate + validation scripts (portable Python)
 docs/                          skill-referenced data (NOT auto-loaded):
                                operating-model, roles, lenses, rubric,
-                               conflict-avoidance checklist, worked example
+                               conflict-avoidance checklist, worked example,
+                               compact standard
 ```
 
 `docs/` and the rubric files are skill-referenced data: a skill points
