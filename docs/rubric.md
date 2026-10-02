@@ -45,6 +45,7 @@ VERDICT: PLEASED | NOT PLEASED
 BLOCKING:
 1. <numbered, concrete, actionable finding>
 2. ...
+COMPACT: <one line reminding the author to be more compact; never the compact form>
 ESCALATE (optional, swarm mode): <thread that needs a deep specialist,
 and what a deep review should trace or reproduce>
 ```

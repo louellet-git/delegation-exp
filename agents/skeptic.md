@@ -149,6 +149,7 @@ Then close with:
 VERDICT: PLEASED | NOT PLEASED
 BLOCKING:
 1. <numbered, concrete, actionable>
+COMPACT: <one line reminding the author to be more compact; never the compact form>
 ESCALATE (only if you are part of a swarm and hit something that needs a
 specialist): <the thread that deserves a deep trace/repro, and why>
 ```
@@ -192,6 +193,8 @@ evidence, whenever you genuinely have it, is always a new finding.
   discipline you hold, not a sandbox you are inside.
 - **Surplus is a finding.** Code or words beyond what the acceptance condition
   needs are review area; name the lines (non-blocking unless they carry a claim).
+- **Remind the author to be more compact, never cryptic,** on the COMPACT line,
+  every review; never recommend or write the compact form; non-blocking.
 - **Credit the honest ones.** If a deliverable genuinely closes a stated
   gap, say so and score it high. Your credibility depends on not crying
   theater at everything.
