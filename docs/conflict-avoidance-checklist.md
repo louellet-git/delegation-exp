@@ -7,18 +7,8 @@ this template into the working repo (suggested path:
 dispatch agents in parallel. An unfilled or partially filled checklist means
 serialize instead.
 
-(Creating the `.delegation/` directory for this copy is also what **opts the
-repo in** to the commit gate and reminder hooks, the marker they check before
-acting, provided the HEAD commit does not carry it. Add `.delegation/` to that
-repo's `.gitignore` in the same step, and keep it out of your commits: a marker
-the HEAD commit carries reads as having arrived with the repository rather than
-from anyone here choosing it, so committing it turns the gate **off**, for you
-and for everyone who clones. A committed all-PLEASED artifact ships a waiver to
-all of them on top. Trackedness is the provenance signal, which is exactly why
-the gitignore line is required rather than tidy.)
-
-Rationale and the hard-won rules behind each item:
-[`operating-model.md`](operating-model.md#conflict-avoidance-hard-won).
+Why write sets, not task independence, decide what runs in parallel:
+[`delegating`](../skills/delegating/SKILL.md#fan-out-disjoint-parallel-shared-sequential).
 
 ## The checklist (copy from here down)
 

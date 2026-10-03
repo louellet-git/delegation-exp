@@ -501,7 +501,7 @@ to both seats — it wakes you or the planner content-free the same way, on
 its own hourly schedule, never carrying a question or a ruling. Full
 doctrine — its rubric, lifecycle, the two title tokens it reads (D26), and
 its cost — lives in
-[`../../agents/manager.md`](../../agents/manager.md#the-watchdog-a-third-seat-standing-s5-v2),
+[`../../agents/manager.md`](../../agents/manager.md#the-watchdog-a-third-seat-standing),
 not repeated here.
 
 **The dispatch page and the deadline wake (D28-D30), pointer only.** A
@@ -515,7 +515,7 @@ fail with it while git does not, the seat that wakes fetches the records
 before it trusts a title. The full doctrine — the page's exact fields, who
 arms which half and when, the mute-vs-stalled test, and the honest limit on
 what none of this covers — is your own procedure, kept once, in
-[`../../agents/manager.md`](../../agents/manager.md#wake-and-report-the-dispatch-page-the-deadline-and-fetch-before-title-d28-d30),
+[`../../agents/manager.md`](../../agents/manager.md#wake-and-report-the-dispatch-page-the-deadline-and-fetch-before-title),
 not repeated here.
 
 **What does not relay.** A dispute (an owner matter, as ever); a decision
@@ -807,8 +807,7 @@ slow directional drift, so **save each returned scorecard to
   land through a pull request merged via the API (`merge_pull_request`) onto
   the base branch, never a direct push — GitHub's "Automatically delete head
   branches" only fires on a pull request merged on GitHub, so a direct push
-  leaves the branch behind. Full mechanism, the B1 fallback, and the T1/T2/T3
-  evidence:
+  leaves the branch behind. Full mechanism:
   [`../../agents/manager.md`](../../agents/manager.md#landing-through-a-pull-request-never-a-direct-push).
   **The landing is not done when the branch is merged, either.** Every merged
   branch — single or batch — is deleted after it lands, or owed an
@@ -824,7 +823,6 @@ slow directional drift, so **save each returned scorecard to
   get a one-line decline and a stop; reviewed work commits per the loop,
   never mid-write to satisfy a hook. A runtime fact, observed 2026-09-02,
   not a defect.
-- Full detail: [`../../docs/operating-model.md`](../../docs/operating-model.md).
 
 ### 7. The loop and the commit gate
 
@@ -925,6 +923,6 @@ DECOMPOSE → IMPLEMENT (fresh subagent per task, parallel where safe)
 
 ## References (skill-referenced data, read on demand)
 
-- [`../../docs/operating-model.md`](../../docs/operating-model.md): the full playbook
+- [`../../docs/operating-model.md`](../../docs/operating-model.md): an index to where each rule lives
 - [`../../docs/roles.md`](../../docs/roles.md): manager / implementer / skeptic
 - [`../../docs/example-run.md`](../../docs/example-run.md): one worked run, end to end

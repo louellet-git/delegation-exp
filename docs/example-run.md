@@ -23,16 +23,8 @@ mkdir -p .delegation/briefs .delegation/steward
 grep -qxF '.delegation/' .gitignore || echo '.delegation/' >> .gitignore
 ```
 
-`.delegation/` is the opt-in marker that arms the commit gate and the reminder
-hooks for *this* repo, and it is the home of the checklist, the dispatch briefs
-and the review artifact. The `.gitignore` line is required, not tidiness, and
-the reason runs the other way from the obvious guess: the gate reads the
-marker's provenance from the HEAD commit tree, so **committing the marker turns
-the gate off** rather than on, here and in every clone, on the grounds that a
-marker which arrived with the repository is nobody's opt-in. Left unignored,
-the marker is one `git add .` away from disarming the gate this manager just
-armed, and an all-PLEASED artifact committed with it would ship a waiver to
-every clone besides.
+The `.gitignore` line is required: a marker committed with the repo turns the
+gate off ([README](../README.md#enforcement-honestly-one-structural-slice-the-rest-is-discipline)).
 
 **Scouting.** `reports-service` is a repo this manager already knows, so the
 bounded structural pass applies: `git ls-files`, the `pyproject.toml` test
@@ -135,11 +127,9 @@ dispatched the manager adjudicates both against
   twice the limit; and the limit is the slice's own written acceptance
   condition, so head 2 holds too.
 
-Nothing demoted, so there is no rebuttal round to run — but the record is
-written anyway, **before** the fix briefs, because an absent record must never
-be ambiguous between "nothing demoted" and "demotions nobody wrote down".
-`.delegation/adjudications/round-1.md`, in full: *"all findings adjudicated
-REAL; nothing demoted."*
+Nothing demoted, so no rebuttal round runs, but the record is written anyway,
+**before** the fix briefs. `.delegation/adjudications/round-1.md`, in full:
+*"all findings adjudicated REAL; nothing demoted."*
 
 `consolidating-review` then reconciles the two survivors into **one** fix
 round and dispatches it grouped by slice owner, a fresh agent per group:
@@ -200,11 +190,8 @@ then writes `.delegation/review-artifact.json`:
 }
 ```
 
-`head_sha` is required, and it is what makes one artifact waive exactly one
-commit: the gate compares it against HEAD at commit time, and once this batch
-lands, HEAD moves and the artifact is spent. Fill it **last**, after the tree
-has stopped changing. In a repo with no commits at all, `git rev-parse HEAD`
-fails and the field is `null`.
+In a repo with no commits at all, `git rev-parse HEAD` fails and `head_sha` is
+`null`.
 
 The manager then works
 [the MANAGER INSPECTS list](../skills/delegating/SKILL.md#manager-inspects-the-procedure)

@@ -28,41 +28,32 @@ anything get committed.
 | `lens` | The adversarial angle one skeptic is assigned (`correctness`, `evidence-vs-claim`, `honesty/overclaim`, `derived-output/ranking`, and the rest). A panel diversifies them. Catalogue: [`docs/lenses.md`](docs/lenses.md). |
 
 > ⚠️ **Running the loop arms this repo, and arming is what turns the gate on.**
-> `/delegate` first checks whether the change is trivial enough to just do
-> directly, and stops there if it is. Once it does start a loop it creates a
-> `.delegation/` directory at the repo root, and that directory is the opt-in
-> marker: from that point on, **every git command in this repo that authors a
-> new commit** (`commit`, `cherry-pick`, `revert`, `am`, their `--continue`,
-> and `--amend`), including a one-line typo fix, is denied unless a current
-> all-PLEASED [review artifact](#enforcement-honestly-one-structural-slice-the-rest-is-discipline)
-> sits in `.delegation/`.
+> `/delegate` creates `.delegation/` at the repo root, and that directory is the
+> opt-in marker: from then on every git command that authors a commit (`commit`,
+> `cherry-pick`, `revert`, `am`, their `--continue`, and `--amend`), a one-line
+> typo fix included, is denied unless a current all-PLEASED review artifact sits
+> in it. Details: [Enforcement, honestly](#enforcement-honestly-one-structural-slice-the-rest-is-discipline).
 >
 > **Add `.delegation/` to that repo's `.gitignore` in the same breath**, before
-> you commit anything, and keep the marker out of your commits. Two concrete
-> failures sit behind that instruction. First, an unignored marker plus an
-> ordinary `git add .` sweeps `.delegation/`, and any all-PLEASED artifact
-> sitting in it, straight into your own commit. Second, and this is the one
-> that matters: **a marker the HEAD commit carries turns the gate OFF**, for
-> you and for everyone who clones the repo. Provenance is read from the HEAD
-> commit tree. A marker HEAD does not carry was created by whoever is sitting
-> here, which is an act of consent, so the gate enforces. A marker HEAD does
-> carry arrived with the repository, which is nobody in this working copy
-> consenting to anything, so the gate warns and stands down rather than arming
-> a repo its contributors never opted into. Committing the marker does not arm
-> your colleagues; it disarms you. The warning repeats on every gated command,
-> which is deliberate noise: it should be fixed, not tuned out.
+> you commit anything. Two failures sit behind that. First, an unignored marker
+> plus an ordinary `git add .` sweeps `.delegation/`, and any all-PLEASED
+> artifact in it, into your own commit. Second, and this is the one that
+> matters: **a marker the HEAD commit carries turns the gate OFF**, for you and
+> for everyone who clones the repo. Provenance is read from the HEAD commit
+> tree. A marker HEAD does not carry was created by whoever is sitting here, an
+> act of consent, so the gate enforces. A marker HEAD does carry arrived with
+> the repository, so nobody in this working copy consented, and the gate warns
+> and stands down rather than arming a repo its contributors never opted into.
+> Committing the marker does not arm your colleagues; it disarms you. The
+> warning repeats on every gated command, deliberately: it should be fixed, not
+> tuned out.
 >
-> **To switch the gate off** in a repo you armed: `rm -rf .delegation`. Check
-> `git status` first, because if someone committed an archive under it you would
-> be deleting their files. If the marker is already part of HEAD the gate is
-> already standing down and says so on every gated command, so there is nothing
-> to switch off.
+> **To switch the gate off** in a repo you armed: `rm -rf .delegation`, after
+> checking `git status` ([un-arming](#when-not-to-delegate-and-how-to-un-arm-a-repo)).
 >
-> **`git rm -r --cached .delegation` does the opposite.** It leaves the
-> directory on disk untracked, which is the armed state. That is the way to
-> claim an inherited marker as your own opt-in, and it is covered under
-> [claiming an inherited marker](#enforcement-honestly-one-structural-slice-the-rest-is-discipline). Do not reach for it when
-> what you want is quiet.
+> **`git rm -r --cached .delegation` does the opposite:** it arms the gate, so
+> it is no way to get quiet. It is how you
+> [claim an inherited marker](#enforcement-honestly-one-structural-slice-the-rest-is-discipline).
 
 **Check the gate is actually live before you trust it.** A misconfigured
 install fails silently by design, because a hook that cannot run must not block
@@ -83,10 +74,9 @@ git repo at all, and the warning says which. Remove `.delegation/` afterwards
 if you were only testing.
 
 **The worked example.** [`docs/example-run.md`](docs/example-run.md) is one
-delegation start to finish: decompose, fan out, panel, consolidate,
-adjudicate, fix, re-review, artifact, commit, plus two steward scorecards on
-the same run. If you
-read one more thing before your first `/delegate`, read that.
+delegation start to finish: decompose, fan out, panel, consolidate, adjudicate,
+fix, re-review, artifact, commit, plus two steward scorecards on the same run.
+If you read one more thing before your first `/delegate`, read that.
 
 ## Who this is for (read this before you install)
 
@@ -106,21 +96,16 @@ None of that is calibrated to be cheap. All of it is calibrated to find things.
 
 **If you are billed per token, these defaults will cost you real money.** They are
 not wrong for metered use, but they are not tuned for it. Scale the panel sizes down
-(the sizing rules are in [`docs/operating-model.md`](docs/operating-model.md)), treat
+(the sizing rules are in [`skills/skeptical-review/SKILL.md`](skills/skeptical-review/SKILL.md#panel-setup)), treat
 the always-pair-a-skeptic floor as the one rule worth keeping at full strength, and
 expect to make the cost/thoroughness call yourself. This framework will not make it
 for you, because it was built somewhere that never had to.
 
 One default *is* calibrated, and it is firm rather than tuned: the **model
-ladder** — amended by its own owner on 2026-09-02, issuer note 4. The manager
-holds its role on an Opus session; the two seats (planner, manager) are
-unchanged. Below the manager, tier is judgment — Haiku through Opus, Fable
-seat-only, workers and reviewers alike, recorded in the brief and never gated
-— while agent count is the strengthened half: a growing job is cut into more
-agents, never handed to one bigger one, with scouts to size it first. Panels
-stay extravagant in count, not tuned down to it: more slices, more lenses,
-more reviewers is what a panel buys, and tier on any of them is left to what
-the slice in front of it actually needs. The ladder lives in
+ladder**, set by the owner and amended on 2026-09-02. The manager holds its role
+on an Opus session; below it, tier is judgment, recorded in the brief and never
+gated, while a growing job is cut into more agents, never handed to one bigger
+one. Panels stay extravagant in count. The ladder lives in
 [`skills/delegating/SKILL.md`](skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what).
 
 The planner seam has its own standing cost, separate from panel sizing: **one
@@ -129,14 +114,11 @@ for the run's duration, the planner idling between turns rather than polling
 or scheduling itself awake. That is the seam's fixed price of admission,
 whether or not any single question ever crosses it.
 
-Liveness across that seam has a second, separate cost (F36): **one idle
-Sonnet watchdog session held open for the run, plus one Routine firing per
-hour while the run is live.** Neither seat can see whether its counterpart
-has stalled or finished, so a standing watchdog session — created by the
-planner at handoff, deleted with its Routine at project close — reads both
-seats' titles hourly (the platform's floor for a Routine) and wakes a seat,
-raises a stall to the owner, or does nothing. Full doctrine, the rubric, and
-the two title tokens it reads: [`agents/manager.md`](agents/manager.md#the-watchdog-a-third-seat-standing-s5-v2).
+Liveness across that seam has a second, separate cost: **one idle Sonnet
+watchdog session held open for the run, plus one Routine firing per hour while
+the run is live** (the platform's floor for a Routine). Full doctrine, the
+rubric, and the title tokens it reads:
+[`agents/manager.md`](agents/manager.md#the-watchdog-a-third-seat-standing).
 
 ## The roles at a glance (so any agent knows what they are)
 
@@ -145,64 +127,32 @@ is the single top-level orchestrator and the only agent that can spawn;
 everything else is a flat sibling it spawns, one level deep. Full detail:
 [`docs/roles.md`](docs/roles.md).
 
-- **Owner** *(the human).* The authority the framework answers to and the only
-  one that may change the framework. It interacts only with the manager, is
-  the final adjudicator of a manager↔steward dispute, and starts (and
-  coordinates) any *separate session* when genuinely-parallel deep work is needed.
 - **Manager** ([`agents/manager.md`](agents/manager.md)) *(the single top-level
   orchestrator; the ONLY spawner).* Owner-facing. It decomposes, spawns
   implementers and skeptics as flat siblings, runs the review panel, integrates,
-  and commits. It also spawns the steward and stays in continuous
-  dialogue with it. **You do not spawn the manager.** `agents/manager.md` is
-  the role definition you adopt in your own top-level session (that is what
-  `/delegate` does); spawning it as a subagent would push it and everything
-  it spawns one level too deep. See
-  [how to become the manager](agents/manager.md#how-to-use-this-file-do-not-spawn-it).
-- **Steward** ([`agents/steward.md`](agents/steward.md)) *(a flat sibling the
-  manager spawns).* Its standing job is to keep the manager on track: govern
-  VISION alignment and DELEGATION discipline and stop the manager *going too deep
-  and losing the plot.* It runs a VISION + DELEGATION scorecard, holds the
-  yardstick (the owner's goal made concrete), carries a minor
-  hurdle-anticipation instinct, and advises and flags; it does not command.
-  It holds one narrow **andon-cord**, *escalate-before-proceed*, on a small
-  closed class (major allocations, new workstreams, trading away a proven
-  invariant), where the manager pauses until the owner rules. An unresolved
-  manager↔steward dispute escalates to the owner. It cannot spawn.
+  and commits. It also spawns the steward
+  ([`agents/steward.md`](agents/steward.md)), a flat sibling that reviews the
+  manager itself, and stays in continuous dialogue with it. **You do not spawn
+  the manager:** you adopt its role definition in your own top-level session,
+  which is what `/delegate` does
+  ([how](agents/manager.md#how-to-use-this-file-do-not-spawn-it)).
 - **Implementation agents + Skeptics** *(flat-sibling workers).* Implementers
   build one scoped slice each; skeptics ([`agents/skeptic.md`](agents/skeptic.md))
   adversarially review every deliverable. Neither can spawn; a worker that
   needs a helper asks the manager to spawn one.
 
-**Two naming conventions, so you can tell them apart.** *Skills and commands*
-are addressed with the plugin namespace, as `delegation-framework:delegating`
-or `/delegate`. *Agents are spawned by the bare `name:` in their own
-frontmatter*, with no namespace: `subagent_type: "skeptic"`,
-`subagent_type: "steward"`, and `subagent_type: "general-purpose"` for the
-inline-briefed implementers, which have no definition file at all. That is the
-convention every example in this repo follows; if your runtime lists plugin
-agents under some other id, use the one it lists.
-
-**The spawn rule (load-bearing).** This framework enforces one-level-deep
-spawning as a *design choice*, not as a runtime constraint, and it is upheld by
-what this repo **withholds**, not by what it grants. The spawnable agent
-definitions, [`agents/skeptic.md`](agents/skeptic.md) and
-[`agents/steward.md`](agents/steward.md), carry `tools:` frontmatter with no
-spawn tool in it, so a skeptic or steward cannot start a second tier. The
-manager's own ability to spawn comes from being the **top-level session**, not
-from any grant this repo issues: nothing here loads
-[`agents/manager.md`](agents/manager.md) (you adopt that role yourself, you
-never spawn it), so the `Task` in its `tools:` line describes the role and
-confers nothing. A runtime *may* hand a subagent its own spawn tool; this
-framework declines to. The difference matters: this is a rule we impose, and it
-can therefore be broken by an agent definition that grants `Task` to a worker.
-It is not a wall the platform holds for us. So: the manager is the sole
-spawner; there are no fake tiers (a spawned agent cannot build its own
-sub-team, and solo work must never be presented as a delegated team); and
-genuinely-parallel deep teams are separate SESSIONS, each with its own
-manager, coordinated by the owner. Lateral coordination is by messaging, not
-spawning. The manager auto-consults the steward on a standing, binding rule at
-execution checkpoints, so the owner never has to be the reminder
-([operating model](docs/operating-model.md#manager-auto-consults--a-standing-binding-rule)).
+**The spawn rule (load-bearing).** One-level-deep spawning is a rule we impose,
+not a wall the platform holds. It is upheld by what this repo **withholds**: the
+spawnable [`agents/skeptic.md`](agents/skeptic.md) and
+[`agents/steward.md`](agents/steward.md) carry `tools:` frontmatter with no
+spawn tool, and an agent definition that grants `Task` to a worker would break
+it. The manager is the sole spawner, as the top-level session; genuinely
+parallel deep teams are separate sessions, each with its own manager,
+coordinated by the owner. Rules and topology:
+[`agents/manager.md`](agents/manager.md#the-spawn-topology-the-load-bearing-rule-of-this-framework).
+The manager auto-consults the steward on a standing, binding rule at execution
+checkpoints, so the owner never has to be the reminder
+([auto-consult](agents/manager.md#auto-consult-a-standing-binding-rule)).
 
 ---
 
@@ -212,13 +162,11 @@ catalogue) extracted from one project's operating model into one composable,
 versioned place.
 
 **On authorship.** This framework was drafted with Claude Code and reviewed by
-the adversarial panel it describes; the machinery was pointed at itself. It is
-mostly doctrine: substantially more lines of prose than of Python, and the one
-structural gate carries more lines of test than of implementation.
-Those proportions are visible in the file sizes, and they move whenever the
-repo does, so count them yourself rather than trusting a number written here.
-Neither the authorship nor the ratio is a reason to discount the ideas or to
-inflate them.
+the adversarial panel it describes; the machinery was pointed at itself. The one
+structural gate carries more lines of test than of implementation; sizes move
+whenever the repo does, so count them yourself rather than trusting a number
+written here. Neither the authorship nor the proportions are a reason to
+discount the ideas or to inflate them.
 
 It does not guarantee that any given delegation is well-judged.
 Decomposition quality, whether a finding is truly blocking, and the go/no-go
@@ -233,55 +181,13 @@ The framework is standalone. It writes down the loop it runs, one scoped task
 per fresh subagent, fan-out decided by disjoint write sets, test-first
 implementation, and evidence before claims, in
 [`skills/delegating/SKILL.md`](skills/delegating/SKILL.md) and
-[`docs/operating-model.md`](docs/operating-model.md). One property of that loop
-is worth naming, because it is the reason the pattern holds up over a long run:
-the subagent spends its own context window on the files it reads and returns
-the manager a report, so the manager's window accumulates summaries rather
-than file contents. That is a consequence of delegating well and not a
-mechanism this repo invents; what the repo adds is organizing it and pressing
-the manager not to abandon it under pressure.
+[`docs/operating-model.md`](docs/operating-model.md).
 
 Around that loop it adds the parts that are the actual reason to install it:
-
-1. **The always-pair-a-skeptic discipline.** Every deliverable (research,
-   design, implementation) carries at least one adversarial skeptic. Floor of
-   one. No exceptions. A code review covers code; this rule covers everything.
-2. **The scaled adversarial panel.** 2–3 skeptics for a small change, 5–7 for
-   a feature batch, with diverse lenses.
-3. **The lens catalogue + PLEASED / NOT PLEASED rubric.** Named adversarial
-   lenses (code *and* non-code) and a numbered-BLOCKING verdict format.
-4. **The fluff gate (blocker adjudication).** An adversarial panel earns its
-   keep by finding real defects, and it pays for that by also producing
-   taste, scope creep, and triggerless hypotheticals dressed as blockers. So
-   a BLOCKING tag does not gate work by itself: after a panel returns NOT
-   PLEASED, the manager adjudicates every BLOCKING finding REAL or FLUFF
-   against an explicit yardstick before any fix round is dispatched
-   ([`skills/consolidating-review/SKILL.md`](skills/consolidating-review/SKILL.md)).
-   Real defects gate; fluff is demoted with a written reason the original
-   reviewer gets exactly one structured round to rebut — concede, or stand
-   with new evidence. No silent demotions, no endless ping-pong, and the
-   adjudication record is a required artifact, so a manager that bulldozes
-   real findings does it in writing, where the steward and the owner can
-   read it.
-5. **The reliability / stall rules.** Silence ≠ progress; watch file
-   activity, not completion notifications; concrete re-briefs for stalled
-   agents; integrate the slices, run one panel over the integrated tree, and
-   land the batch in **one** commit (the review artifact binds to a single
-   HEAD, and the framework's own rule is to review the integrated tree rather
-   than half-written slices).
-6. **Doc-collision avoidance.** Reserved index files, pre-assigned doc
-   numbers, and a fill-before-you-fan-out conflict checklist.
-7. Swarm vs. deep review modes with a dual-placement selection rule.
-8. **The steward.** A standing, read-only adversarial flat sibling the
-   manager spawns, whose whole purpose is to stop the manager going too deep
-   and losing the plot. It reviews the *manager* (not deliverables): it scores
-   VISION (on-prize vs drifting into motion) and DELEGATION (orchestrating vs
-   doing IC work / over-spawning / under-delegating / fake sub-team). It
-   **advises and flags; it does not command.** The manager can weigh or ignore
-   its scorecard, judgment stays human-owned, and an unresolved dispute escalates
-   to the owner. It is disciplined accountability, not enforcement.
-
-See [`skills/delegating/SKILL.md`](skills/delegating/SKILL.md) for the loop
+the always-pair-a-skeptic rule (every deliverable, no exceptions), the scaled
+adversarial panel, the lens catalogue and PLEASED / NOT PLEASED rubric, the
+fluff gate, the reliability and doc-collision rules, and the steward. See
+[`skills/delegating/SKILL.md`](skills/delegating/SKILL.md) for the loop
 mechanics and these rules in operational form, and
 [`docs/operating-model.md`](docs/operating-model.md) for the full model.
 
@@ -317,13 +223,13 @@ to your project root overwrites your own `README.md` with this one, and nothing
 will warn you. The layout inside that directory has to be preserved: every cross-file link in this tree is relative, and every hook
 command resolves its script through `${CLAUDE_PLUGIN_ROOT}/scripts/...`.
 
-Two entries in that list are easy to drop and are not optional.
+Some entries in that list are easy to drop and are not optional.
 `.claude-plugin/` carries the manifest; without it the copy is a pile of
 markdown, not an installable plugin. `README.md` is the canonical text of the
-commit gate's five honest limits, and seven files in the other directories link
-to it by relative path, so a copy without it ships seven broken links. `test/`
-is there because this README tells you to run the suite before trusting the
-gate, and a copy without it cannot. Run
+commit gate's five honest limits, and files in the other directories link to it
+by relative path, so a copy without it ships broken links. `test/` is there
+because this README tells you to run the suite before trusting the gate, and a
+copy without it cannot. Run
 `python3 scripts/validate-structure.py <your-copy-root>` after vendoring: it
 checks the manifest, the frontmatter, the hook script paths, the required docs,
 and every relative link, so a wrong list fails there rather than in a session.
@@ -351,11 +257,9 @@ a current capability.
 ## When not to delegate, and how to un-arm a repo
 
 **The trivial-edit gate.** Do not run this loop on a trivial edit or a
-single-file fix. The overhead is not worth it, and `/delegate` states the gate
-up front and stops rather than decomposing anything. The loop is for
-substantial, multi-part builds where independent review adds real safety: a
-feature batch, a hardening pass, a migration. Over-processing a cosmetic change
-is a real failure mode here, not a safe default, and the steward flags it.
+single-file fix: the overhead is not worth it, and `/delegate` states the gate up
+front and stops. The rule is in
+[`skills/delegating/SKILL.md`](skills/delegating/SKILL.md).
 
 **Un-arming a repo.** The opt-in persists: once `/delegate` has run,
 `.delegation/` stays on disk, and every later commit in that repo needs a
@@ -367,6 +271,10 @@ rm -rf .delegation                       # un-arm
 mv .delegation .delegation.off           # or set it aside, keeping the history
 ```
 
+**Run `git status` first.** Files under `.delegation/` may be tracked, in which
+case you are deleting somebody's committed archive, and the deletion commit is
+itself ungated so nothing will stop you.
+
 The commit gate and both reminder hooks go silent in that repo immediately. The
 marker holds no state the framework needs later, so re-arming is just running
 the loop again (or `mv .delegation.off .delegation`). If you want to keep the
@@ -376,20 +284,10 @@ archive is allowed and does not disarm your gate, but every clone then gets a
 `.delegation/` directory and an armed gate: see the second residual under
 [Enforcement, honestly](#enforcement-honestly-one-structural-slice-the-rest-is-discipline).)
 
-**If the marker is one you inherited** (HEAD carries it, so the gate is already
-standing down and warning), there is nothing to un-arm: it is already off. You
-have two choices, and they go in opposite directions.
-
-To make the warning stop and leave enforcement off, delete the directory:
-`rm -rf .delegation`. Run `git status` first. Those files may be tracked, in
-which case you are deleting somebody's committed archive, and the deletion
-commit is itself ungated so nothing will stop you.
-
-To turn enforcement **on** for yourself, claim the marker:
-`git rm -r --cached .delegation`, add `.delegation/` to `.gitignore`, and commit
-that removal. Until it is committed the marker still counts as inherited, which
-is exactly what makes that commit ungated. Be clear that this arms the gate. It
-is not a way to quieten it.
+**A marker you inherited** (HEAD carries it) is already off and warns: there is
+nothing to un-arm. Deleting the directory silences the warning; to turn
+enforcement on instead, see
+[claiming an inherited marker](#enforcement-honestly-one-structural-slice-the-rest-is-discipline).
 
 ## Dependencies
 
@@ -399,23 +297,16 @@ somewhere else, and no version to pin. The manifest
 ([`.claude-plugin/plugin.json`](.claude-plugin/plugin.json)) declares no
 `dependencies`.
 
-One *soft* seam exists, by name only: the sibling planning-framework's
-planner session, when it finishes planning, CREATES this manager session on
-Opus and hands it the plan as its opening prompt — it does not shed its role
-into `/delegate`, and it stays alive, session-to-session, for the seam's
-duration. When the seam is live, the `delegating` skill's plan intake and
-planner relay apply — the plan's leaf cards arrive as briefs-in-waiting, and
-questions about plan content go back to the planner session rather than
-being decided by manager fiat. Nothing loads, resolves, or validates that
-sibling; if it is absent, nothing here references it at runtime and nothing
-fails. Standalone stays true, and the planner-as-front-door inversion is
-scoped to the seam being live, not a rewrite of the standalone story above.
+One *soft* seam exists, by name only: the sibling planning-framework's planner
+session creates this manager session and hands it the plan. While the seam is
+live, the `delegating` skill's
+[plan intake](skills/delegating/SKILL.md#decompose-the-procedure) and
+[planner relay](skills/delegating/SKILL.md#the-planner-relay-questions-go-back-up-the-seam)
+apply. Nothing loads, resolves, or validates that sibling; if it is absent,
+nothing here references it at runtime and nothing fails. Standalone stays true.
 
-The one external requirement is an interpreter: the hook commands are portable
-Python 3.7+, and each one tries `python3`, then `python`, then `py -3`, then
-gives up quietly. One of those three has to answer for the commit gate and the
-reminder hooks to run at all (see limit 1 below). The fallbacks are why Windows
-works: the python.org installer ships `python.exe` and no `python3.exe`.
+The one external requirement is a Python 3.7+ interpreter, for the hook commands
+([limit 1](#enforcement-honestly-one-structural-slice-the-rest-is-discipline)).
 
 ## Enforcement, honestly: one structural slice, the rest is discipline
 
@@ -454,7 +345,7 @@ rather than merely forgetting a rule.
 
 **When the marker counts as an opt-in.** Only when the HEAD commit does not
 carry it. The gate reads the HEAD commit tree, never the index. Three readings,
-across six states:
+across seven states:
 
 | What HEAD's tree holds at `.delegation` | Reading | Gate |
 |---|---|---|
@@ -497,21 +388,9 @@ git commit -m "keep .delegation local"
 The first two steps alone change nothing, because the marker counts as
 inherited for exactly as long as HEAD carries it. That is also what makes this
 commit itself ungated, so there is no deadlock where you need a panel to escape
-a gate that is not enforcing. If what you actually wanted was to stop the
-warnings without arming anything, delete the directory instead: `rm -rf
-.delegation`, and check `git status` first in case someone committed an archive
-you would be deleting from under them.
-
-**One panel, one commit.** Because the artifact is bound to HEAD, it waives
-exactly one commit and is spent the moment that commit lands. So the loop is:
-integrate every slice, run one panel over the integrated tree, then make one
-commit. That is also what the framework already asked for on its own terms,
-which is to review the integrated tree rather than half-written slices. The
-reliability point behind the older "commit each slice as it lands" advice is
-real and survives intact: do not let a large pile of unreviewed work accumulate
-in the tree. The way to honour it now is to keep the *batch* small (fewer
-slices per panel, panels more often), not to sneak individual slices past the
-gate in separate commits.
+a gate that is not enforcing. To stop the warnings without arming anything,
+delete the directory instead, checking `git status` first
+([un-arming](#when-not-to-delegate-and-how-to-un-arm-a-repo)).
 
 **What is deliberately not gated.** `pull`, `merge` and `rebase` are not gated.
 They move or replay commits that were already gated when they were authored, so
@@ -536,7 +415,7 @@ tree on every command, and *forgetting what got included* is the exact failure
 this gate exists to wall off. The honest price of the typo is re-pointing
 `head_sha` at the new HEAD.
 
-**Two residuals worth naming.** First: `git reset --soft HEAD~1` is not gated,
+**Residuals worth naming.** First: `git reset --soft HEAD~1` is not gated,
 and it moves HEAD back, which makes a spent artifact fresh again. One artifact
 can therefore waive more than one commit that way. This is deliberate. The only
 way to spend an artifact is to make the commit it authorised, so the re-arm
@@ -623,10 +502,11 @@ the three escape hatches above in priority order, with the artifact schema
 printed **alone on its own line** so it can be selected and pasted without
 re-typing. One extra line appears when `.delegation/` is staged but not
 committed, saying so and giving `git restore --staged .delegation`; one more
-appears when the gate had to fall back to the hook's own repo (limit 4). No
-value read out of the artifact is ever echoed back into that message: findings
-are reported positionally ("review #2 ..."), because hook output reaches the
-model as privileged text and a cloned repo could otherwise speak through it.
+appears when the gate had to fall back to the hook's own repo (limit 4). Nothing
+read out of the artifact is echoed back into that message except a 12-char
+`head_sha` prefix already validated as hex: findings are reported positionally
+("review #2 ..."), because hook output reaches the model as privileged text and
+a cloned repo could otherwise speak through it.
 
 Everything else (the always-pair-a-skeptic breadth, the reliability rules,
 panel sizing) is skill guidance plus **reminder hooks**, which nudge and
@@ -671,12 +551,15 @@ skills/skeptical-review/       run a panel; lenses; swarm/deep/hybrid modes
 skills/consolidating-review/   adjudicate BLOCKING findings (the fluff gate);
                                batch the survivors; drive convergence
 commands/                      /delegate, /skeptic-review, /review-panel
-hooks/hooks.json               reminder hooks; the commit gate
-scripts/                       gate + validation scripts (portable Python)
+hooks/hooks.json               hooks: session-start context, reminders, the commit gate
+hooks/session-start-context.md the context injected at session start (startup, clear, compact)
+scripts/                       hook and validation scripts (portable Python)
+test/                          the commit gate's test suite
 docs/                          skill-referenced data (NOT auto-loaded):
                                operating-model, roles, lenses, rubric,
                                conflict-avoidance checklist, worked example,
                                compact standard
+OWNER-ACTIONS.md               what a seat could not do, and why each line is safe to run (append-only)
 ```
 
 `docs/` and the rubric files are skill-referenced data: a skill points
@@ -728,26 +611,10 @@ token leaks only; domain-shaped *assumptions* phrased in none of the listed
 words are policed by adversarial review, not by this script. Two distinct
 mechanisms, not one.
 
-Note: the design spec named the gate/check scripts as shell scripts (`.sh`);
-they ship as portable Python (`.py`) so the same scripts run on Windows
-and POSIX, a deliberate and flagged divergence with identical contracts. The
-hook commands therefore require a Python 3.7+ interpreter, which they look for
-as `python3`, then `python`, then `py -3` (limit 1 above).
+## The git history
 
-## What green does NOT buy you
-
-- Passing validation proves the machinery runs, not that any delegation
-  was well-judged. Manager judgment remains human-owned.
-- The commit gate is a wall against **forgetting** a review, not against a
-  **fabricated** one, and only where hooks are installed and enabled, only
-  in repos carrying the `.delegation/` opt-in marker, and with the residuals
-  of limits 4 and 5 (unparsed paths now fall back and over-gate rather than
-  mis-resolve silently; rare false positives).
-- The published git history is short, and it is not a project record. This
-  repo was rebuilt from a clean tree for public release rather than published
-  in place, so neither the number of commits nor their timestamps say anything
-  about how long the work took or how it evolved. Do not read the log as a
-  timeline.
-- Reminder hooks and the skeptic-pairing breadth are discipline, not
-  structure: they reduce, but do not eliminate, the chance an off-tree
-  deliverable ships unreviewed.
+The published git history is short, and it is not a project record. This
+repo was rebuilt from a clean tree for public release rather than published
+in place, so neither the number of commits nor their timestamps say anything
+about how long the work took or how it evolved. Do not read the log as a
+timeline.

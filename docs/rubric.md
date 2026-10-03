@@ -1,10 +1,9 @@
 # The verdict rubric: PLEASED | NOT PLEASED
 
-Every skeptic, whatever its lens, reports in this format. The format is the
-contract that lets a manager consolidate a panel mechanically, adjudicate
-every BLOCKING finding against the fluff-gate yardstick
-([`../skills/consolidating-review/SKILL.md`](../skills/consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate)),
-and lets the commit gate key on the result.
+Every skeptic, whatever its lens, reports in this format: the contract that
+lets a manager consolidate a panel mechanically and the commit gate key on the
+result. BLOCKING findings are adjudicated against the
+[fluff-gate yardstick](../skills/consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate).
 
 ## Per-finding format
 
@@ -25,16 +24,6 @@ For each finding (a file, a function, a test, a claim, a design section):
 - To make it real: <the smallest change that would raise the score, or
   "drop it - X already covers what little this does">
 ```
-
-**The evidence fields are what make a finding adjudicable.** A BLOCKING tag
-does not gate work by itself: the manager adjudicates every BLOCKING item
-REAL or FLUFF before the fix round, and it adjudicates against *these
-fields* — the file:line citation, the claims-vs-establishes split, and
-above all the MISS line, which is where a real finding names its concrete
-break and a fluff finding runs out of words. A BLOCKING item filed without
-them goes back for the missing fields before it is adjudicated at all.
-Yardstick and procedure:
-[`../skills/consolidating-review/SKILL.md`](../skills/consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate).
 
 ## The verdict block
 
@@ -57,19 +46,6 @@ Rules:
 - Number the BLOCKING items, because the consolidation step
   ([`../skills/consolidating-review/SKILL.md`](../skills/consolidating-review/SKILL.md))
   reconciles panels by number.
-- Rate usefulness toward the end goal stated in the dispatch, never
-  toward line coverage. A test can be correct, useful for regression safety,
-  and still score low because it does not move the stated goal — say so
-  plainly.
-- Distinguish **"weak but honest"** (a characterization test or hedged claim
-  that documents a floor, clearly labelled) from **"weak and over-trusted"**
-  (something whose green check or confident prose will be read as proof of
-  more than it is). Reserve the harshest severity for the second.
-- **Credit the honest ones.** If a deliverable genuinely closes a stated
-  gap, say so and score it high. A skeptic that cries theater at everything
-  has no signal.
-- Be specific and technical; cite file:line or quote the claim. A skeptic
-  who hand-waves is as useless as the work it criticizes.
 
 ## The REBUTTAL block (only after a demotion)
 
@@ -99,18 +75,11 @@ Rules:
 
 ## How the manager reads a panel
 
-- Any NOT PLEASED → the slice does not commit. Consolidate every numbered
-  BLOCKING item into one reconciled list, then adjudicate each one REAL or
-  FLUFF against
-  [the fluff-gate yardstick](../skills/consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate)
-  — demotions go back to their reviewers for one rebuttal round, and the
-  adjudication record is written before any fix is dispatched. Batch the
-  survivors into one fix round; re-review **the dissenters only**.
-- All PLEASED → record the verdicts in the review artifact
-  (`.delegation/review-artifact.json`, format in
-  [`../skills/skeptical-review/SKILL.md`](../skills/skeptical-review/SKILL.md)),
-  then the manager still inspects before committing. A unanimous panel is
-  necessary, not sufficient.
+- Any NOT PLEASED → the slice does not commit; consolidate, adjudicate and fix per
+  [consolidating-review](../skills/consolidating-review/SKILL.md).
+- All PLEASED → write `.delegation/review-artifact.json`
+  ([format](../skills/skeptical-review/SKILL.md)), then the manager still
+  inspects before committing: a unanimous panel is necessary, not sufficient.
 - An ESCALATE output is not a verdict. It is a routing instruction: dispatch
   the named thread as a deep review before trusting the swarm's PLEASED on
   that thread.
