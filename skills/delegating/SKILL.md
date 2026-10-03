@@ -58,14 +58,30 @@ description: Use when running a substantial multi-part build as a manager delega
 
 # Delegating
 
-You are the manager. This skill carries both halves of the job: the mechanics
-of the loop you run, and the rules this framework adds on top of it. There is
-no companion plugin to *install*: nothing here loads, resolves, or validates
-another plugin, and if a mechanic is not written down here or in a file this
-skill links to, it is not part of the framework. One soft seam exists, by
-name only: when the sibling planning-framework delivers a finished plan as
-this run's task, the plan intake and the planner relay below apply. When that
-sibling is absent, nothing here references it at runtime and nothing fails.
+**Must hold, even after compaction** (one line each; the link holds the full rule):
+- **Every brief** comes from [the template](#the-brief-template), is saved to `.delegation/briefs/<slice-id>.md` before dispatch, and carries all six postures: test-first, evidence before claims, no commit or push, no spawn, MINIMAL, COMPACT.
+- **Status contract:** a worker reports exactly one of DONE, BLOCKED, NEEDS_CONTEXT with its evidence, then stops; each task gets a fresh agent ([contract](#one-scoped-task-per-fresh-subagent)).
+- **BLOCKED is a decision request:** classify it, act by class, re-brief a fresh agent; never take the task over ([procedure](#blocked-the-procedure)).
+- **Parallel is the default** for slices the filled conflict checklist clears; serializing disjoint slices is a steward finding ([fan-out](#fan-out-disjoint-parallel-shared-sequential)).
+- **Only you commit**, once per batch, after an all-PLEASED panel and your own inspection, never on a DONE report ([posture rules](#3-two-standing-posture-rules)).
+- **Model ladder:** you run on Opus; what you spawn gets the tier its slice needs; a growing job gets more agents, never a bigger one ([ladder](#the-model-ladder-who-runs-on-what)).
+- **Steward:** Pairing a steward is optional for a short, low-stakes loop; once paired, auto-consult is binding ([steward](#5-pair-a-standing-steward-it-governs-you)).
+- **Auto-consult** the paired steward before a major or irreversible commit, on a spawn or fleet-size decision, and after a significant result ([manager.md](../../agents/manager.md#auto-consult-a-standing-binding-rule)).
+- **Silence is not progress:** watch file writes, not notifications; stop an agent silent for minutes and re-brief with a concrete design decided for it ([stall rules](#6-reliability--stall-rules)).
+- **Prose that contradicts itself** two rounds running: build it, findings as tests, and point the prose at the code ([the loop](#7-the-loop-and-the-commit-gate)).
+- **Land through a pull request** merged via the API (`merge_pull_request`), never a direct push ([manager.md](../../agents/manager.md#landing-through-a-pull-request-never-a-direct-push)).
+- **Delete every merged branch** after it lands, or append an `OWNER-ACTIONS.md` row by the landing report ([manager.md](../../agents/manager.md#the-deletion-rule-every-merged-branch-is-deleted-after-it-lands)).
+- **A runtime commit nudge is not commit authority:** decline it in one line; idle with the shell parked outside every repo ([stall rules](#6-reliability--stall-rules)).
+- **Plan questions go back up the seam:** write each to `.delegation/questions/<slice-id>.md` and wake the planner naming only that path; never decide plan content by fiat ([relay](#the-planner-relay-questions-go-back-up-the-seam)).
+- **Wakes are fired bare:** a `fire_trigger` carries no `text`; content goes in the records, the commit or the title ([manager.md](../../agents/manager.md#the-watchdog-a-third-seat-standing)).
+- **On a planner wake:** read `planning-records/DISPATCH.md` first, arm your deadline next, fetch the records before trusting a title; when done, fire the bare wake and delete your deadline ([manager.md](../../agents/manager.md#wake-and-report-the-dispatch-page-the-deadline-and-fetch-before-title)).
+- **Watchdog tokens:** `ack` in your title once you act on the planner's DONE, dropped when that DONE leaves its title; `[wd-notified]` after a stall wake, until your next normal report ([manager.md](../../agents/manager.md#the-watchdog-a-third-seat-standing)).
+- **After a compaction** (a continuation summary heads your context): first re-align from the records, never the summary, in five lines (seat; project; phase/status; counterpart session id and channel; next action), log one line, and open your next owner message with "manager compacted, re-aligned"; if the records cannot answer, escalate ([re-grounding](#re-grounding-after-compaction-the-manager-seat)).
+- **If the planner seat goes dark:** respawn a fresh one that re-orients in writing from the records, and notify the owner; your own session persists for the whole project ([manager.md](../../agents/manager.md#the-seat-above-you-and-the-seat-beside-you)).
+
+You are the manager. This skill is the loop you run plus the rules this
+framework adds; it is standalone, with one soft planner seam
+([README](../../README.md#dependencies)).
 
 **First: the trivial-edit gate.** Do NOT delegate a trivial edit or a
 single-file fix; the overhead isn't worth it, so just do it. Use this loop for
@@ -158,8 +174,10 @@ is as a procedure. Run it in order.
    number the agent will pick for itself: put each slice's numbers in that
    slice's brief, in the PRE-ASSIGNED NUMBERS slot of the template below.
 
-6. **Fill the conflict-avoidance checklist** (section 4 below). If it shows an
-   overlap you cannot remove, serialize those slices; do not fan out anyway.
+6. **Fill the conflict-avoidance checklist**
+   ([fan-out](#fan-out-disjoint-parallel-shared-sequential)): no parallel
+   dispatch until every line is filled. If it shows an overlap you cannot
+   remove, serialize those slices; do not fan out anyway.
 
 7. **Size the batch to one panel and one commit.** The review artifact binds to
    a single HEAD, so a batch is reviewed once and lands once. A batch big
@@ -179,7 +197,8 @@ Never grant a worker a spawn tool. Team sizing is the manager's call, not the
 plan's: when a task needs more than one implementer, that is several
 **slices**, not several writers crowded onto one — one writer per slice,
 never co-writers on a shared write set. Reviewer count is unaffected: it
-stays the existing 2–7 panel call below.
+stays the existing 2–7 panel call in
+[skeptical-review](../skeptical-review/SKILL.md#panel-setup).
 
 **Naming convention, since this repo uses two.** Skills and commands are
 addressed with the plugin namespace (`delegation-framework:delegating`,
@@ -187,11 +206,6 @@ addressed with the plugin namespace (`delegation-framework:delegating`,
 unnamespaced: `subagent_type: "skeptic"`, `subagent_type: "steward"`,
 `subagent_type: "general-purpose"`. If your runtime lists plugin agents under
 some other id, use the one it lists.
-
-Every brief is written from [the template below](#the-brief-template). Build it
-from the template rather than from memory: a brief assembled ad hoc reliably
-drops the no-self-commit re-brief, which this skill also says cannot be
-assumed, and that omission alone makes the commit gate gate nothing.
 
 The agent then opens whatever files it needs, does the work, runs its own
 tests, and reports back with a status of **DONE**, **BLOCKED**, or
@@ -201,17 +215,17 @@ scratch, not the same agent carrying the last task's residue. A NEEDS_CONTEXT
 report comes back for a fuller brief, and you answer it by extending the brief
 rather than by taking the task over (and where the missing fact is plan
 content you do not own, by relaying the question first: the planner relay,
-below); a BLOCKED report has its own procedure, two sections down.
+below); a BLOCKED report has [its own procedure](#blocked-the-procedure).
 
 ### The model ladder: who runs on what
 
 Model choice is part of the dispatch, not a mood. The two seats are owner-set
 and unchanged: the manager runs on Opus, and the planner runs on Fable 5 or
 Opus. Below the manager, the owner has since amended their own rule
-(2026-09-02, issuer note 4 — see the authorization comment at the top of this
-file): tier and agent count used to travel together as one ladder; they are
-now two separate rules pointing in different directions, and this section
-states both.
+(2026-09-02; see the authorization comment at the top of this file): tier
+and agent count used to travel together as one ladder; they are now two
+separate rules pointing in different directions, and this section states
+both.
 
 - **The manager runs on Opus.** The manager is a role the top-level session
   adopts, so no frontmatter can enforce this: hold the role on an Opus
@@ -237,21 +251,7 @@ states both.
   job down itself or dispatches scouts first to size the total work, then
   cuts as many slices and seats as many reviewers as the write sets allow.
   "More than one, more than 2–3 when the job warrants it" — the 2–3 / 5–7
-  panel-size numbers elsewhere in this skill are guidance, not a ceiling.
-
-**The split, stated once, plainly:** if a slice is hard, reach for whatever
-tier fits it — that choice is judgment, not a cap, and it is recorded, not
-argued for. If a *job* is big, the answer is never a bigger single agent; it
-is more agents, sized by decomposition or by a scouting pass first. Do not
-read the retained half back into the withdrawn half — "the job grew" is a
-reason to cut another slice, never a reason by itself to reach for a bigger
-model on the slice you already have.
-
-The fixed-cost note in the README ("Who this is for") is about panel
-*count*, and so is the retained half of this ladder: breadth — more slices,
-more lenses, more reviewers — is what a panel buys on a fixed-cost account,
-and a growing job earns more seats before it earns a bigger one. Tier, on
-either half of a panel, is left to judgment on the slice in front of it.
+  panel-size numbers in skeptical-review are guidance, not a ceiling.
 
 ### The brief template
 
@@ -268,6 +268,7 @@ END GOAL (the falsifiable claim this run must move, quoted):
 
 YOUR ONE TASK (an outcome, not a direction to explore):
   <the single outcome this slice delivers>
+  Update the docs that live near what you changed.
 
 FILE-OWNERSHIP ALLOWLIST (create or modify ONLY these):
   <paths / globs>
@@ -338,14 +339,11 @@ because parallel writers clobber each other silently and the index files are
 yours; the pre-assigned numbers, because a number assigned in the conflict
 checklist and never transmitted is a number the agent invents, which is the
 collision the checklist was filled to prevent; the model-tier slot, because
-the slot is a record, not a gate — writing the tier down is what lets the
-steward read afterward whether it fit the slice, in either direction, and
-no case against decomposition is owed for it; the
-predecessor slot, because a
-serialized slice briefed as if it were first will re-do or undo what just
-landed; the partial-work slot, because half-written work nobody was told about
-is what makes a later panel produce noise; the exact test command, because "run
-the tests" is not copy-pasteable; posture 3, because general-purpose briefs
+a recorded tier lets the steward judge afterward whether it fit the slice;
+the predecessor slot, because a serialized slice briefed as if it were first
+will re-do or undo what just landed; the partial-work slot, because
+half-written work nobody was told about is what makes a later panel produce
+noise; the exact test command, because "run the tests" is not copy-pasteable; posture 3, because general-purpose briefs
 default to "commit your work" and a self-committed slice lands before any panel
 runs; posture 4, because one-level-deep spawning is this framework's
 load-bearing invariant; and the status contract, because it is what closes a
@@ -466,57 +464,28 @@ the owner rather than complying. The ruling landing in the file is what
 lands in the fresh brief's slots, so a steward checkpoint can reconcile why
 the slice changed shape. The same commit-first shape covers a re-plan: a
 route (e) re-plan travels by commit, the planner pokes you to re-pull, and
-any card you have not yet pulled is stale until you do (D13) — treat it as
+any card you have not yet pulled is stale until you do — treat it as
 such, not as current.
 
-**How reliable this is, honestly.** Session creation with a pinned model and
-a wake fired from one seam session to the other are both live-tested. What is
-not: a poke's delivery into a session that is actively mid-turn (a
-human-active session) rather than idle — unproven this run. So the written
-file is the reliable channel and the poke is a **best-effort wake** on top of
-it, never the thing to trust alone: if a ruling seems overdue, re-check the
-question file directly and, if the planner session looks unresponsive, check
-its status or title rather than assuming the poke landed. The local
-ListAgents/SendMessage recipe is documented above but has not itself been
-exercised — no local peer session existed to test it against this run — so
-treat it as unverified until it has run for real. One honest incident behind
-this design: interrupting a session should be treated as killing it unless
-its next turn proves otherwise, and a failed session does not answer pokes —
-the surviving seat found this out by polling the counterpart's status and
-title when a reply ran overdue, not by any poke ever arriving. That is why
-written state plus status polling, not the poke channel alone, is the
-reliable layer.
+**How reliable this is, honestly.** The written file is the reliable channel;
+the poke is a **best-effort wake** on top of it, never trusted alone. Session
+creation with a pinned model and a cross-seat wake are live-tested; a poke
+into a mid-turn session and the local recipe are not. If a ruling seems
+overdue, re-check the question file, then the counterpart's status or title.
+Treat an interrupted session as killed until its next turn proves otherwise:
+a failed session answers no pokes.
 
-**Wakes are fired bare, always (D27).** Every wake in this section is
-content-free by design, and that design has teeth now: a `fire_trigger` call
-that carries `text` runs in a fresh minted session on this platform instead
-of reaching the bound seat, and never surfaces there — that is what emptied
-every wake that vanished on 2026-09-02, in both directions, including this
-relay's own "report landed" wakes. Anything a seat wants its counterpart to
-know goes in the question file, the commit, or the title, never in the
-firing itself. A wake that carries text is the incident, not the platform.
+**Wakes are fired bare, always**: a `fire_trigger` carrying `text` never
+reaches the bound seat, so content goes in the question file, the commit or
+the title ([`../../agents/manager.md`](../../agents/manager.md#the-watchdog-a-third-seat-standing)).
 
-This wake mechanic is also how the standing watchdog session (S5 v2) talks
-to both seats — it wakes you or the planner content-free the same way, on
-its own hourly schedule, never carrying a question or a ruling. Full
-doctrine — its rubric, lifecycle, the two title tokens it reads (D26), and
-its cost — lives in
-[`../../agents/manager.md`](../../agents/manager.md#the-watchdog-a-third-seat-standing),
-not repeated here.
+**The standing watchdog** wakes you or the planner the same content-free way,
+hourly; its rubric and title tokens:
+[`../../agents/manager.md`](../../agents/manager.md#the-watchdog-a-third-seat-standing).
 
-**The dispatch page and the deadline wake (D28-D30), pointer only.** A
-planner-framework dispatch to you is that same content-free wake, one line:
-"read `planning-records/DISPATCH.md` and proceed under your standing role."
-Both seats arm a deadline for it — a one-shot `run_once_at` trigger, the
-planner's bound to itself at dispatch and yours bound to the planner as your
-first act on waking, so a connector lost on either side still leaves the
-other with a clock — and because titles ride the same connector as wakes and
-fail with it while git does not, the seat that wakes fetches the records
-before it trusts a title. The full doctrine — the page's exact fields, who
-arms which half and when, the mute-vs-stalled test, and the honest limit on
-what none of this covers — is your own procedure, kept once, in
-[`../../agents/manager.md`](../../agents/manager.md#wake-and-report-the-dispatch-page-the-deadline-and-fetch-before-title),
-not repeated here.
+**The dispatch page, the deadline wake and fetch-before-title** are your own
+wake-and-report procedure:
+[`../../agents/manager.md`](../../agents/manager.md#wake-and-report-the-dispatch-page-the-deadline-and-fetch-before-title).
 
 **What does not relay.** A dispute (an owner matter, as ever); a decision
 the card already made, re-asked in the hope of a different answer; and
@@ -549,7 +518,7 @@ counterpart session id and channel; next action — sourced from the durable
 records (`.delegation/`: briefs, questions, the plan package, this file),
 never from the summary. Append one line to the seat's log once it is written.
 If the records cannot answer one of the five lines, that is a **failed**
-re-alignment: escalate per the dead-seat default (D7, in "The seat above you,
+re-alignment: escalate per the dead-seat default (in "The seat above you,
 and the seat beside you" in `agents/manager.md`) rather than guess at it. The
 next message you send the owner (through the planner, per the front-door
 rule) opens with about four words — "manager compacted, re-aligned" — and
@@ -569,16 +538,8 @@ Keep this reflex lean by design (an owner ruling): the statement is at most
 five lines, the log entry one. A re-grounding habit that bloats every
 session's context is itself the defect it exists to prevent.
 
-**Tested/untested, honestly.** This reflex is UNTESTED this run: the one live
-drill of recovery-from-records (a fresh session reading only the records and
-correctly stating its seat, project, and next action) was confounded by its
-transport before it reached the records question — the nudge arrived as
-imperative poke content instead of a content-free wake, and the drilled
-session correctly refused it (see the planner relay above: this is the
-incident behind the content-free-wake rule). The dead-seat
-default it shares a statement format with (D7) ships marked untested for the
-same reason, with escalate-to-owner as the stated fallback on any failure of
-either.
+This reflex and the dead-seat default ship UNTESTED; on any failure of either,
+escalate to the owner.
 
 ### Fan-out: disjoint-parallel, shared-sequential
 
@@ -609,10 +570,11 @@ incentive cuts both ways on purpose: the steward flags a fan-out the
 checklist did not clear, and it flags a clean checklist left to run one
 slice at a time.
 
-Before any parallel dispatch, fill the conflict-avoidance checklist. It is a
-forced artifact rather than advice, and the rules and rationale live there, so
-they are not restated here: see section 4 below and
-[`../../docs/conflict-avoidance-checklist.md`](../../docs/conflict-avoidance-checklist.md).
+Before any parallel dispatch, copy
+[`../../docs/conflict-avoidance-checklist.md`](../../docs/conflict-avoidance-checklist.md)
+to `.delegation/conflict-checklist.md` and fill it. It is a forced artifact,
+not advice: **no parallel dispatch until every line is filled.** Its rules and
+rationale live there.
 
 ### Requesting and receiving review
 
@@ -622,30 +584,12 @@ the thing. The panel machinery itself is
 [`../skeptical-review/SKILL.md`](../skeptical-review/SKILL.md); what belongs
 here is the connective tissue around it:
 
-- **Request review of the integrated tree**, and only after every parallel
-  slice has reported DONE. A tree with a half-written slice in it produces
-  noise instead of findings.
-- **Give each reviewer what it needs to be adversarial**: the deliverable, the
-  end goal the work was supposed to move, and the claim the work makes. A
-  reviewer with no stated end goal returns line-coverage nitpicking.
-- **Receiving a finding is not the same as accepting it.** You adjudicate,
-  and the procedure has a name and a yardstick: the **fluff gate**
-  ([`../consolidating-review/SKILL.md`](../consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate)).
-  Every numbered BLOCKING item is adjudicated REAL (it gates; into the fix
-  round) or FLUFF (demoted to non-blocking or discarded, with a written
-  reason the original reviewer gets exactly one structured round to rebut),
-  and the adjudication record is written before the fix round is
-  dispatched. No silent demotions. Two lenses demanding opposite fixes get
-  resolved by you *before* dispatch, or the fix agent will thrash.
-- **The fix round is dispatched, not performed by you**, and the fix agent is
-  bound by the same posture rules as any implementer. Its brief comes from the
-  same template and is saved to `.delegation/briefs/` before dispatch, like any
-  other. This holds for the last, smallest round as much as the first: a round
-  of one-line nits is still a dispatched round, never a manager edit.
-- **Re-review the dissenters** against the revision, briefed to attack it as
-  fresh work rather than to tick off their old list. Every dissenter has to
-  come back PLEASED before an artifact exists; there is no round that ends with
-  someone still holding NOT PLEASED.
+- **Request review of the integrated tree** once every slice reports DONE,
+  stating the end goal to each reviewer:
+  [panel setup](../skeptical-review/SKILL.md#panel-setup).
+- **Receiving a finding is not accepting it**: consolidate, adjudicate in the
+  [fluff gate](../consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate),
+  dispatch one fix round from the template, re-review the dissenters.
 
 ### MANAGER INSPECTS: the procedure
 
@@ -667,14 +611,16 @@ yours alone. A unanimous panel is necessary, not sufficient. Work the list:
 4. **Check the reserved files are actually wired**, since nobody else was
    allowed to touch them and it is the step that gets forgotten at the end of a
    long run.
-5. **Check the artifact**: non-empty `deliverable`, a valid `mode`, an accurate
-   `rounds`, a non-empty `lens` on every review, every verdict exactly
-   `PLEASED`, every `blocking` list empty, `consolidated_blocking` empty, and
-   `head_sha` equal to `git rev-parse HEAD` **right now**. Fill `head_sha`
-   last, once the tree has stopped changing; a fix round after you write it
-   leaves the artifact bound to the same HEAD but describing an older tree.
-   Those are the gate's own checks, so an artifact that fails one of them is a
-   deny, not a warning.
+5. **Check the artifact** against
+   [its schema](../skeptical-review/SKILL.md#the-review-artifact-feeds-the-commit-gate).
+   The gate itself checks a non-empty `deliverable`, a valid `mode`, a
+   non-empty `reviews` array with a `lens` on each, every `verdict` exactly
+   `PLEASED` with empty `blocking` lists, empty `consolidated_blocking`, and
+   `head_sha` equal to `git rev-parse HEAD` **right now**
+   ([limit 2](../../README.md#enforcement-honestly-one-structural-slice-the-rest-is-discipline));
+   a failed one is a deny. Fill `head_sha` last, once the tree has stopped
+   changing; a fix round after you write it leaves the artifact bound to the
+   same HEAD but describing an older tree.
 6. **Check `.delegation/` is in this repo's `.gitignore`** and that neither the
    marker nor the artifact is staged. Staging does not disarm anything (the
    deny will tell you to run `git restore --staged .delegation`), but
@@ -690,9 +636,7 @@ not a note in the commit message.
 
 ### Test-first implementation
 
-Where the deliverable is code, the brief says test-first: write the failing
-test, watch it fail for the reason you expected, then write the code that
-makes it pass. A test written after the code tends to encode what the code
+Why posture 1: a test written after the code tends to encode what the code
 does rather than what it was supposed to do, and it has never been observed
 failing, so nothing establishes that it *can* fail. Where the deliverable is
 not code, the equivalent is to write down the acceptance condition before
@@ -715,19 +659,9 @@ alike.
 
 ### 1. The law
 
-> Every deliverable carries at least one adversarial skeptic before it is
-> trusted — **research, design, implementation — all of them. The floor is
-> one. No exceptions.**
-
-A code review after each task covers code. This law covers *every* deliverable
-kind. Attach skeptics via the `skeptical-review` skill; the reviewer definition is
-`agents/skeptic.md` (spawn as `subagent_type: "skeptic"`).
-
-### 2. Panel sizing
-
-**2–3 skeptics for a small change, 5–7 for a feature batch.** Scale to risk,
-not habit. Lens choice: [`../../docs/lenses.md`](../../docs/lenses.md).
-Verdict format: [`../../docs/rubric.md`](../../docs/rubric.md).
+Every deliverable, of every kind, carries at least one adversarial skeptic
+before it is trusted; no exceptions:
+[`../skeptical-review/SKILL.md`](../skeptical-review/SKILL.md).
 
 ### 3. TWO standing posture rules
 
@@ -748,42 +682,19 @@ Both are load-bearing; hold both or the commit gate gates nothing:
   after review."* Without this re-brief, the slice self-commits mid-work and
   the PreToolUse commit gate gates nothing.
 
-### 4. The forced conflict-avoidance checklist (before ANY fan-out)
-
-Before dispatching agents in parallel, copy and fill
-[`../../docs/conflict-avoidance-checklist.md`](../../docs/conflict-avoidance-checklist.md)
-into the working repo (suggested: `.delegation/conflict-checklist.md`). This
-is a forced artifact, not advice: **no parallel dispatch until every line is
-filled.** If filling it shows overlapping write sets you cannot remove,
-serialize those slices. Summary of what it forces: disjoint per-agent write
-sets; index files reserved to the manager; pre-assigned ADR/doc numbers; a
-file-ownership allowlist and exact test command in every brief.
-
 ### 5. Pair a standing steward (it governs YOU)
 
-The panel governs deliverables; nothing in the loop governs *you*, the manager.
-You drift in two ways you cannot see: **losing the prize** (commissioning
-locally-satisfying motion that does not move the end goal) and **failing to
-delegate** (doing implementer work yourself, over-spawning make-work, or
-under-delegating the substantive builds). Pair a standing steward
+Nothing in the loop governs you; a standing steward
 ([`../../agents/steward.md`](../../agents/steward.md), spawn as
-`subagent_type: "steward"`) and consult it repeatedly, at checkpoints and
-before big fan-outs, sized to the run: skip it for a short, low-stakes loop;
-consult it often on a long or high-stakes one where drift would go unnoticed.
-It returns a MANAGER SCORECARD (VISION + DELEGATION) with cited evidence. It is
-disciplined accountability, not a gate. No hook enforces its verdict, you
-can ignore it, and your judgment stays yours; it only raises the cost of
-self-deception. Role detail: [`../../docs/roles.md`](../../docs/roles.md#steward).
+`subagent_type: "steward"`) does, and the duty is
+[`../../agents/manager.md`](../../agents/manager.md#spawn-the-steward-and-stay-in-dialogue-with-it).
+Pairing a steward is optional for a short, low-stakes loop; once paired, auto-consult is binding.
 
-**Give it the two things it reads from disk, or it cannot do the job.** The
-steward reconciles what landed against what was dispatched, so it needs the
-dispatch briefs on disk: **save every brief to `.delegation/briefs/<slice-id>.md`
-before dispatch** (the template above is written to be saved as-is). Without
-them the steward cannot separate your direct work from delegated work, and its
-DELEGATION line is unrecoverable for that window, which it will say rather than
-fake. It also compares each checkpoint against its own earlier ones to catch
-slow directional drift, so **save each returned scorecard to
-`.delegation/steward/<checkpoint>.md`**, which is where it looks for them.
+**Give it the two things it reads from disk, or it cannot do the job.** Every
+brief, saved before dispatch ([the template](#the-brief-template)): without
+them it cannot separate your direct work from delegated work. And each
+returned scorecard, saved to **`.delegation/steward/<checkpoint>.md`**, where
+it compares checkpoints to catch slow directional drift.
 
 ### 6. Reliability / stall rules
 
@@ -791,38 +702,21 @@ slow directional drift, so **save each returned scorecard to
   not completion notifications. An agent with *no* output after several
   minutes is stalled: stop it (`TaskStop`) and **re-brief with a concrete
   design decided for it**, never an open-ended "figure out whether this is
-  solvable" (that framing once caused a 26-minute no-output stall; the
-  concrete re-brief finished in ~2 minutes).
-- **One panel, one commit: integrate, review the integrated tree once, then
-  make a single commit staging explicit paths.** **Never `git add -A` while
-  another agent writes.** Do not try to land disjoint slices individually as
-  they finish. The review artifact is bound to HEAD, so it waives exactly one
-  commit, and this is also what the framework already asked for on its own
-  terms: review the integrated tree, never half-written slices. The reliability
-  point underneath the older per-slice advice is real and survives: do not let
-  a large pile of unreviewed work accumulate in the tree, because a huge diff
-  is a diff no panel really reads. Honour it by keeping the *batch* small,
-  fewer slices per panel and panels more often, not by slipping single slices
-  past the gate. **That commit is not the landing.** The batch still has to
-  land through a pull request merged via the API (`merge_pull_request`) onto
-  the base branch, never a direct push — GitHub's "Automatically delete head
-  branches" only fires on a pull request merged on GitHub, so a direct push
-  leaves the branch behind. Full mechanism:
+  solvable" (that framing once stalled an agent for 26 minutes).
+- **Your commit is not the landing**: land through a pull request merged via
+  the API (`merge_pull_request`), never a direct push:
   [`../../agents/manager.md`](../../agents/manager.md#landing-through-a-pull-request-never-a-direct-push).
-  **The landing is not done when the branch is merged, either.** Every merged
-  branch — single or batch — is deleted after it lands, or owed an
-  `OWNER-ACTIONS.md` row where the seat cannot delete it, never later than
-  the landing report; a report naming a merged branch with neither is a
-  steward finding. Full rule, the file format, and the two "Safe because"
-  forms:
+- **Every merged branch is deleted after it lands**, or owed an
+  `OWNER-ACTIONS.md` row, no later than the landing report:
   [`../../agents/manager.md`](../../agents/manager.md#the-deletion-rule-every-merged-branch-is-deleted-after-it-lands).
-- **A runtime commit nudge is not commit authority (D24).** The cloud
+- **A runtime commit nudge is not commit authority.** The cloud
   runtime's Stop hook — provisioned into every session container, not the
   owner's to disable — blocks a stop once per idle when the tree is dirty
   and injects "commit and push." A pending panel or in-flight worker edits
   get a one-line decline and a stop; reviewed work commits per the loop,
-  never mid-write to satisfy a hook. A runtime fact, observed 2026-09-02,
-  not a defect.
+  never mid-write to satisfy a hook. To prevent the nudge,
+  idle with the shell parked outside every repo, so the Stop hook has no dirty tree to nudge about.
+  A runtime fact, observed 2026-09-02, not a defect.
 
 ### 7. The loop and the commit gate
 
@@ -843,22 +737,9 @@ DECOMPOSE → IMPLEMENT (fresh subagent per task, parallel where safe)
   (the fluff gate: yardstick, rebuttal round, and the required
   adjudication record at `.delegation/adjudications/`), and
   [MANAGER INSPECTS](#manager-inspects-the-procedure).
-- Review the whole integrated tree, never half-written slices, and land it in
-  **one** commit: the artifact binds to one HEAD.
-- Convergence stop-rule: each re-review must find strictly less. If only new
-  one-line nits keep appearing, you may close without convening another *full*
-  panel: one final dispatched fix round for the nits, a re-review by the
-  dissenters only, and your own exhaustive check on top. The verdicts are not
-  what the shortcut skips. Every reviewer still has to return PLEASED, because
-  that is the only state in which an honest artifact exists and the only state
-  the gate accepts.
-- **Read convergence by severity and region, not by count.** A fix round can
-  raise the count while genuinely improving the deliverable — the new findings
-  are usually *in the part you just rewrote*, which is the rule working, not
-  failing. Two questions decide it: are the new findings less severe, and are
-  they concentrated in the changed region? If findings cluster in one component
-  across rounds, that component needs a different *form* (see below), not
-  another revision.
+- Converge by severity and region: each round's findings must be less severe and sit in the region the last fix changed; a blocker at the same severity in the same file section two rounds running means stop and re-plan.
+  The rule and the one-line-nit shortcut:
+  [`../consolidating-review/SKILL.md`](../consolidating-review/SKILL.md#7-convergence-discipline).
 - **Brief re-reviewers to attack the revision as fresh work**, not merely to
   tick off their old list. Most defects in a fix round are newly introduced.
   Two failure modes to name explicitly in the re-brief: **relocated is not
@@ -870,56 +751,14 @@ DECOMPOSE → IMPLEMENT (fresh subagent per task, parallel where safe)
   with the reviewers' findings as test cases. Then have the prose point at the
   code as normative rather than restate it. Building surfaces defects prose
   review structurally cannot reach, and the tests keep them fixed.
-- **Arm the gate at loop start:** create a `.delegation/` directory at the
-  repo root when you begin the loop (it also holds the filled conflict
-  checklist and, later, the review artifact). This directory is the
-  **opt-in marker**: the commit gate and reminder hooks act only in repos that
-  carry it *and whose HEAD commit does not*, because plugin hooks are
-  session-global and must not wall off unrelated repos. A marker the HEAD
-  commit carries arrived with the repository rather than from anyone in this
-  working copy, so it is not consent and the gate stands down with a warning.
-- **In the same step, add `.delegation/` to that repo's `.gitignore`** if it is
-  not already there. This is not tidiness, it is required, and the reason is
-  the opposite of the one you might assume. Trackedness *is* the provenance
-  signal: the gate reads the HEAD commit tree, so a committed marker does not
-  arm your colleagues, it **disarms the gate for everyone who clones the
-  repo**, and for you as soon as that commit lands. Two failure modes, both one
-  `git add .` away. First, an unignored marker plus an ordinary `git add .`
-  sweeps `.delegation/` into your own commit and turns off the gate you just
-  armed. Second, an all-PLEASED artifact committed alongside it ships a waiver
-  over the network to every clone. Gitignoring the marker is what keeps it
-  meaning "somebody here chose this". Removing `.delegation/` later is how a
-  repo is **un-armed**, and it is the escape hatch of last resort if the gate
-  ever denies something it should not. If you inherited a marker and want it
-  as your own opt-in: `git rm -r --cached .delegation`, gitignore it, **and
-  commit that removal** (that commit is ungated, because until it lands the
-  marker still counts as inherited).
-- When the panel is all-PLEASED, ensure the review artifact exists at
-  `.delegation/review-artifact.json` (written per the `skeptical-review`
-  skill), including `head_sha` from `git rev-parse HEAD`. The PreToolUse commit
-  gate denies the git subcommands that introduce newly authored work
-  (`commit`, `cherry-pick`, `revert`, `am`, their `--continue`, and `--amend`)
-  without it. `pull`, `merge` and `rebase` are *not* gated: they integrate
-  commits that were already gated when they were authored. Neither are `reset`,
-  `restore`, `push` or `add`, which author no commit, nor any command carrying
-  `--abort`, `--skip`, `--quit` or `--dry-run` outside quotes. `--amend` **is**
-  gated, because an amend writes a new commit whose content is whatever is
-  staged, so `git add unreviewed.py && git commit --amend --no-edit` would
-  launder unreviewed work through a spent artifact; expect to need a fresh
-  artifact even for a message-only amend. Two residuals worth knowing: landing
-  a branch with `merge --no-ff` is not gated, because the review happened at
-  the commits inside the branch rather than at the merge; and
-  `git reset --soft HEAD~1` re-arms a spent artifact by moving HEAD back, which
-  is deliberate and returns exactly the one commit that artifact already
-  authorised. After committing, archive the artifact to `.delegation/history/`
-  so it cannot waive the next batch. The gate has five honest limits, and they
-  are stated in full in the
-  [README](../../README.md#enforcement-honestly-one-structural-slice-the-rest-is-discipline):
-  it needs hooks enabled and a Python 3.7+ interpreter answering to `python3`,
-  `python` or `py -3`; the artifact is fabricable; it
-  reaches the local tree only; it can be evaded or mis-resolved by parsing
-  (an unresolvable path falls back to the hook's own repo and the deny says so);
-  and it can rarely over-reach.
+- **Arm the gate at loop start:** create `.delegation/` at the repo root (it
+  holds the filled checklist and, later, the review artifact) and, in the same
+  step, add `.delegation/` to that repo's `.gitignore`: a committed marker
+  disarms the gate for every clone. The marker and its provenance, claiming an
+  inherited marker, what is gated (`--amend` included), the residuals and the
+  gate's five honest limits:
+  [README](../../README.md#enforcement-honestly-one-structural-slice-the-rest-is-discipline);
+  un-arming: [README](../../README.md#when-not-to-delegate-and-how-to-un-arm-a-repo).
 
 ## References (skill-referenced data, read on demand)
 

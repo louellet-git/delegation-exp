@@ -15,7 +15,7 @@ builds where independent review adds real safety. An orchestration that spawns
 agents for work you could have done directly is the framework failing, not
 succeeding.
 
-**Six rules that hold whenever the loop is running:**
+**Rules that hold whenever the loop is running:**
 
 1. **Every work agent gets at least one skeptic.** No exceptions. A green
    checkmark, a passing suite and confident prose each prove nothing on their

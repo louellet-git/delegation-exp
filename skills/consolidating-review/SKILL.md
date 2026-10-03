@@ -151,15 +151,10 @@ demotion, and new evidence flipped it.
 
 Every demotion is told to the finding's original reviewer, with the written
 reason, and the reviewer gets **exactly one** structured reply — the
-REBUTTAL block in [`../../docs/rubric.md`](../../docs/rubric.md):
-
-- **CONCEDE.** The demotion stands; the finding lives on as non-blocking or
-  is discarded, per the record.
-- **STAND, with NEW evidence.** Evidence the original finding did not
-  contain: a command run, a line cited, a consumer named. The manager
-  re-adjudicates against the yardstick with the new evidence in hand.
-  Standing on the *old* evidence restated louder is a concession with extra
-  words, and is recorded as one.
+REBUTTAL block in [`../../docs/rubric.md`](../../docs/rubric.md) (CONCEDE, or
+STAND with NEW evidence; old evidence restated is a concession). On CONCEDE
+the demotion stands: non-blocking or discarded, per the record. On STAND the
+manager re-adjudicates against the yardstick with the new evidence in hand.
 
 One round, then it is spent. In practice reviewers are one-shot spawns, so
 "tell the original reviewer" usually means re-dispatching the same lens
@@ -196,12 +191,11 @@ Finding <#> (<lens> / <reviewer>): REAL | FLUFF
   Final: gates (fix round) | demoted to non-blocking | discarded | escalated to owner
 ```
 
-The record is for the reviewers, the steward, and the next reader, not for
-the commit gate: the gate does not read it (honest limits, below). The
-steward *does* read it — `.delegation/` is its evidence base — and a round
-where half the BLOCKING list was demoted is exactly the skipping-its-own-gate
-conduct it exists to flag. The review artifact may also carry an optional
-`adjudications` array summarizing the record, same status as `escalations`
+The steward reads the record — `.delegation/` is its evidence base — and a
+round where half the BLOCKING list was demoted is exactly the
+skipping-its-own-gate conduct it exists to flag. The review artifact may also
+carry an optional `adjudications` array summarizing the record, same status
+as `escalations`
 ([`../skeptical-review/SKILL.md`](../skeptical-review/SKILL.md)): read by
 people, ignored by the gate.
 
@@ -260,10 +254,8 @@ as it is everywhere else in this framework.
 
 ## 7. Convergence discipline
 
-- The loop converges: each re-review must find **strictly less** than
-  the round before. Same-or-more findings two rounds running means the slice
-  was mis-scoped or the fix round was dispatched piecemeal. Stop and
-  re-plan; do not grind rounds.
+- Converge by severity and region: each round's findings must be less severe and sit in the region the last fix changed; a blocker at the same severity in the same file section two rounds running means stop and re-plan.
+  A repeat like that means the slice was mis-scoped or the fix round was dispatched piecemeal: do not grind rounds.
 - **The one-line-nit shortcut, stated precisely.** If late rounds surface only
   one-line nits, what you may skip is convening another **full panel**, not the
   verdicts. Close it like this: batch the nits into one final **dispatched**
@@ -279,8 +271,7 @@ as it is everywhere else in this framework.
   ([`../skeptical-review/SKILL.md`](../skeptical-review/SKILL.md)), followed by
   [the manager's own inspection](../delegating/SKILL.md#manager-inspects-the-procedure)
   and **one** commit for the whole batch: the artifact is bound to a single
-  HEAD, so a panel waives one commit, not one per slice. Fill the artifact's
-  `head_sha` after the last fix round, not before it.
+  HEAD, so a panel waives one commit, not one per slice.
 
 ## Honest limits (of the fluff gate)
 

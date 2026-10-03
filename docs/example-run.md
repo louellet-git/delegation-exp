@@ -155,7 +155,8 @@ briefed to probe for inputs that still slip through (empty dataset, single row,
 unicode field, delimiter in value; a burst straddling the window boundary, a
 clock that jumps), not just to confirm the diff. The three PLEASED reviewers
 are not re-run: the fix touched only what the dissenters reviewed. Both return
-**PLEASED**. Strictly less found than round 1 → the loop converged; no further
+**PLEASED**. No finding left, so the loop converged by severity and region
+([consolidating-review](../skills/consolidating-review/SKILL.md#7-convergence-discipline)); no further
 rounds, and because nobody is left holding NOT PLEASED there is an artifact to
 write.
 

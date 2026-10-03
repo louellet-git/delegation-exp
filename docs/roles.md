@@ -42,7 +42,7 @@ drift would go unnoticed.
 ## Implementation agent
 
 Builds exactly one scoped slice: it writes the
-code, updates the docs that live near what it changed, and reports what it
+code and reports what it
 did plus test evidence. Brief template:
 [`../skills/delegating/SKILL.md`](../skills/delegating/SKILL.md#the-brief-template).
 

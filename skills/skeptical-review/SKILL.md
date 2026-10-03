@@ -16,7 +16,7 @@ design, implementation, all of them. No exceptions.
 
 ## Panel setup
 
-1. **Size it:** 2–3 skeptics for a small change, 5–7 for a feature batch.
+1. **Size it:** 2–3 skeptics for a small change, 5–7 for a feature batch: scale to the risk; the numbers are guidance, not a ceiling.
 2. **Pick lenses** per the catalogue's guidance — diversify; duplicate
    lenses add noise, not coverage.
 3. **State the end goal in each dispatch.** Skeptics rate usefulness toward
@@ -94,9 +94,9 @@ review:
 `head_sha` is **required** and binds the artifact to **one** commit: the
 gate compares it against the repo's current HEAD, so once the reviewed
 commit lands the artifact is spent and the next commit needs a fresh panel.
-Record it when you write the artifact. An artifact written without the
-field fails closed with an explicit message — re-run the panel rather than
-patching the SHA in.
+Fill head_sha last; if a fix lands after the artifact is written, write the artifact again: the gate checks only HEAD.
+An artifact written without the field fails closed with an explicit message —
+re-run the panel rather than patching the SHA in.
 
 Keys the gate does not define are ignored, so the artifact can carry more than
 the minimum. Record the mode you chose in `mode`, and **if any swarm reviewer
@@ -128,49 +128,18 @@ Both arrays are for the manager, the steward and the next reader, not for the
 gate: the gate neither requires nor validates them. Do not invent other fields
 and expect them to mean anything.
 
-The PreToolUse commit gate denies the git commands that **author a new
-commit** (`commit`, `cherry-pick`, `revert`, `am`, their `--continue`, and
-`--amend`) unless this file exists, is valid JSON, has a non-empty
-`deliverable` string, a valid `mode`, a `head_sha` matching current HEAD, a
-non-empty `reviews` array, **a non-empty `lens` on every review**, every
-`verdict` exactly `"PLEASED"` with no non-empty `blocking` list, and an **empty
-`consolidated_blocking`**.
-
-Deliberately **not** gated: `merge`, `rebase` and `pull`, which integrate or
-replay commits that were already gated when they were authored; `reset`,
-`restore`, `push`, `add` and anything read-only, which author no commit; and
-any command carrying `--abort`, `--skip`, `--quit` or `--dry-run` outside
-quotes, none of which can create a commit (`git rebase --abort` must always
-work, especially mid-conflict). `--continue` **is** gated on the subcommands
-above, because it writes the commit the conflicted operation stopped short of,
-and so is `--amend`: an amend writes a new commit whose content is whatever is
-staged, so allowing it would launder `git add unreviewed.py` through a spent
-artifact.
-
-The gate acts only in repos carrying the `.delegation/` **opt-in marker**
-directory (created by the `delegating` skill at loop start) **that the HEAD
-commit does not carry**. A marker HEAD carries is not an opt-in: it arrived
-with the repository rather than from anyone in that working copy choosing it,
-so the gate warns and stands down, and the warning repeats on every gated
-command by decision. Honest framing, the gate has five limits: it verifies the
-artifact, not the review's rigor; it only fires where hooks are enabled and a
-Python 3.7+ interpreter answers to `python3`, `python` or `py -3`; it gates
-only the local tree; matcher evasion is possible and an unresolvable path falls
-back to gating the hook's own repo, saying so in the deny; and being
-session-global it is scoped by the opt-in marker yet can still
-false-positive on compound commands, quoted separators, and heredocs. Every
-deny prints the three escape hatches and this schema: write the artifact,
-remove `.delegation/`, or disable the hook (all five limits in the
+The PreToolUse commit gate denies the git commands that author a new commit
+unless this file is valid and its `head_sha` matches HEAD (what is gated and
+what is not, the `.delegation/` opt-in marker, the deny message and its escape
+hatches, the five honest limits: the section "Enforcement, honestly" of the
 [README](../../README.md)). After the manager commits, archive the artifact
 to `.delegation/history/`.
 
 ## Reading the panel
 
 - Any NOT PLEASED → hand the numbered BLOCKING lists to
-  [`../consolidating-review/SKILL.md`](../consolidating-review/SKILL.md),
-  which adjudicates every BLOCKING item against the fluff-gate yardstick
-  (real defects gate; fluff is demoted on the record, with one rebuttal
-  round for the reviewer) before one reconciled fix round; re-review the
-  dissenters only.
-- All PLEASED → write the artifact, then the **manager still inspects** —
-  a unanimous panel is necessary, not sufficient.
+  [`../consolidating-review/SKILL.md`](../consolidating-review/SKILL.md): it
+  adjudicates, runs one fix round and re-reviews the dissenters.
+- All PLEASED → write the artifact, then the
+  [manager still inspects](../delegating/SKILL.md#manager-inspects-the-procedure)
+  — a unanimous panel is necessary, not sufficient.
