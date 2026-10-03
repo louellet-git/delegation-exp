@@ -111,21 +111,12 @@ def main() -> int:
         require_frontmatter(path, ["name", "description"], f"skills/{skill}/SKILL.md")
 
     # 3. Agents
-    skeptic = root / "agents" / "skeptic.md"
-    if not skeptic.is_file():
-        err("missing agents/skeptic.md")
-    else:
-        require_frontmatter(skeptic, ["name", "description", "tools"], "agents/skeptic.md")
-    steward = root / "agents" / "steward.md"
-    if not steward.is_file():
-        err("missing agents/steward.md")
-    else:
-        require_frontmatter(steward, ["name", "description", "tools"], "agents/steward.md")
-    manager = root / "agents" / "manager.md"
-    if not manager.is_file():
-        err("missing agents/manager.md")
-    else:
-        require_frontmatter(manager, ["name", "description", "tools"], "agents/manager.md")
+    for agent in ("skeptic", "steward", "manager"):
+        path = root / "agents" / f"{agent}.md"
+        if not path.is_file():
+            err(f"missing agents/{agent}.md")
+            continue
+        require_frontmatter(path, ["name", "description", "tools"], f"agents/{agent}.md")
     if (root / "agents" / "implementation-agent.md").exists():
         err(
             "agents/implementation-agent.md must not exist "

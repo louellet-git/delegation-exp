@@ -1,35 +1,29 @@
 #!/usr/bin/env python3
 """Stop reminder nudge: discipline, not structure.
 
-Requires Python 3.7 or newer (`from __future__ import annotations`,
-`subprocess.run(capture_output=True)`).
+Requires Python 3.7 or newer (`from __future__ import annotations`, `subprocess.run(capture_output=True)`).
+Always exits 0; the hooks.json interpreter chain ends in `exit 0`, so a missing interpreter is silent.
 
-At session stop, IF the current repo has opted in (a `.delegation/`
-directory at the repo root that the HEAD commit does not carry, the same
-marker and the same provenance rule the commit gate uses) AND the working
-tree has uncommitted changes AND there is no review artifact the commit gate
-would accept, surface a one-line reminder that a delegation slice may be in
-flight without its panel. Reminder only: the
-commit gate is the structural check and this hook never blocks the stop.
+At session stop, IF the repo opted in (a `.delegation/` directory at the repo
+root that the HEAD commit does not carry: the commit gate's own three-state
+`marker_provenance()`) AND the working tree has uncommitted changes AND there
+is no review artifact the commit gate would accept, surface a one-line
+reminder that a delegation slice may be in flight without its panel. Reminder
+only: the commit gate is the structural check and this hook never blocks the
+stop.
 
-"An artifact the commit gate would accept" is not re-implemented here, it is
-literally `commit-gate.py`'s own `artifact_problem()`. This file used to
-check verdicts only, which meant it stayed quiet in the exact state where
-the gate denies: an all-PLEASED artifact whose `head_sha` no longer matches
-HEAD. The user ended the session believing they were covered and met the
-deny on their next commit. The two notions of "valid" must not drift, so
-there is now only one of them.
+A marker carried by the HEAD commit arrived with the repository, and one whose
+provenance cannot be determined is no evidence of consent either, so both
+silence this hook as they stand the gate down; nagging every contributor is
+the noise the opt-in marker exists to prevent.
 
-Silent in every other case (no marker, a marker that is not a local opt-in,
-clean tree, valid artifact, or any error running git). "Not a local opt-in"
-is the commit gate's own three-state `marker_provenance()`: a marker carried
-by the HEAD commit arrived with the repository, and a marker whose
-provenance cannot be determined is not evidence of consent either. Both
-silence this hook, for the same reason they stand the gate down.
+"An artifact the commit gate would accept" is literally `commit-gate.py`'s own
+`artifact_problem()`, so the two notions of "valid" cannot drift (a
+verdict-only check stayed quiet on an all-PLEASED artifact whose `head_sha` no
+longer matched HEAD, the exact state where the gate denies).
 
-Always exits 0, and hooks.json invokes it as `python3 ... || python ... ||
-py -3 ... || exit 0` so that a missing interpreter or script degrades to
-silence (the python.org Windows installer ships no `python3.exe`).
+Silent in every other case (no marker, clean tree, valid artifact, or any
+error running git).
 """
 
 from __future__ import annotations
@@ -41,16 +35,14 @@ import sys
 from pathlib import Path
 
 OPT_IN_MARKER = ".delegation"
-ARTIFACT_REL_PATH = Path(".delegation") / "review-artifact.json"
 GATE_PATH = Path(__file__).resolve().parent / "commit-gate.py"
 
 
 def load_gate():
-    """Import commit-gate.py by path (its filename is not an identifier).
+    """Import commit-gate.py by path (its filename is not an identifier), or None.
 
-    Returns the module, or None if it cannot be loaded. Callers degrade to
-    nagging: this hook only ever prints, so a false reminder costs a line of
-    text while a missed one costs the thing this hook exists for."""
+    Callers degrade to nagging: this hook only prints, so a false reminder
+    costs a line of text while a missed one costs what the hook exists for."""
     try:
         spec = importlib.util.spec_from_file_location(
             "delegation_commit_gate", GATE_PATH
@@ -65,16 +57,7 @@ def load_gate():
 
 
 def marker_is_local_opt_in(root: Path, gate) -> bool:
-    """Did somebody HERE opt this repo in, as opposed to inheriting it?
-
-    Delegates to the commit gate's `marker_provenance()` so the two hooks
-    cannot drift. Only MARKER_LOCAL nudges: a marker in the HEAD commit
-    arrived with the repository, and one whose provenance cannot be read is
-    not evidence of consent either.
-
-    If the gate module itself will not load, nudge anyway: this hook only
-    ever prints, so a false reminder costs a line of text while a missed one
-    costs the thing the hook exists for."""
+    """Only the gate's `marker_provenance()` == MARKER_LOCAL nudges; an unusable gate nudges too."""
     if gate is None:
         return True
     try:
@@ -98,8 +81,7 @@ def find_repo_root(start: Path) -> Path | None:
 
 
 def artifact_is_acceptable(root: Path, gate) -> bool:
-    """Exactly the commit gate's own verdict on the artifact, including the
-    `head_sha` binding to current HEAD."""
+    """The commit gate's own verdict on the artifact, `head_sha` binding to HEAD included."""
     if gate is None:
         return False  # cannot tell: nudge rather than stay silently wrong
     try:
@@ -142,9 +124,6 @@ def main() -> int:
         return 0
 
     gate = load_gate()
-    # A marker the HEAD commit carries arrived with the repository; nobody in
-    # this working copy opted in, so nagging every contributor would be the
-    # noise the opt-in marker exists to prevent. Same rule as the commit gate.
     if not marker_is_local_opt_in(root, gate):
         return 0
     if artifact_is_acceptable(root, gate):

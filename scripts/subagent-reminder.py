@@ -2,26 +2,19 @@
 """SubagentStop reminder nudge: discipline, not structure.
 
 Requires Python 3.7 or newer (`from __future__ import annotations`).
+Always exits 0; the hooks.json interpreter chain ends in `exit 0`, so a missing interpreter is silent.
 
 When a subagent finishes IN A REPO THAT HAS OPTED IN to the framework (a
-`.delegation/` directory at the repo root that the HEAD commit does not
-carry, the same scoping marker the commit gate uses; plugin hooks are
+`.delegation/` directory at the repo root that the HEAD commit does not carry,
+the commit gate's own three-state `marker_provenance()`; plugin hooks are
 session-global, and a nudge in every unrelated session is noise), surface a
-one-line reminder of the skeptic law.
-This is explicitly a REMINDER hook: it cannot know whether the subagent
-produced a deliverable, whether a skeptic was already attached, or whether
-the work is off-tree. It never blocks anything.
+one-line reminder of the skeptic law. This is explicitly a REMINDER hook: it
+cannot know whether the subagent produced a deliverable, whether a skeptic was
+already attached, or whether the work is off-tree. It never blocks anything.
 
-A `.delegation/` marker carried by the HEAD COMMIT is not an opt-in (it
-arrived with the repository rather than from anyone in this working copy
-choosing it), and neither is one whose provenance cannot be determined, so
-this hook stays quiet in both cases. Same three-state rule as the commit
-gate, and literally its `marker_provenance()`.
-
-Always exits 0, and hooks.json invokes it as `python3 ... || python ... ||
-py -3 ... || exit 0` so that a missing interpreter or script degrades to
-silence rather than to a nonzero hook exit (the python.org Windows installer
-ships no `python3.exe`).
+A marker carried by the HEAD commit arrived with the repository rather than
+from anyone in this working copy choosing it, and one whose provenance cannot
+be determined is no opt-in either, so this hook stays quiet in both cases.
 """
 
 from __future__ import annotations
@@ -52,13 +45,8 @@ def load_gate():
 
 
 def marker_is_local_opt_in(root: Path, gate) -> bool:
-    """Did somebody HERE opt this repo in, as opposed to inheriting it?
-
-    Delegates to the commit gate's `marker_provenance()` so the two hooks
-    cannot drift. Only MARKER_LOCAL nudges: a marker in the HEAD commit
-    arrived with the repository, and one whose provenance cannot be read is
-    not evidence of consent either. A gate module that will not load falls
-    back to nudging, which is this hook's whole failure posture."""
+    """Only the gate's `marker_provenance()` == MARKER_LOCAL nudges. A gate that
+    will not load falls back to nudging, this hook's whole failure posture."""
     if gate is None:
         return True
     try:
@@ -93,15 +81,15 @@ def main() -> int:
     start = Path(cwd) if isinstance(cwd, str) and cwd else Path.cwd()
     root = find_repo_root(start)
     if root is None:
-        return 0  # not a repo: stay quiet
+        return 0
     try:
         if not (root / OPT_IN_MARKER).is_dir():
-            return 0  # repo has not opted in: stay quiet
+            return 0
     except OSError:
         return 0
 
     if not marker_is_local_opt_in(root, load_gate()):
-        return 0  # marker came with the repo, or cannot be shown to be local
+        return 0
 
     print(
         json.dumps(
