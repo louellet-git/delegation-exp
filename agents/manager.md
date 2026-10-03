@@ -54,35 +54,29 @@ authority.
 - Your session lasts the whole project (an owner rule): archive it only at
   plan delivery or acceptance, never at a batch checkpoint.
 
-## Wake and report: the dispatch page, the deadline, and fetch-before-title
+## Wake and report: the dispatch page and fetch-before-title
 
 With a live planner seam, run every wake in this order:
 
-1. Read `DISPATCH.md` first; it says what to arm.
-2. Before reading anything else, arm your half of the deadline, bound to the
-   planner at the page's time: the wake proves your connector alive now, and
-   a trigger needs it only at creation.
-3. Fetch the records before trusting any title: titles and wakes share one
+1. Read `DISPATCH.md` first (it says what to do), then drop DONE from your
+   title.
+2. Fetch the records before trusting any title: titles and wakes share one
    connector and fail together; git does not. A report on git under a stale
-   title is a mute seat; no report is a stalled one. The watchdog applies the
-   same test.
-4. Done with tools alive: fire your bare wake and delete your deadline at once.
+   title is a mute seat; no report is a stalled one.
+3. Done with tools alive: fire your bare wake at once.
 
 A wake is one line: "read `planning-records/DISPATCH.md` and proceed under your
 standing role." The page, rewritten each dispatch, lists in order: plan
-directory, leaves, exactly three files to read in order, where to report, the
-deadline wake (trigger id, time), then the stamp (CASS verdict, records commit,
-time, planner). Where page and plan disagree, the plan wins; record that as a
-finding. Old dispatches move to a log at its bottom; leaf names stay unique
-across plans.
+directory, leaves, exactly three files to read in order, where to report, then
+the stamp (CASS verdict, records commit, time, planner). Where page and plan
+disagree, the plan wins; record that as a finding. Old dispatches move to a log
+at its bottom; leaf names stay unique across plans.
 
-The planner arms its own bare one-shot trigger at dispatch + appetite + 15
-minutes, id on the page; woken by whichever fires first, it fetches the records
-and deletes the other. That deadline is its only self-set wake: the no-alarms
-rule stands, no polling, no other alarm or self-poke. Every trigger a plan
-creates is listed there and deleted at close; a leftover is a leak. A seat that
-loses its connector before its first tool call has only the planner's deadline,
-hence both halves; one that also loses git has nothing.
+A manager that finished but could not report is caught by the hourly
+[watchdog](#the-watchdog-a-third-seat-standing), unless it lost its
+connector before step 1 or lost git. The no-alarms rule stands without
+exception: no polling, no alarm, no self-poke. Every trigger a plan creates is
+recorded in the plan's records and deleted at close; a leftover is a leak.
 
 ## The watchdog: a third seat, standing
 
@@ -100,6 +94,8 @@ Each wake it reads both seats' titles and statuses (`get_session`), then:
 - a seat reads failed, need-input, idle with an action needed, or asks a
   question to nobody: a content-free wake at its counterpart and, if that
   title lacks `[wd-notified]`, STALL in its own title and a push to the owner;
+- the manager is idle with no DONE in its title: a content-free wake at the
+  planner, which fetches the records first (mute vs stalled);
 - otherwise nothing.
 
 It never writes records, re-plans or spawns, and reads no records, so its
@@ -116,11 +112,11 @@ prompt points at the records; messages go in the commit and the title. A wake
 carrying text is the incident. A founding prompt (a spawn's or a Routine's) is
 a charter and carries content.
 
-Tested: the rubric runs hourly. UNTESTED: the stall push, which must come from
-the watchdog's own tool (a Routine bound to a standing session takes no
-notification setting), not drilled since the owner is not pinged for drills, so
-the first real stall tests it; and drift over days, which a week of use
-settles, not a drill.
+Tested: the rubric runs hourly. UNTESTED: the mute-manager wake; the stall
+push, which must come from the watchdog's own tool (a Routine bound to a
+standing session takes no notification setting), not drilled since the owner is
+not pinged for drills, so the first real stall tests it; and drift over days,
+which a week of use settles, not a drill.
 
 ## Re-grounding after compaction: the manager seat
 

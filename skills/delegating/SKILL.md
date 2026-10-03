@@ -54,6 +54,8 @@ description: Runs a substantial multi-part build as a manager who briefs one fre
   "We don’t need a second run just a strong encouragement from the get go and a strong encouragement for any fixes that are recommended to it by reviewer. Reviewer doesn’t recommend just reminds to try and be more compact."
   And on tightening it, same day:
   "Tighten compact rules. Should be a report that is also compact as can be located in the repo."
+  And dropping the dispatch deadline wake (the hourly watchdog covers a mute manager), 2026-10-03, verbatim:
+  "Drop"
 -->
 
 # Delegating
@@ -103,10 +105,10 @@ rule):
 - **Wakes are fired bare:** a `fire_trigger` carrying `text` never reaches the
   bound seat, so content goes in the records, the commit or the title
   ([manager.md](../../agents/manager.md#the-watchdog-a-third-seat-standing)).
-- **On a planner wake:** read `planning-records/DISPATCH.md` first, arm your
-  deadline next, fetch the records before trusting a title; when done, fire
-  the bare wake and delete your deadline
-  ([manager.md](../../agents/manager.md#wake-and-report-the-dispatch-page-the-deadline-and-fetch-before-title)).
+- **On a planner wake:** read `planning-records/DISPATCH.md` first, drop DONE
+  from your title, fetch the records before trusting a title; when done, fire
+  the bare wake
+  ([manager.md](../../agents/manager.md#wake-and-report-the-dispatch-page-and-fetch-before-title)).
 - **Watchdog tokens:** `ack` in your title once you act on the planner's DONE,
   dropped when that DONE leaves its title; `[wd-notified]` after a stall wake,
   until your next normal report

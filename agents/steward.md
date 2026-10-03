@@ -115,9 +115,7 @@ report each brief missing from `.delegation/briefs/<slice-id>.md`
     plus PR number nor an `OWNER-ACTIONS.md` row for it, filed by the next
     commit, before the report
     ([rule](manager.md#the-deletion-rule-every-merged-branch-is-deleted-after-it-lands));
-  - a dispatch page (`DISPATCH.md`) or landing report naming no deadline wake
-    (trigger id, time), the fix for a connector lost at completion, or any
-    wake carrying text: `fire_trigger` with `text` mints a fresh session
+  - any wake carrying text: `fire_trigger` with `text` mints a fresh session
     instead of reaching the seat.
 - **Compacted without realigning.** A compact (a continuation summary atop its
   context) or restart in the window with no five-line re-alignment statement
