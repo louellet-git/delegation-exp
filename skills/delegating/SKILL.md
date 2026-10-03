@@ -391,7 +391,10 @@ sufficient.
 5. **Check the artifact** against
    [its schema](../skeptical-review/SKILL.md#the-review-artifact-feeds-the-commit-gate):
    the gate (`check_artifact` in `scripts/commit-gate.py`) denies any failed
-   field, and a `head_sha` not equal to `git rev-parse HEAD` **right now**
+   field. Check each: non-empty `deliverable`, valid `mode`, non-empty
+   `reviews` with a `lens` each, every `verdict` exactly `PLEASED` with empty
+   `blocking`, empty `consolidated_blocking`, and `head_sha` equal to
+   `git rev-parse HEAD` **right now**
    ([limit 2](../../README.md#enforcement-honestly-one-structural-slice-the-rest-is-discipline)).
    Fill `head_sha` last, once the tree stops changing, or a later fix round
    leaves it describing an older tree.
