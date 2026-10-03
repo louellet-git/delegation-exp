@@ -1601,7 +1601,12 @@ class TestObjectStoreMatchesGit(GateTestCase):
         git(repo, "commit", "-qm", "commit the marker")
         return repo
 
-    def assertReadsEveryObject(self, repo: Path) -> int:
+    def assertReadsEveryObject(self, repo: Path, deltas: bool = True) -> int:
+        if deltas:  # a git that stops deltifying must not make the delta tests trivial
+            idx = (repo / ".git" / "objects" / "pack").glob("*.idx")
+            out = git(repo, "verify-pack", "-v", *idx).stdout
+            self.assertTrue(any(len(l.split()) >= 7 for l in out.splitlines()),
+                            "the pack holds no delta object")
         shas = [line.split()[0]
                 for line in git(repo, "cat-file", "--batch-all-objects",
                                 "--batch-check=%(objectname) %(objecttype)"
@@ -1624,7 +1629,7 @@ class TestObjectStoreMatchesGit(GateTestCase):
 
     @unittest.skipUnless(GIT, "git binary not available")
     def test_loose_objects(self):
-        self.assertReadsEveryObject(self.growing_repo("loose-objects"))
+        self.assertReadsEveryObject(self.growing_repo("loose-objects"), deltas=False)
 
     @unittest.skipUnless(GIT, "git binary not available")
     def test_packed_objects_with_offset_deltas(self):
