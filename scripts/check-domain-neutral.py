@@ -8,9 +8,8 @@ of terms (case-insensitive, word-boundary matched) and exits nonzero on any hit.
 The token list is deliberately NOT in this repository. It lives in an untracked
 file (default: `.domain-tokens` at the repo root, one term per line, `#` for
 comments) or in the `DOMAIN_TOKENS` environment variable as a comma-separated
-list. The reason is the obvious one: a committed list of the words you scrubbed
-is itself the disclosure. The list of what you are hiding tells a reader exactly
-what you were hiding.
+list, because a committed list of the words you scrubbed is itself the
+disclosure.
 
 Set your own list up like this:
 
@@ -25,8 +24,8 @@ fail quietly, because a check that reports success while enforcing nothing is
 the worst failure mode this framework has.
 
 The grep catches the obvious leaks. Subtler domain-shaped *assumptions* can still
-slip past a token match — those are policed by adversarial review, not by this
-script. Two distinct mechanisms; this one is only the mechanical half.
+slip past a token match; adversarial review polices those. This script is only
+the mechanical half.
 
 Usage: python3 scripts/check-domain-neutral.py [repo-root]
 Exit codes: 0 = clean (or inert), 1 = denylist hits found, 2 = usage/IO error.
@@ -41,12 +40,6 @@ from pathlib import Path
 
 TOKENS_FILENAME = ".domain-tokens"
 TOKENS_ENV_VAR = "DOMAIN_TOKENS"
-
-# Paths (relative to repo root, POSIX style) exempt from the gate.
-# NOTE: this script is deliberately NOT allowlisted. It no longer names a single
-# term, so it has nothing to be exempt from — which is the whole point of
-# reading the list from an untracked file instead of hardcoding it here.
-ALLOWLIST: set[str] = set()
 
 SKIP_DIRS = {".git", "__pycache__", "node_modules", ".delegation"}
 
@@ -113,8 +106,6 @@ def main() -> int:
             continue
         if rel.as_posix() == TOKENS_FILENAME:
             continue  # the list itself, which is untracked by design
-        if rel.as_posix() in ALLOWLIST:
-            continue
         if not is_text_candidate(path):
             continue
         try:
