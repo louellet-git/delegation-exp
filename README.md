@@ -123,8 +123,8 @@ Copy every path below, layout intact, into a subdirectory such as
 Drop none: links are relative, hooks resolve
 `${CLAUDE_PLUGIN_ROOT}/scripts/...`, other files cite `README.md`, and
 `.claude-plugin/` and `test/` are the manifest and the suite. Check with
-`python3 scripts/validate-structure.py <your-copy-root>`. The copy is frozen:
-record its upstream commit in your README; to update:
+`python3 scripts/validate-structure.py <your-copy-root>`. A hand-vendored copy is
+frozen: record its upstream commit in your README; to update it:
 
 1. `git fetch` the upstream repo.
 2. `git diff <vendored-commit>..<target-tag> -- .claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ docs/ test/ README.md LICENSE`
@@ -134,6 +134,29 @@ record its upstream commit in your README; to update:
 
 Marketplace propagation of version bumps is planned, not available: upgrades
 are per consumer.
+
+An installer-managed copy ([section 3](#3-project-vendored-cloud-sessions)) is
+instead updated by re-running the installer from a newer clone.
+
+### 3. Project-vendored (cloud sessions)
+
+The owner's cloud sessions (observed 2026-10-25) do not run `/plugin install`.
+From a clone of this repo, not a vendored copy, run:
+
+```
+python3 scripts/install-into.py /path/to/your/repo
+```
+
+It writes a [vendored](#2-vendoring-the-frozen-snapshot-escape-hatch) copy
+under `vendor/delegation-framework/` with `INSTALL.json`, `skeptic`, `steward`,
+the skills and the commands under `.claude/`, the hooks merged into
+`.claude/settings.json`, and a `.delegation/` line in `.gitignore`. It refuses,
+before writing anything, a file it wrote and you changed (delete it to accept
+the new version) or a file or symlink it did not write (move or rename it). Commit the result.
+
+It wires the commit gate but does not arm it; when the gate enforces is under
+[Enforcement, honestly](#enforcement-honestly-one-structural-slice-the-rest-is-discipline).
+Whether cloud sessions load the installed files is unverified.
 
 ## When not to delegate, and how to un-arm a repo
 
