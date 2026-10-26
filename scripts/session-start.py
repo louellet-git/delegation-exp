@@ -44,7 +44,7 @@ def main() -> int:
         pass
 
     try:
-        body = CONTEXT_PATH.read_text(encoding="utf-8")
+        body = CONTEXT_PATH.read_text(encoding="utf-8-sig")
     except OSError:
         return 0  # context file missing: stay silent rather than half-speak
 
@@ -59,16 +59,10 @@ def main() -> int:
         "the loop is actually run.\n"
         "</EXTREMELY_IMPORTANT>"
     )
-    print(
-        json.dumps(
-            {
-                "hookSpecificOutput": {
-                    "hookEventName": "SessionStart",
-                    "additionalContext": context,
-                }
-            }
-        )
-    )
+    out = {"additionalContext": context}
+    if "--copilot" not in sys.argv:  # Copilot CLI reads the top-level shape
+        out = {"hookSpecificOutput": {"hookEventName": "SessionStart", **out}}
+    print(json.dumps(out))
     return 0
 
 

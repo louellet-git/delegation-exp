@@ -1,6 +1,6 @@
-# Owner actions — what a seat could not do, and why each line is safe to run
+# Owner actions
 
-Append-only. One row per branch. Run a row's command locally; nothing else is needed.
+One row per branch. Run a row's command locally; nothing else is needed.
 
 | Date (UTC) | Repository | Branch | Why the seat could not | Safe because | Command |
 |---|---|---|---|---|---|

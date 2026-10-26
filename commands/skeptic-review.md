@@ -8,8 +8,6 @@ Use the **delegation-framework:skeptical-review** skill to review:
 $ARGUMENTS
 
 Dispatch at least **one** skeptic, even for a single deliverable that "looks
-fine", with the end goal stated. Pick the lens for the dominant risk:
-design-review or research/claim-verification for non-code; anything that
-scores, ranks, classifies, prioritizes or derives a verdict **must** get
-derived-output/ranking, in deep mode. Report PLEASED | NOT PLEASED + numbered
-BLOCKING.
+fine", with the end goal stated, and a `compact` one (compact-review skill) for any doc. Choose
+lenses per [the catalogue](../docs/lenses.md#choosing-lenses-for-a-panel).
+Report PLEASED | NOT PLEASED + numbered BLOCKING.

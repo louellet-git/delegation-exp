@@ -35,7 +35,7 @@ with a reason, a deleted failing test.
 ### derived-output / ranking
 
 Anything that scores, ranks, classifies, prioritizes or derives a verdict: does
-it order reality correctly? Run the skeptic's ranking patterns, executing the
+it order reality correctly? Run [the skeptic's ranking patterns](../agents/skeptic.md#attack-patterns-name-the-ones-that-apply), executing the
 deliverable and its own worked example. Smells: a threshold with no stated
 headroom; two promotion rules that can stack.
 
@@ -62,17 +62,18 @@ a dependency stated as hard when nothing declares it.
 Memos and recommendations: is each claim traced to a source that says it, with
 its conditions, and were disconfirming sources sought?
 
+### compact
+
+A created or changed doc: is it as compact as [compact.md](compact.md) asks? A
+skeptic loads [compact-review](../skills/compact-review/SKILL.md).
+
 ## Choosing lenses for a panel
 
-- Small change (2-3): correctness, evidence-vs-claim, the dominant-risk lens.
-- Feature batch (5-7): correctness, coupling/boundary-integrity,
+- Seats and sizing: [panel setup](../skills/skeptical-review/SKILL.md#panel-setup).
+- Candidates for a larger batch: correctness, coupling/boundary-integrity,
   overfit/generalization, evidence-vs-claim, honesty/overclaim, plus
   per-feature skeptics for the riskiest slices.
 - Non-code deliverables: design-review or research/claim-verification as the
   anchor, honesty/overclaim second.
-- Anything that scores, ranks or derives a verdict: **derived-output/ranking**
-  is mandatory, in **deep** mode: inversion and fail-open defects are only
-  reachable by executing the thing.
-
-Mode (swarm / deep / hybrid) is chosen separately: see
-[`../skills/skeptical-review/SKILL.md`](../skills/skeptical-review/SKILL.md).
+- Anything that scores, ranks or derives a verdict: **derived-output/ranking**,
+  mandatory ([modes](../skills/skeptical-review/SKILL.md#the-three-modes)).

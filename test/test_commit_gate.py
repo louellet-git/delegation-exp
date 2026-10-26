@@ -194,7 +194,7 @@ def run_payload(payload):
 
 def run_raw_stdin(raw: str):
     saved_stdin = sys.stdin
-    sys.stdin = io.StringIO(raw)
+    sys.stdin = io.TextIOWrapper(io.BytesIO(raw.encode("utf-8")), encoding="utf-8")
     out = io.StringIO()
     try:
         with contextlib.redirect_stdout(out):
@@ -775,6 +775,56 @@ class TestEndToEnd(GateTestCase):
         output = json.loads(result.stdout)
         self.assertEqual(
             output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def deny_output(self, *flags):
+        payload = json.dumps({
+            "tool_name": "Bash",
+            "tool_input": {"command": 'git commit -m "x"'},
+            "cwd": str(self.repo()),
+        })
+        result = subprocess.run(
+            [sys.executable, str(GATE_PATH), *flags],
+            input=payload, capture_output=True, text=True, timeout=30,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout)
+
+    def test_copilot_flag_denies_in_the_top_level_shape(self):
+        output = self.deny_output("--copilot")
+        self.assertEqual(set(output), {"permissionDecision", "permissionDecisionReason"})
+        self.assertEqual(output["permissionDecision"], "deny")
+        self.assertIn("review-artifact", output["permissionDecisionReason"])
+
+    def test_default_deny_shape_is_unchanged(self):
+        output = self.deny_output()
+        self.assertEqual(set(output), {"hookSpecificOutput"})
+        self.assertEqual(
+            set(output["hookSpecificOutput"]),
+            {"hookEventName", "permissionDecision", "permissionDecisionReason"})
+
+    def test_non_ascii_command_and_cwd_still_deny_under_a_cp1252_locale(self):
+        # UTF-8 bytes that a cp1252 stdin cannot decode ("Ё" is D0 81).
+        payload = json.dumps({
+            "tool_name": "Bash",
+            "tool_input": {"command": 'git commit -m "Ёж"'},
+            "cwd": str(self.repo("répö-Ё")),
+        }, ensure_ascii=False).encode("utf-8")
+        result = subprocess.run(
+            [sys.executable, str(GATE_PATH)], input=payload,
+            capture_output=True, timeout=30,
+            env={**os.environ, "PYTHONIOENCODING": "cp1252"},
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        output = json.loads(result.stdout)
+        self.assertEqual(
+            output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_tool_name_matches_case_insensitively(self):
+        repo = self.repo()
+        for name in ("bash", "powershell", "BASH"):
+            code, output = run_gate('git commit -m "x"', repo, tool_name=name)
+            self.assertEqual(
+                output["hookSpecificOutput"]["permissionDecision"], "deny", name)
 
     def test_subprocess_allows_silently_with_a_valid_artifact(self):
         repo = self.repo()

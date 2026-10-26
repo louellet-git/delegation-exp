@@ -71,7 +71,7 @@ def find_repo_root(start: Path) -> Path | None:
 
 def main() -> int:
     try:
-        payload = json.load(sys.stdin)
+        payload = json.loads(sys.stdin.buffer.read().decode("utf-8"))
     except (json.JSONDecodeError, OSError, UnicodeDecodeError):
         return 0
     if not isinstance(payload, dict):

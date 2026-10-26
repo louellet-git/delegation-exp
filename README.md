@@ -52,55 +52,87 @@ two steward scorecards.
 
 ## Who this is for (read this before you install)
 
-Flat-subscription accounts, a load-bearing assumption: where a seven-skeptic
-panel costs what a two-skeptic one does, defaults maximise catches (panels of 5
-to 7, dissenters re-reviewed, a standing steward). **Billed per token, that
-costs real money:** scale panels down
-([sizing](skills/skeptical-review/SKILL.md#panel-setup)) but keep the
-always-pair-a-skeptic floor; the cost call is yours.
+Reviewers run on Haiku and panels seat one reviewer per distinct high-impact
+risk, never a quota ([sizing](skills/skeptical-review/SKILL.md#panel-setup));
+billed per token, the cost call is yours, but keep the one-skeptic floor.
+The owner-set [model ladder](skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what)
+is firm unless the owner says otherwise. Standing cost per project, with a
+planner: an idle planner and manager session plus a Haiku
+[watchdog](agents/manager.md#the-watchdog-a-third-seat-standing) on one hourly
+Routine.
 
-The owner-set **model ladder** (2026-09-02) is firm: the manager runs on Opus;
-below it, tier is judgment recorded in the brief, never gated; a growing job
-gets more agents, never a bigger one; panels stay large
-([ladder](skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what)).
-Standing cost per project: an idle planner and an Opus manager session for the
-run (the planner idles between turns, never polling), plus an idle Sonnet
-watchdog and one hourly Routine firing, the platform floor
-([watchdog](agents/manager.md#the-watchdog-a-third-seat-standing)).
+## The roles at a glance
 
-## The roles at a glance (so any agent knows what they are)
-
-The owner talks only to the **manager**
-([`agents/manager.md`](agents/manager.md)), the single top-level orchestrator
-and only spawner: it decomposes, spawns implementers and skeptics as flat
-siblings one level deep, runs the panel, integrates and commits
-([`docs/roles.md`](docs/roles.md)). **Never spawn the manager:** `/delegate`
-makes your own top-level session adopt it
-([how](agents/manager.md#how-to-use-this-file-do-not-spawn-it)). Implementers
-build one slice each and skeptics ([`agents/skeptic.md`](agents/skeptic.md))
-review every deliverable; neither can spawn, so a worker needing help asks the
-manager. The manager also spawns the **steward**
-([`agents/steward.md`](agents/steward.md)) to review itself, consulting it at
-execution checkpoints by standing rule so the owner is never the reminder
-([auto-consult](agents/manager.md#auto-consult-a-standing-binding-rule)).
-
-The one-level rule holds only while the skeptic and steward `tools:` grant no
-spawn tool (`Task`). Parallel deep teams are separate sessions with their own
-managers, coordinated by the owner
-([topology](agents/manager.md#the-spawn-topology-the-load-bearing-rule-of-this-framework)).
+Roles and the one-level spawn rule: [roles](docs/roles.md),
+[topology](agents/manager.md#the-spawn-topology-the-load-bearing-rule-of-this-framework).
+[Never spawn the manager](agents/manager.md#how-to-use-this-file-do-not-spawn-it).
 
 ## What it owns
 
 The loop ([`skills/delegating/SKILL.md`](skills/delegating/SKILL.md),
 [`docs/operating-model.md`](docs/operating-model.md)): one scoped task per
 fresh subagent, fan-out by disjoint write sets, test-first, evidence before
-claims. `docs/` is read on demand, not auto-loaded. Claims are capabilities,
+claims. Docs its agents write follow [compact](docs/compact.md), reviewed by
+a skeptic loading the compact-review skill. `docs/` is read on demand, not
+auto-loaded. Claims are capabilities,
 not guarantees: decomposition quality, whether a finding truly blocks, and the
 commit go/no-go stay human (or the manager's).
 
 ## Install
 
-### 1. Git-installable (the default, precedented path)
+### 0. Once per machine, no repo changes (Claude Code and Copilot CLI)
+
+From any clone of this repo:
+
+```
+python3 scripts/install-into.py --user
+```
+
+It installs for every repo on the machine: the framework copy at
+`~/.claude/delegation-framework/`, the agents, skills, commands and hooks under
+`~/.claude/`, the skills under `~/.agents/skills/` (the shared Agent Skills
+location Copilot CLI and other tools read), the agents and hooks under
+`~/.copilot/` (or `$COPILOT_HOME`), and `.delegation/` in your global git
+excludes. Re-run it from a newer clone to upgrade; your own hooks are kept, and
+a file you edited is refused (delete it to accept the new version).
+
+**Cloud sessions** start from a fresh container, so put the one-liner in the
+environment's setup script (once per environment, never per repo); it also
+upgrades a machine that already has `~/.df-src`:
+
+```
+if [ -d ~/.df-src/.git ]; then git -C ~/.df-src pull -q --ff-only; else git clone -q --depth 1 https://github.com/louellet-git/delegation-exp ~/.df-src; fi && python3 ~/.df-src/scripts/install-into.py --user
+```
+
+**Any other agent that can read GitHub:** have it read
+`skills/delegating/SKILL.md` and `agents/manager.md` from the repo above and
+hold the manager role; workers and reviewers read their brief and role file the
+same way. No install, no hooks: discipline only.
+
+**In GitHub Copilot CLI:**
+
+- `/delegate` is Copilot's own command ("Send this session to GitHub and
+  Copilot will create a PR", `copilot help commands`, 1.0.103): it commits your
+  unstaged changes to a new branch, past the commit gate. Ask for the
+  `delegating` skill by name instead.
+- Hooks come from [`hooks/copilot-hooks.json`](hooks/copilot-hooks.json)
+  (separate `bash` and `powershell` commands). Use one install, not both: a
+  trusted repo's `.claude/settings.json` from a
+  [section 3](#3-project-vendored-cloud-sessions) install also loads, and its
+  `||` chain is expected to fail under Windows PowerShell 5.1.
+- On Windows, put `python` on PATH: the PowerShell hooks try only `python`,
+  and without it the gate is silent.
+- The model ladder is guidance there: Copilot agent files carry no `model`.
+- `copilot plugin install louellet-git/delegation-exp` loads the same hooks via
+  [`.github/plugin/plugin.json`](.github/plugin/plugin.json) once this lands on
+  `main`.
+
+Verified on Copilot 1.0.103 (Linux, mock model): both installs fire
+SessionStart, PreToolUse and Stop; an un-reviewed `git commit` is denied, an
+all-PLEASED one and ordinary shell calls pass. Untested: Windows, PowerShell's
+tool name, SubagentStop, double-firing with both installs.
+
+### 1. Git-installable (the Claude Code plugin path)
 
 ```
 /plugin marketplace add louellet-git/delegation-framework-public
@@ -140,7 +172,7 @@ instead updated by re-running the installer from a newer clone.
 
 ### 3. Project-vendored (cloud sessions)
 
-The owner's cloud sessions (observed 2026-10-25) do not run `/plugin install`.
+Cloud sessions do not run `/plugin install`; [section 0](#0-once-per-machine-no-repo-changes-claude-code-and-copilot-cli) covers them too.
 From a clone of this repo, not a vendored copy, run:
 
 ```
@@ -182,7 +214,7 @@ with a plan, and then
 [plan intake](skills/delegating/SKILL.md#decompose-the-procedure) and the
 [planner relay](skills/delegating/SKILL.md#the-planner-relay-questions-go-back-up-the-seam)
 apply; nothing loads the sibling, and its absence fails nothing. The one
-external requirement is Python 3.7+ (limit 1).
+external requirement is Python (version and fallbacks: limit 1).
 
 ## Enforcement, honestly: one structural slice, the rest is discipline
 
@@ -223,14 +255,12 @@ authored); `reset`, `restore`, `push`, `add` and read-only commands (no
 commit). **Residuals:** a `git merge --no-ff` merge commit has no artifact, and
 branch commits made beyond the gate's reach (limits 1, 3, 4) are never
 re-checked. `git reset --soft HEAD~1` re-freshens a spent artifact, so one
-artifact can waive more than one commit; that stays open on purpose, as closing
-it means gating `reset`, which authors no commit, and limit 4's `bash -c`
-bypass is wider. A committed `.delegation/history/` does not disarm you but
+artifact can waive more than one commit; left open on purpose: closing it
+means gating `reset`, which authors no commit. A committed `.delegation/history/` does not disarm you but
 gates every clone that has the plugin; accepted (keep the archive outside the
 repo).
 
-**Cost:** about 44ms on every `Bash` and `PowerShell` call, gated or not, 30ms
-of it Python startup; the provenance read is about 0.36ms.
+**Cost:** about 44ms per `Bash` and `PowerShell` call, gated or not.
 
 **Its five honest limits:**
 
@@ -252,7 +282,7 @@ of it Python startup; the provenance read is about 0.36ms.
    via variables) falls back to the hook's own repo, gated there; the deny
    names that repo.
 5. **Over-reach (the flip side).** Hooks are session-global, so the gate runs in
-   every repo the session touches; the marker (none: silent allow) and anchored
+   every repo the session touches; the marker (with none it allows silently) and anchored
    matching scope it, but a compound command, a quoted separator, a heredoc or
    the limit-4 fallback can deny wrongly. Escape hatches, in order: write the
    review artifact; remove `.delegation/`; disable the hook.
@@ -287,7 +317,7 @@ python3 scripts/check-domain-neutral.py
 ```
 
 Only the tests exercise behaviour: run them before trusting the gate (no
-network, fixtures or `git` binary needed). The validator must be green, here
+network needed; several tests run `git`). The validator must be green, here
 and on any vendored copy. The domain check is inert, its exit 0 no pass, until
 you supply an untracked `.domain-tokens` list, one term per line:
 

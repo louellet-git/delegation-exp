@@ -15,21 +15,21 @@ mkdir -p .delegation/briefs .delegation/steward
 grep -qxF '.delegation/' .gitignore || echo '.delegation/' >> .gitignore
 ```
 
-Three unrelated changes under one panel and one commit are a **feature batch**
-(panel of 5 to 7). The [checklist](conflict-avoidance-checklist.md) clears
+Three unrelated changes under one panel and one commit are a
+[feature batch](../skills/skeptical-review/SKILL.md#panel-setup). The [checklist](conflict-avoidance-checklist.md) clears
 disjoint slices, each an allowlist plus its exact test command: A `export/`, B
 `middleware/`, C `docs/api.md`; `docs/README.md` stays the manager's. They run in
 parallel, one fresh test-first worker subagent each.
 
 Briefs from [the template](../skills/delegating/SKILL.md#the-brief-template) are
 saved to `.delegation/briefs/A.md`, `B.md`, `C.md` before dispatch, or the
-steward's DELEGATION line is unrecoverable. Each carries **"You do not commit or
-push. Leave work in the tree; the manager commits once, after review."**
+steward's DELEGATION line is unrecoverable.
 
 ## 2. REVIEW PANEL
 
-A feature batch gets **5**: **swarm**, five lenses in parallel over the whole
-tree once all report DONE, docs slice included. `correctness` is **NOT
+One skeptic per distinct high-impact risk, here **5** in
+[swarm](../skills/skeptical-review/SKILL.md#the-three-modes) mode: five lenses
+in parallel over the whole tree once all report DONE, docs slice included. `correctness` is **NOT
 PLEASED** (`export/csv.py` crashes on an empty dataset; the suite covers only
 populated tables), `overfit/generalization` **NOT PLEASED** (`ratelimit.py`
 counts per fixed calendar minute, so a boundary burst passes twice the limit);
@@ -38,21 +38,20 @@ the other three are **PLEASED**.
 ## 3. ADJUDICATE → FIX ROUND
 
 A BLOCKING tag does not gate by itself: adjudicate each finding against
-[the fluff gate](../skills/consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate)
-before any fix. Both are **REAL**: a reproducible crash with evidence (head 4); a
-user-visible failure of the slice's own acceptance condition (heads 1, 2).
+[fluff gate, consolidating-review §2](../skills/consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate)
+before any fix. Both are **REAL**: a reproducible crash with evidence (finding 4); a
+user-visible failure of the slice's own acceptance condition (findings 1, 2).
 Nothing is demoted, so no rebuttal round, yet write the record before the fix
 briefs: `.delegation/adjudications/round-1.md`, *"all findings adjudicated REAL;
 nothing demoted."*
 
-One fix round, a fresh agent per slice owner, **A-fix** and **B-fix**. Save
-`A-fix.md` and `B-fix.md` before dispatch, PARTIAL WORK naming what the
-predecessor left, or the steward cannot reconcile the round. Fix agents do not
-commit.
+One fix round, sent by SendMessage to the original agents A and B, context
+intact: **A-fix** and **B-fix**. Save `A-fix.md` and `B-fix.md` before sending,
+or the steward cannot reconcile the round. Fix agents do not commit.
 
 ## 4. RE-REVIEW the dissenters
 
-Re-run only `correctness` and `overfit/generalization`, briefed to probe inputs
+Send the `correctness` and `overfit/generalization` skeptics back (SendMessage), briefed to probe inputs
 that still slip, not to confirm the diff; the PLEASED three stay, since the fix
 touched only what the dissenters reviewed. Both return **PLEASED**: converged
 ([convergence](../skills/consolidating-review/SKILL.md#7-convergence-discipline)),
@@ -66,7 +65,7 @@ Write `.delegation/review-artifact.json`
 its `head_sha` the output of `git rev-parse HEAD`, the parent of that commit
 (`null` in a repo with no commits, where it fails).
 
-A unanimous panel is not sufficient: work
+Work
 [the MANAGER INSPECTS list](../skills/delegating/SKILL.md#manager-inspects-the-procedure)
 yourself, reconciling every changed path against the five saved briefs (A, B, C,
 A-fix, B-fix) plus the reserved set, and re-running the full test command. Then
@@ -97,10 +96,10 @@ VISION: on-prize
   Evidence: A, B, C each moved a conjunct of the claim.
 
 DELEGATION: delegating-well
-  Spawn count (MANDATORY): 5 (A, B, C, two fix agents).
+  Spawn count (MANDATORY): 8 (A, B, C and five skeptics); fixes went back to A and B.
   Kept-or-delegated (MANDATORY): riskiest build, CSV export, went to A; its
     skeptic caught the bug.
-  Evidence: unexplained delta empty; panel of 5 fits a feature batch.
+  Evidence: unexplained delta empty; five reviewers cover five distinct risks.
 
 RECOMMENDATION: stay the course — write the artifact, inspect, ship.
 ```
@@ -125,7 +124,5 @@ DELEGATION: doing-IC-work, over-spawning, under-delegating
     stayed in the manager's lap: no builder, skeptic or brief-id.
   Evidence: unexplained delta = auth/session.py; the 5 spawns hid it.
 
-RECOMMENDATION: stop. Pull auth/session.py into a slice with a skeptic
-                (correctness + injection-path); cancel the polish agents;
-                re-anchor on the load-bearing claim.
+RECOMMENDATION: stop. Pull auth/session.py into a slice with a skeptic.
 ```

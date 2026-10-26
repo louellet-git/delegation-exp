@@ -106,7 +106,7 @@ def tree_is_dirty(root: Path) -> bool:
 
 def main() -> int:
     try:
-        payload = json.load(sys.stdin)
+        payload = json.loads(sys.stdin.buffer.read().decode("utf-8"))
     except (json.JSONDecodeError, OSError, UnicodeDecodeError):
         return 0
     if not isinstance(payload, dict):

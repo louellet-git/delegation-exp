@@ -4,7 +4,7 @@
 Checks (all must pass):
   1. .claude-plugin/plugin.json is valid JSON with name/version/description,
      and name == "delegation-framework".
-  2. The three skills exist and each SKILL.md has YAML frontmatter with
+  2. The four skills exist and each SKILL.md has YAML frontmatter with
      name + description.
   3. agents/manager.md, agents/steward.md and agents/skeptic.md each exist
      with frontmatter (name, description, tools); agents/implementation-agent.md
@@ -33,7 +33,7 @@ FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 PLUGIN_ROOT_REF_RE = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/([^\"'\\\s]+)")
 
-EXPECTED_SKILLS = ["delegating", "skeptical-review", "consolidating-review"]
+EXPECTED_SKILLS = ["delegating", "skeptical-review", "consolidating-review", "compact-review"]
 EXPECTED_COMMANDS = ["delegate.md", "skeptic-review.md", "review-panel.md"]
 EXPECTED_DOCS = [
     "operating-model.md",
@@ -163,7 +163,7 @@ def main() -> int:
     # 7. Relative markdown links resolve
     for md in sorted(root.rglob("*.md")):
         rel = md.relative_to(root)
-        if any(part in {".git", "node_modules", "__pycache__"} for part in rel.parts):
+        if any(part in {".git", ".delegation", "node_modules", "__pycache__"} for part in rel.parts):
             continue
         in_fence = False
         for line in md.read_text(encoding="utf-8").splitlines():

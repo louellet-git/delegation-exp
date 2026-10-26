@@ -1,21 +1,16 @@
-# The operating model: how work gets built and graded
+# Operating model
 
 Index: one home per concept. Also [roles](roles.md), [rubric](rubric.md).
 
-The law: every deliverable gets at least one adversarial skeptic before it is
-trusted, no exceptions
-([skeptical-review](../skills/skeptical-review/SKILL.md)).
-
 ## The loop
 
-- Substantial builds only, never a trivial edit.
+- [Substantial builds only](../README.md#when-not-to-delegate-and-how-to-un-arm-a-repo).
 - [Decompose](../skills/delegating/SKILL.md#decompose-the-procedure);
   [implement](../skills/delegating/SKILL.md#one-scoped-task-per-fresh-subagent),
   [brief template](../skills/delegating/SKILL.md#the-brief-template);
   [BLOCKED](../skills/delegating/SKILL.md#blocked-the-procedure); the manager
   [does not read](../skills/delegating/SKILL.md#the-loop-mechanics);
-  [model ladder](../skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what),
-  panel size is guidance, not a ceiling.
+  [model ladder](../skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what).
 - [Test-first](../skills/delegating/SKILL.md#test-first-implementation),
   [evidence before claims](../skills/delegating/SKILL.md#evidence-before-claims),
   [never commit or push](../skills/delegating/SKILL.md#3-two-standing-posture-rules),
@@ -40,7 +35,7 @@ trusted, no exceptions
 
 Spawn rules: [roles](roles.md),
 [topology](../agents/manager.md#the-spawn-topology-the-load-bearing-rule-of-this-framework),
-[use](../agents/manager.md#how-to-use-this-file-do-not-spawn-it).
+[do not spawn it](../agents/manager.md#how-to-use-this-file-do-not-spawn-it).
 [Steward](../agents/steward.md):
 [pairing](../agents/manager.md#spawn-the-steward-and-stay-in-dialogue-with-it),
 [scorecards](../skills/delegating/SKILL.md#5-pair-a-standing-steward-it-governs-you),
@@ -52,6 +47,4 @@ Spawn rules: [roles](roles.md),
 [README](../README.md#enforcement-honestly-one-structural-slice-the-rest-is-discipline):
 five honest limits,
 [un-arming](../README.md#when-not-to-delegate-and-how-to-un-arm-a-repo);
-[artifact schema](../skills/skeptical-review/SKILL.md#the-review-artifact-feeds-the-commit-gate);
-`head_sha` filled last, archive to `.delegation/history/`
-([manager inspects](../skills/delegating/SKILL.md#manager-inspects-the-procedure)).
+[artifact schema](../skills/skeptical-review/SKILL.md#the-review-artifact-feeds-the-commit-gate).

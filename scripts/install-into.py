@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
-"""Install the framework into a repo so cloud sessions get it without /plugin install.
+"""Install the framework so sessions get it without /plugin install.
 
 Usage: python3 scripts/install-into.py <target-repo-root>  (from an upstream clone only)
+       python3 scripts/install-into.py --user
+
+Repo mode vendors it into one repo (vendor/delegation-framework + .claude/ + .gitignore).
+--user installs once for every repo on the machine: the copy at ~/.claude/delegation-framework,
+~/.claude/{agents,skills,commands} and hooks (absolute paths) in ~/.claude/settings.json, skills for
+other tools at ~/.agents/skills (the cross-tool Agent Skills location; Copilot CLI reads it), Copilot
+CLI agents and hooks under $COPILOT_HOME (default ~/.copilot), and .delegation/ in the global git
+excludes. HOME (USERPROFILE on Windows) relocates it. Re-running is the upgrade; user hooks are kept.
 """
 
 import hashlib
@@ -15,6 +23,7 @@ from pathlib import Path
 SRC = Path(__file__).resolve().parent.parent
 PATHS = ".claude-plugin agents skills commands hooks scripts docs test README.md LICENSE".split()
 VENDOR = "vendor/delegation-framework"
+HOOK_RE = re.compile(r'python3 "[^"]*delegation-framework[/\\]scripts[/\\]((?:commit-gate|session-start|stop-reminder|subagent-reminder)\.py)"')  # shipped scripts only, under any home, or vendored
 LINK_RE = re.compile(r"(\]?\()([^()\s]+)(\))")
 TICK_RE = re.compile(r"`([^`\s]+\.\w+)`")
 
@@ -24,13 +33,34 @@ def fail(msg):
 
 
 def key(h):
-    """The framework script a hook runs, or None for a user hook."""
-    cmd = h.get("command", "")
-    return cmd.split('"')[1] if cmd.startswith(f'python3 "$CLAUDE_PROJECT_DIR/{VENDOR}/scripts/') else None
+    """The framework script a hook runs, wherever installed, or None for a user hook."""
+    m = HOOK_RE.match(h.get("command", ""))
+    return m and m.group(1)
 
 
-def rewrite(rel, vendor, dest):
-    """Point links and (bare) paths at the vendored copy, `paths` at its project location, skill names at plain ones."""
+def copilot_agent(text):
+    """Keep only the name and description of the front matter."""
+    _, fm, body = text.split("---\n", 2)
+    keep, on = [], False
+    for line in fm.splitlines(True):
+        if re.match(r"\w", line):
+            on = line.split(":")[0] in ("name", "description")
+        if on:
+            keep.append(line)
+    return "---\n" + "".join(keep) + "---\n" + body
+
+
+def excludes(home):
+    """The global git excludes file."""
+    try:
+        out = subprocess.check_output(["git", "config", "--global", "--type=path", "core.excludesFile"], text=True, stderr=subprocess.DEVNULL).strip()
+    except (OSError, subprocess.CalledProcessError):
+        out = ""
+    return Path(out) if out else Path(os.environ.get("XDG_CONFIG_HOME") or home / ".config") / "git" / "ignore"
+
+
+def rewrite(rel, vendor, dest, where=VENDOR):
+    """Point links and (bare) paths at the vendored copy, `paths` at its location `where`, skill names at plain ones."""
     def find(path):
         for base in (os.path.dirname(rel), ""):
             hit = os.path.normpath(os.path.join(base, path)).replace(os.sep, "/")
@@ -47,24 +77,34 @@ def rewrite(rel, vendor, dest):
 
     def tick(m):
         hit = find(m.group(1))
-        return f"`{VENDOR}/{hit}`" if hit else m.group(0)
+        return f"`{where}/{hit}`" if hit else m.group(0)
 
-    text = (SRC / rel).read_text(encoding="utf-8").replace("${CLAUDE_PLUGIN_ROOT}", VENDOR)
+    text = (SRC / rel).read_text(encoding="utf-8").replace("${CLAUDE_PLUGIN_ROOT}", where)
     text = TICK_RE.sub(tick, LINK_RE.sub(link, text)).replace("delegation-framework:", "")
     return text.encode("utf-8")
 
 
 def main():
     if len(sys.argv) != 2:
-        fail("usage: install-into.py <target-repo-root>")
-    t = Path(sys.argv[1])
+        fail("usage: install-into.py <target-repo-root> | --user")
+    user = sys.argv[1] == "--user"
+    t = Path.home() if user else Path(sys.argv[1])
     if not t.is_dir():
         fail(f"not a directory: {t}")
     t = t.resolve()
-    vendor, manifest = t / VENDOR, t / VENDOR / "INSTALL.json"
-    settings, gi = t / ".claude" / "settings.json", t / ".gitignore"
-    if any(p.parts[-2:] == ("vendor", "delegation-framework") for p in (t, *t.parents)) or SRC in (t, *t.parents) or vendor.resolve() in (SRC, *SRC.parents):
+    cl = t / ".claude"
+    vendor = cl / "delegation-framework" if user else t / VENDOR
+    where = vendor.as_posix() if user else VENDOR  # where installed docs and hooks point
+    hookdir = where if user else "$CLAUDE_PROJECT_DIR/" + VENDOR
+    manifest, settings = vendor / "INSTALL.json", cl / "settings.json"
+    gi = excludes(t) if user else t / ".gitignore"
+    cp = Path(os.path.expanduser(os.environ.get("COPILOT_HOME") or t / ".copilot"))
+    if user:
+        if vendor in (SRC, *SRC.parents) or SRC in vendor.parents:
+            fail("this script is inside, or contains, the installed copy; run an upstream clone's script")
+    elif any(p.parts[-2:] == ("vendor", "delegation-framework") for p in (t, *t.parents)) or SRC in (t, *t.parents) or vendor.resolve() in (SRC, *SRC.parents):
         fail(f"the target is inside, or contains, a vendored copy of this script, or is this script's own repo; run an upstream clone's script into another repo")
+    mkey = lambda d: d.relative_to(t).as_posix() if t in d.parents else d.as_posix()  # absolute when outside t
     if vendor.exists() and not manifest.is_file():
         fail(f"{vendor} exists without INSTALL.json: not written by this installer, or a partial install; delete it if it holds only a copy of this framework")
     try:
@@ -73,7 +113,7 @@ def main():
         fail(f"cannot read {manifest}: {e!r}")
 
     new = {}
-    for p in (*PATHS, "hooks/hooks.json", "hooks/session-start-context.md"):
+    for p in (*PATHS, "hooks/hooks.json", "hooks/session-start-context.md", *(["hooks/copilot-hooks.json"] * user)):
         if not (SRC / p).exists():
             fail(f"{SRC / p} is missing from the source")
     for p in PATHS:
@@ -85,7 +125,18 @@ def main():
     installed = [p for g in ("agents/*.md", "skills/*/SKILL.md", "commands/*.md") for p in sorted(SRC.glob(g)) if p.name != "manager.md"]
     for p in installed:
         rel = p.relative_to(SRC).as_posix()
-        new[t / ".claude" / rel] = rewrite(rel, vendor, t / ".claude" / rel)
+        new[cl / rel] = rewrite(rel, vendor, cl / rel, where)
+        if user and not rel.startswith("commands/"):
+            dest = t / ".agents" / "skills" / p.parent.name / "SKILL.md" if p.name == "SKILL.md" else cp / "agents" / f"{p.stem}.agent.md"
+            data = rewrite(rel, vendor, dest, where)
+            new[dest] = copilot_agent(data.decode("utf-8")).encode("utf-8") if p.parent.name == "agents" else data
+    if user:
+        cfg = json.loads((SRC / "hooks" / "copilot-hooks.json").read_text())
+        for groups in cfg["hooks"].values():
+            for g in groups:
+                for h in g["hooks"]:
+                    h["env"] = {"PLUGIN_ROOT": where}
+        new[cp / "hooks" / "delegation-framework.json"] = (json.dumps(cfg, indent=2) + "\n").encode()
     digest = {d: hashlib.sha256(b).hexdigest() for d, b in new.items()}
 
     managed = {**new, **mine}
@@ -102,7 +153,7 @@ def main():
     try:
         old = json.loads(settings.read_text()) if settings.is_file() else {}
         cfg = json.loads(json.dumps(old))
-        ours = json.loads((SRC / "hooks" / "hooks.json").read_text().replace("${CLAUDE_PLUGIN_ROOT}", "$CLAUDE_PROJECT_DIR/" + VENDOR))["hooks"]
+        ours = json.loads((SRC / "hooks" / "hooks.json").read_text().replace("${CLAUDE_PLUGIN_ROOT}", hookdir))["hooks"]
         hooks = cfg.setdefault("hooks", {})
         for event in {**hooks, **ours}:
             ship = {}  # framework script -> (shipped matcher, shipped hook)
@@ -135,8 +186,14 @@ def main():
     except (ValueError, AttributeError, TypeError) as e:
         fail(f"cannot merge hooks into {settings}: {e}")
 
-    at = None  # the destination being written, named if the write fails
+    def save(commit):
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        manifest.write_text(json.dumps({"source_commit": commit, "files": {mkey(d): h for d, h in digest.items()}}, indent=2) + "\n")
+
+    at = manifest  # the destination being written, named if the write fails
     try:
+        if not manifest.is_file():  # first install: a run cut short reads as an upgrade
+            save(None)
         for at in mine.keys() - new.keys():
             at.unlink(missing_ok=True)
         for at, data in new.items():
@@ -146,6 +203,7 @@ def main():
             at = settings
             settings.write_text(json.dumps(cfg, indent=2) + "\n")
         at = gi
+        gi.parent.mkdir(parents=True, exist_ok=True)
         text = gi.read_text() if gi.is_file() else ""
         if ".delegation/" not in text.splitlines():
             gi.write_text(text + ("\n" if text and not text.endswith("\n") else "") + ".delegation/\n")
@@ -155,10 +213,10 @@ def main():
         except (OSError, subprocess.CalledProcessError):
             commit = None
         at = manifest
-        manifest.write_text(json.dumps({"source_commit": commit, "files": {d.relative_to(t).as_posix(): h for d, h in digest.items()}}, indent=2) + "\n")
+        save(commit)
     except OSError as e:
         fail(f"write failed on {at}: {e}\nfix the cause above, then re-run")
-    print(f"installed delegation-framework into {t}; commit the result")
+    print(f"installed delegation-framework for this user into {vendor}, {cl} and {cp}" if user else f"installed delegation-framework into {t}; commit the result")
 
 
 if __name__ == "__main__":
