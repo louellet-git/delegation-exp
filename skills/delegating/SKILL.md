@@ -63,22 +63,17 @@ description: Runs a substantial multi-part build as a manager who briefs one fre
   rulings above for tier; the standing order on decomposing stays.
 
   And the rulings of the same day (verbatim, from the owner's later answers):
-  "Scouts on Sonnet is fine." "the doc critic, that should honestly be a skill
-  for the critic agent itself. Like, we don't need a million fucking agents.
+  "Scouts on Sonnet is fine." "we don't need a million fucking agents.
   Make skills, not agents." "Okay, watchdog goes to Haiku." Panels: "we don't
   want huge skeptic bloat. [...] make sure we're not being unnecessary in our
   number of reviewers. Make sure it's high impact and not just a number we're
   trying to hit." Fix rounds: "wouldn't it make more sense to use the original
   agent? What do you think?", then "For the original agent, yeah, use the
-  original agent." The doc check: "I'm okay with the doc check script. Just
-  make sure it's like useful." Landing: "I don't want the manager asking me
+  original agent." Landing: "I don't want the manager asking me
   every fucking time. I guess like I have a preference for minimizing number
   of branches, especially when it's possible to merge back to main, like so
   long as we have that version control. So this is like if we have GitHub
   available, then we do that."
-
-  And the cancellation, same owner, 2026-10-26, verbatim: "Cancel the
-  engineering standard thing just keep the compact request."
 -->
 
 # Delegating
