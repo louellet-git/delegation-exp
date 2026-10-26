@@ -1,12 +1,3 @@
----
-id: DOC-ROLES
-type: description
-item: 10.38 Process description
-status: current
-date: 2026-10-26
-scope: The five roles, their authority and their spawn limits.
----
-
 # Roles: owner, manager, steward, implementation agent, skeptical reviewer
 
 ## Owner

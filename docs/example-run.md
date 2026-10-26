@@ -1,12 +1,3 @@
----
-id: DOC-EXAMPLE-RUN
-type: description
-item: 10.8 Concept of operations
-status: current
-date: 2026-10-26
-scope: A worked delegation from decomposition to commit, with two steward scorecards, showing the operating model in use.
----
-
 # Worked example: one delegation, end to end
 
 **Task:** `reports-service` gains a CSV export, a rate limiter and docs for
@@ -32,8 +23,7 @@ parallel, one fresh test-first worker subagent each.
 
 Briefs from [the template](../skills/delegating/SKILL.md#the-brief-template) are
 saved to `.delegation/briefs/A.md`, `B.md`, `C.md` before dispatch, or the
-steward's DELEGATION line is unrecoverable. Each carries **"You do not commit or
-push. Leave work in the tree; the manager commits once, after review."**
+steward's DELEGATION line is unrecoverable.
 
 ## 2. REVIEW PANEL
 
@@ -106,7 +96,7 @@ VISION: on-prize
   Evidence: A, B, C each moved a conjunct of the claim.
 
 DELEGATION: delegating-well
-  Spawn count (MANDATORY): 3 (A, B, C); fixes went back to A and B.
+  Spawn count (MANDATORY): 8 (A, B, C and five skeptics); fixes went back to A and B.
   Kept-or-delegated (MANDATORY): riskiest build, CSV export, went to A; its
     skeptic caught the bug.
   Evidence: unexplained delta empty; five reviewers cover five distinct risks.
@@ -134,6 +124,5 @@ DELEGATION: doing-IC-work, over-spawning, under-delegating
     stayed in the manager's lap: no builder, skeptic or brief-id.
   Evidence: unexplained delta = auth/session.py; the 5 spawns hid it.
 
-RECOMMENDATION: stop. Pull auth/session.py into a slice with a skeptic
-                (correctness + injection-path).
+RECOMMENDATION: stop. Pull auth/session.py into a slice with a skeptic.
 ```

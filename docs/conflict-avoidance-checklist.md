@@ -1,12 +1,3 @@
----
-id: DOC-CONFLICT-AVOIDANCE-CHECKLIST
-type: procedure
-item: 10.10 Configuration management procedure
-status: current
-date: 2026-10-26
-scope: The checklist a manager fills before dispatch so parallel implementers' write sets are checked for overlap.
----
-
 # Conflict-avoidance checklist: fill BEFORE you fan out
 
 1. Copy the template into `.delegation/conflict-checklist.md`, a fresh copy per fan-out.

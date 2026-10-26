@@ -1,12 +1,6 @@
 ---
 name: skeptical-review
 description: Runs a skeptic panel on a deliverable and writes the review artifact the commit gate reads. Use before trusting any code, design or research.
-id: DOC-SKILL-SKEPTICAL-REVIEW
-type: procedure
-item: 10.30 Life-cycle procedure
-status: current
-date: 2026-10-26
-scope: Steps to run a skeptic panel on a deliverable and write the review artifact the commit gate reads.
 ---
 
 # Skeptical Review
@@ -15,10 +9,8 @@ Every deliverable gets at least one skeptic, no exceptions. Spawn
 [skeptic](../../agents/skeptic.md) as `subagent_type: "skeptic"`, one per
 [lens](../../docs/lenses.md), reporting in [rubric](../../docs/rubric.md)
 format. Where that type is not installed (Copilot CLI, a session without the
-install), spawn a general-purpose worker told to read `agents/skeptic.md`
+install), spawn a general-purpose worker on `haiku` told to read `agents/skeptic.md`
 first and act as it; the same holds for the [steward](../../agents/steward.md).
-Claude Code enforces `haiku` through the spawn tool's `model`; under Copilot
-CLI the model is guidance unless its spawn takes one (unverified).
 
 ## Panel setup
 
@@ -27,9 +19,9 @@ skeptic, and a reviewer earns its seat by naming a risk no other seat covers.
 Diversify lenses. State the end goal in each dispatch, or get line-coverage
 noise. Once every slice is DONE, review the integrated tree, all reviewers in
 parallel (they are read-only). A deliverable that creates or changes a doc also
-seats a skeptic with lens `doc-standard`, which loads the
-[doc-review](../doc-review/SKILL.md) skill; it may rerun
-`scripts/doc_check.py`. Its verdict goes in the artifact.
+seats a skeptic with lens `compact`
+([compact-review](../compact-review/SKILL.md) skill). Its verdict goes in the
+artifact.
 
 ## The three modes
 

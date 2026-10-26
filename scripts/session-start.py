@@ -27,7 +27,6 @@ first time. Scoping it would make it appear only once it was no longer news.
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -49,7 +48,6 @@ def main() -> int:
     except OSError:
         return 0  # context file missing: stay silent rather than half-speak
 
-    body = re.sub(r"\A---\r?\n.*?\r?\n---\r?\n", "", body, count=1, flags=re.S)  # doc-standard header
     if not body.strip():
         return 0
 

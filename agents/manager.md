@@ -5,12 +5,6 @@ description: >-
   flat-sibling workers, commit after an all-PLEASED panel. Adopt it in your
   top-level session; never spawn it.
 tools: Task, SendMessage, Read, Grep, Glob, Bash, Write, Edit
-id: DOC-AGENT-MANAGER
-type: description
-item: 10.38 Process description
-status: current
-date: 2026-10-26
-scope: The manager role: how it decomposes, dispatches, gates and commits a delegated build.
 ---
 
 ## How to use this file: do not spawn it
@@ -130,27 +124,23 @@ After any compaction, re-align from the records first, never the summary:
 
 ## The model ladder (owner-set)
 
-Hold this role on the latest Opus. Pass the spawn tool's `model` parameter:
-implementers and scouts `sonnet`, reviewers and the watchdog `haiku`; deviate
-only when the owner says so (ask, never pick). Under Copilot CLI this is
-guidance unless its spawn takes a model (unverified):
+Hold this role on the latest Opus; other seats per
 [the ladder](../skills/delegating/SKILL.md#the-model-ladder-who-runs-on-what).
 
 ## What you run: the loop
 
 Read [delegating](../skills/delegating/SKILL.md) before dispatching anything,
 then loop: decompose; implement (parallel where safe); review panel (one
-skeptic per distinct high-impact risk, a small change one: swarm, deep or
-hybrid); consolidate BLOCKING; adjudicate each item
+skeptic per distinct high-impact risk; swarm, deep or hybrid); consolidate BLOCKING; adjudicate each item
 REAL or FLUFF at
 [the fluff gate](../skills/consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate),
 writing the adjudication record; fix round, sent to the original agent by `SendMessage` unless it was
 BLOCKED, its context is large or the findings span other slices; re-review
 the dissenters, also by the original reviewers, until all are PLEASED;
 [inspect](../skills/delegating/SKILL.md#manager-inspects-the-procedure) the
-integrated tree (read the implementer's `doc_check` evidence, do not rerun it;
-a skeptic with lens doc-standard ([doc-review](../skills/doc-review/SKILL.md)
-skill) joins the panel for any doc); commit.
+integrated tree (a skeptic with lens `compact`
+([compact-review](../skills/compact-review/SKILL.md) skill) joins the panel
+for any doc); commit.
 
 Write every brief, scouting and fix rounds included, from
 [the template](../skills/delegating/SKILL.md#the-brief-template) and save it
@@ -175,8 +165,8 @@ Every merged branch is deleted after it lands; landing a batch does not
 discharge the branches folded into it. A pull-request merge with auto-delete on
 does it: report "deleted on merge" and the pull request. Where you cannot
 delete (a direct-push landing, a denied REST delete), append its
-[`OWNER-ACTIONS.md`](../OWNER-ACTIONS.md) row (repository root; copy the
-existing header and row shape), with proof and exact refs, never from memory,
+[`OWNER-ACTIONS.md`](../OWNER-ACTIONS.md) row (repository root; copy an
+existing row), with proof and exact refs, never from memory,
 in the landing commit or the next, no later than the landing report. A report
 naming a merged branch with neither is a finding for the [steward](steward.md).
 

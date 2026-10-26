@@ -1,30 +1,24 @@
----
-id: DOC-COMPACT
-type: policy
-item: 10.45 Quality management policy
-status: current
-date: 2026-10-26
-scope: The standard for compact code, docs, agent instructions and tests, applied to everything agents write.
----
-
 # Compact work
 
-It governs the form of what agents write, not how many agents, skeptics or panels a task uses. Enforced by the skeptic panel (docs: the doc-standard lens) and the implementer's `doc_check.py check` run before DONE. Citations are tag plus source number: E empirical (arXiv conference papers: E7 ESEM 20, E33 AITest 26, E37 ICLR 26, E39 ICLR 26, E44 NeurIPS 25), G official guidance (vendor docs, style guides), B book, P practitioner (blogs and engineering write-ups).
+The standard for compact code, docs, agent instructions and tests: the fewest elements that do the job and still read cold.
+It governs the form of what agents write, not how many agents, skeptics or panels a task uses. Enforced by the skeptic panel (lens `compact`: [compact-review](../skills/compact-review/SKILL.md)). Citations are tag plus source number: E empirical (arXiv conference papers: E7 ESEM 20, E33 AITest 26, E37 ICLR 26, E39 ICLR 26, E44 NeurIPS 25), G official guidance (vendor docs, style guides), B book, P practitioner (blogs and engineering write-ups).
 
 ## Code
 - Build only what the current task needs: no speculative features, parameters, hooks or generality; YAGNI does not cover refactoring or tests, which keep code cheap to change. [P1 G2]
 - Treat these as YAGNI smells and remove them unless they are a deliberate seam: a base class with one subclass, a flag or parameter that always has one value, a public member that could be private, code only tests run. [P3]
 - Prefer duplication to the wrong abstraction [P4]; merge copies that encode the same knowledge [P5]; inline back a helper that has grown parameters and conditionals for its callers [P4].
 - Prefer deep modules, a simple interface over real work; do not split code into helpers as complex as their bodies, and re-merge functions that must be read together (a contested design heuristic). [P6]
-- Keep functions flat: nesting-weighted complexity tracks comprehension time, mixed for correctness [E7]; adopt a complexity metric only if it predicts faults better than line count, as class-level OO metrics stopped doing once class size was controlled [E8].
+- Keep functions flat: nesting-weighted complexity tracks comprehension time, its link to correctness is mixed [E7]; adopt a complexity metric only if it predicts faults better than line count, as class-level OO metrics stopped doing once class size was controlled [E8].
 - Use a core language construct, then the standard library, before a new dependency, framework or wrapper layer. [G9]
 - Delete unused code, parameters and flags in the same change, after searching for callers. [E10 B11]
 - Use the plain form of constructs shown to be misread (increment inside an expression, logic used as control flow, type-conversion tricks), and meaningful names beyond tiny scopes, where `i`, `j`, `k` are fine. [E12 G13]
 - Comment the why, the constraint and the non-obvious; never narrate the code; give public, nontrivial or non-obvious functions a docstring. [G13 G14]
-- When agents write code, state the contract plainly with its exceptions; tendencies are model-specific, so check on the model in use. [G15 G16]
+- When agents write code, state the contract plainly with its exceptions: no unrequested features, files, docs or refactors, no handling for states that cannot occur, no one-use helpers; tendencies are model-specific, so check on the model in use. [G15 G16]
 
 ## Docs
 - Omit needless words and sentences: make every word tell. [B17]
+- Before writing, ask what use this is to the reader, what context they arrive with, and what they should know or do when they leave; write the least that gets them there. The writer's job, not only the reviewer's.
+- In-code docs: a docstring is a one-line summary, with inputs, outputs and errors only where not obvious, in the language's convention; a module or file opens with a one-line purpose.
 - Keep a small set of fresh docs: cut out-of-date, wrong and redundant text; in a cleanup delete what is certainly wrong and skip what is unclear. [G14]
 - State each fact once and link to it, since copies drift; inline what a task needs within one hop, since over-splitting fragments docs. [P5 E18]
 
@@ -71,7 +65,6 @@ Compact, never cryptic. These limits win over every rule above.
 - Scope vs form: posture 5 MINIMAL bounds scope, [posture 6 COMPACT](../skills/delegating/SKILL.md#the-brief-template) bounds form; the merge, inline and delete rules above apply only to lines the change touches or orphans.
 - Length vs adherence is open for agent config files: padding around one rule showed no effect [E26]; compressing skills raised quality slightly [E27]; only at hundreds of constraints did the best model fall off [E45]; vendor guidance says length costs adherence but publishes no measurement [G21 G25].
 - Contradicting rules: stacked conflicting constraints cut following sharply, and one LLM rewrite won back some on the weakest model only [E24]; a contradicting adjacent config file showed no effect [E26].
-- Rationale: E27 moves rationale out of the always-loaded body; G15 and G19 want the why. Keep one clause of why on a non-obvious rule or value.
 
 ## Where the rule landed
 Posture 6 of the brief template in [delegating](../skills/delegating/SKILL.md) and the closing reminder in [skeptic](../agents/skeptic.md).

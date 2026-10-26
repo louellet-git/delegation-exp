@@ -1,12 +1,6 @@
 ---
 description: Run a multi-part task through the manager, implementer and skeptic loop; not for trivial edits
 argument-hint: [the task to delegate]
-id: DOC-CMD-DELEGATE
-type: procedure
-item: 10.30 Life-cycle procedure
-status: current
-date: 2026-10-03
-scope: The /delegate command: runs a multi-part task through the delegating skill.
 ---
 
 If `$ARGUMENTS` is a trivial edit or single-file fix, do NOT delegate: say so
@@ -29,6 +23,6 @@ the skill exactly:
 3. Write every brief, scouting and fix rounds included, from the skill's
    template, and save it under `.delegation/briefs/` before dispatch.
 4. Seat at least one skeptic on every deliverable, plus one with lens
-   `doc-standard` on any doc.
+   `compact` (compact-review skill) on any doc.
 5. Run ONE panel over the integrated tree and make ONE commit, per
    `${CLAUDE_PLUGIN_ROOT}/commands/review-panel.md`.

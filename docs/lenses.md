@@ -1,12 +1,3 @@
----
-id: DOC-LENSES
-type: description
-item: 10.38 Process description
-status: current
-date: 2026-10-26
-scope: The adversarial lenses a manager assigns to skeptics, with what each looks for.
----
-
 # The lens catalogue
 
 A **lens** is the adversarial angle a skeptic is assigned; a panel diversifies
@@ -71,18 +62,14 @@ a dependency stated as hard when nothing declares it.
 Memos and recommendations: is each claim traced to a source that says it, with
 its conditions, and were disconfirming sources sought?
 
-### doc-standard
+### compact
 
-A created or changed doc: does it meet [`DOC-STANDARD.md`](DOC-STANDARD.md),
-header, content and compactness? Run by a skeptic loading
-[doc-review](../skills/doc-review/SKILL.md); any deliverable that creates or
-changes a doc.
+A created or changed doc: is it as compact as [compact.md](compact.md) asks? A
+skeptic loads [compact-review](../skills/compact-review/SKILL.md).
 
 ## Choosing lenses for a panel
 
-- One skeptic per distinct high-impact risk, no quota; a lens earns its seat by
-  naming a risk no other seat covers. A small change gets one, on the lens for
-  the dominant risk.
+- Seats and sizing: [panel setup](../skills/skeptical-review/SKILL.md#panel-setup).
 - Candidates for a larger batch: correctness, coupling/boundary-integrity,
   overfit/generalization, evidence-vs-claim, honesty/overclaim, plus
   per-feature skeptics for the riskiest slices.
@@ -90,6 +77,3 @@ changes a doc.
   anchor, honesty/overclaim second.
 - Anything that scores, ranks or derives a verdict: **derived-output/ranking**,
   mandatory ([modes](../skills/skeptical-review/SKILL.md#the-three-modes)).
-
-Mode (swarm / deep / hybrid) is chosen separately: see
-[`../skills/skeptical-review/SKILL.md`](../skills/skeptical-review/SKILL.md).

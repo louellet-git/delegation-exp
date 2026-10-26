@@ -1,12 +1,6 @@
 ---
 name: delegating
 description: Runs a substantial multi-part build as a manager who briefs one fresh subagent per slice, runs disjoint slices in parallel, gates each batch on a skeptic panel and commits once. Use when a build is too big for one agent and independent review adds real safety; not for a trivial edit.
-id: DOC-SKILL-DELEGATING
-type: procedure
-item: 10.30 Life-cycle procedure
-status: current
-date: 2026-10-26
-scope: Steps for a manager to brief slices, run them in parallel, gate on a panel and commit once.
 ---
 
 <!--
@@ -82,6 +76,9 @@ scope: Steps for a manager to brief slices, run them in parallel, gate on a pane
   of branches, especially when it's possible to merge back to main, like so
   long as we have that version control. So this is like if we have GitHub
   available, then we do that."
+
+  And the cancellation, same owner, 2026-10-26, verbatim: "Cancel the
+  engineering standard thing just keep the compact request."
 -->
 
 # Delegating
@@ -89,7 +86,7 @@ scope: Steps for a manager to brief slices, run them in parallel, gate on a pane
 **Must hold, even after compaction** (trigger and link; each rule lives in
 its section):
 - **Every brief** comes from [the template](#the-brief-template), saved to
-  `.delegation/briefs/<slice-id>.md` before dispatch, with all seven postures.
+  `.delegation/briefs/<slice-id>.md` before dispatch, with all six postures.
 - **A worker reports** DONE, BLOCKED or NEEDS_CONTEXT with evidence, then
   stops ([contract](#one-scoped-task-per-fresh-subagent)); a BLOCKED is a
   decision request, never taken over
@@ -97,10 +94,8 @@ its section):
 - **Disjoint slices run in parallel**
   ([fan-out](#fan-out-disjoint-parallel-shared-sequential)).
 - **Only you commit**, once per batch, after an all-PLEASED panel and your
-  inspection ([posture rules](#3-two-standing-posture-rules)). Landing never
-  asks the owner: with GitHub, a merged PR to main and the branch deleted;
-  else a local commit on the current branch; without git, no commit
-  ([manager.md](../../agents/manager.md#landing-through-a-pull-request-never-a-direct-push)).
+  inspection ([posture rules](#3-two-standing-posture-rules)); landing never
+  asks the owner ([manager.md](../../agents/manager.md#landing-through-a-pull-request-never-a-direct-push)).
 - **Models:** [the ladder](#the-model-ladder-who-runs-on-what).
 - **Steward:** once paired, auto-consult is binding
   ([manager.md](../../agents/manager.md#auto-consult-a-standing-binding-rule)).
@@ -154,8 +149,8 @@ multi-part build where independent review adds real safety.
    `git ls-files`, `ls`, `rg --files`, the manifest, the test-runner config.
    **You do not do the reading:** module bodies are the implementer's, and
    reading them spends the context the loop protects. Exceptions: the reserved
-   files and the integrated tree; pulled into source, dispatch a scouting
-   slice.
+   files and the integrated tree. If you are pulled into reading source,
+   dispatch a scouting slice.
 4. **Cut slices by [write set](#fan-out-disjoint-parallel-shared-sequential),
    not topic:** one outcome, owner and test command each; two tasks writing one file are one slice
    or two sequential ones.
@@ -202,7 +197,7 @@ other slices.
   growing job gets more agents, never a bigger one.
 - **Break a growing job down** yourself or send scouts to size it, then cut
   as many slices as the write sets allow; seat one reviewer per distinct
-  high-impact risk, no quota.
+  high-impact risk, no quota ([panel setup](../skeptical-review/SKILL.md#panel-setup)).
 
 ### The brief template
 
@@ -242,8 +237,7 @@ PARTIAL WORK ALREADY IN THE TREE:
   <half-written paths left behind, each to keep, finish or replace; or "none">
 
 EXACT TEST COMMAND (copy-pasteable; run it yourself):
-  <command; for changed docs add `python3 <framework>/scripts/doc_check.py
-   check <changed docs>`>
+  <command>
 
 ACCEPTANCE CONDITION (checkable):
   <condition>
@@ -265,8 +259,9 @@ POSTURES (requirements, not preferences):
      This binds every fix a reviewer sends back just as hard. MINIMAL bounds
      scope; COMPACT bounds form. Tests straight-line by default; never trade
      cause and effect for brevity. Standard: the plugin's docs/compact.md.
-  7. DOC STANDARD: every doc you write or change meets the plugin's
-     docs/DOC-STANDARD.md: header and compactness.
+     Before writing, ask what use this is to the reader, what they arrive
+     with and what they should know or do when they leave; write the least
+     that gets them there.
 
 REPORT BACK exactly one status, with the evidence behind it:
   DONE          <what you built, the test command and its actual output>
@@ -387,8 +382,7 @@ sufficient.
    allowlist (an untrue checklist, an unsafe fan-out). Neither ships silently.
 3. **Run the full test command yourself** and keep the output, not the
    slices' reports.
-4. **Check the reserved files are wired**, the step a long run forgets, and
-   read the evidence that the implementers' doc checks passed.
+4. **Check the reserved files are wired**, the step a long run forgets.
 5. **Check the artifact** against
    [its schema](../skeptical-review/SKILL.md#the-review-artifact-feeds-the-commit-gate):
    the gate (`check_artifact` in `scripts/commit-gate.py`) denies any failed
@@ -473,12 +467,8 @@ DECOMPOSE → IMPLEMENT (fresh subagent per task, parallel where safe)
           → MANAGER INSPECTS → COMMIT (gate checks the artifact)
 ```
 
-- **Converge:** each round's findings less severe and inside the region the
-  last fix changed; a blocker at the same severity in the same file section
-  two rounds running means stop and re-plan
-  ([rule, one-line-nit shortcut](../consolidating-review/SKILL.md#7-convergence-discipline)).
-- **Re-reviewers attack the revision as fresh work**, since most fix-round
-  defects are new.
+- **Converge** per [consolidating-review §7](../consolidating-review/SKILL.md#7-convergence-discipline).
+- **Re-reviewers attack the revision as fresh work.**
 - **Prose contradicting itself:** when two sharper rounds on one ordering or
   algorithm each yield a new contradiction, build it with the findings as
   tests, the prose pointing at the code as normative: building reaches

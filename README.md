@@ -1,12 +1,3 @@
----
-id: DOC-README
-type: description
-item: 10.67 User documentation
-status: current
-date: 2026-10-26
-scope: Entry point: what the framework is, how to install it for Claude Code or Copilot CLI, and what its commit gate enforces.
----
-
 # delegation-framework
 
 **Playbook, roles, and adversarial review machinery for a manager →
@@ -74,18 +65,16 @@ Routine.
 
 Roles and the one-level spawn rule: [roles](docs/roles.md),
 [topology](agents/manager.md#the-spawn-topology-the-load-bearing-rule-of-this-framework).
-**Never spawn the manager:** `/delegate` makes your own top-level session adopt
-it ([how](agents/manager.md#how-to-use-this-file-do-not-spawn-it)).
+[Never spawn the manager](agents/manager.md#how-to-use-this-file-do-not-spawn-it).
 
 ## What it owns
 
 The loop ([`skills/delegating/SKILL.md`](skills/delegating/SKILL.md),
 [`docs/operating-model.md`](docs/operating-model.md)): one scoped task per
 fresh subagent, fan-out by disjoint write sets, test-first, evidence before
-claims. Every doc its agents write, in any format, meets the
-[doc standard](docs/DOC-STANDARD.md) (ISO/IEC/IEEE 15289, tailored: a header,
-no bloat), reviewed by a skeptic with the doc-review skill. `docs/` is read on
-demand, not auto-loaded. Claims are capabilities,
+claims. Docs its agents write follow [compact](docs/compact.md), reviewed by
+a skeptic loading the compact-review skill. `docs/` is read on demand, not
+auto-loaded. Claims are capabilities,
 not guarantees: decomposition quality, whether a finding truly blocks, and the
 commit go/no-go stay human (or the manager's).
 
@@ -278,9 +267,7 @@ repo).
 1. It fires only where this plugin's hooks are installed and enabled for the
    committing agent and a Python 3.7+ answers to `python3`, `python` or
    `py -3`, tried in order (the fallbacks serve Windows, which ships no
-   `python3.exe`; Copilot's PowerShell hooks try only `python`, see
-   [section 0](#0-once-per-machine-no-repo-changes-claude-code-and-copilot-cli));
-   otherwise the gate silently vanishes.
+   `python3.exe`); otherwise the gate silently vanishes.
 2. It checks the artifact's form (non-empty `deliverable`, `reviews` and each
    review's `lens`; a valid `mode`), that every `verdict` is exactly `PLEASED`
    with every `blocking` list and `consolidated_blocking` empty, and that
@@ -327,7 +314,6 @@ inconvenient one mid-run and report success; only the instruction enforces it
 python3 -m unittest discover test
 python3 scripts/validate-structure.py
 python3 scripts/check-domain-neutral.py
-python3 scripts/doc_check.py check
 ```
 
 Only the tests exercise behaviour: run them before trusting the gate (no

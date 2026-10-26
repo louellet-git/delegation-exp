@@ -1,23 +1,10 @@
----
-id: DOC-OPERATING-MODEL
-type: description
-item: 10.38 Process description
-status: current
-date: 2026-10-26
-scope: Index of how work is built and graded: the loop, spawn topology, steward and commit gate, each linked to its home.
----
-
 # Operating model
 
 Index: one home per concept. Also [roles](roles.md), [rubric](rubric.md).
 
-The law: every deliverable gets at least one adversarial skeptic before it is
-trusted, no exceptions
-([skeptical-review](../skills/skeptical-review/SKILL.md)).
-
 ## The loop
 
-- [Substantial builds only](../README.md#when-not-to-delegate-and-how-to-un-arm-a-repo), never a trivial edit.
+- [Substantial builds only](../README.md#when-not-to-delegate-and-how-to-un-arm-a-repo).
 - [Decompose](../skills/delegating/SKILL.md#decompose-the-procedure);
   [implement](../skills/delegating/SKILL.md#one-scoped-task-per-fresh-subagent),
   [brief template](../skills/delegating/SKILL.md#the-brief-template);

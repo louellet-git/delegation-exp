@@ -1,12 +1,3 @@
----
-id: DOC-RUBRIC
-type: description
-item: 10.38 Process description
-status: current
-date: 2026-10-26
-scope: The skeptic verdict format and how the manager reads a panel.
----
-
 # The verdict rubric: PLEASED | NOT PLEASED
 
 Every skeptic reports in this format, so a manager can

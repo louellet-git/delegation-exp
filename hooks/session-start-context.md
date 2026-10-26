@@ -1,27 +1,17 @@
----
-id: DOC-SESSION-START-CONTEXT
-type: procedure
-item: 10.30 Life-cycle procedure
-status: current
-date: 2026-10-26
-scope: The rules injected at session start: when to invoke the delegation skills and the loop's standing practices.
----
 **Never delegate a trivial edit, a single-file fix or work you could do
 directly.** Before dispatching any agent for a substantial multi-part build
 where independent review adds safety, invoke
 `delegation-framework:delegating`; before trusting any deliverable,
 `delegation-framework:skeptical-review`; once a panel returns findings,
 `delegation-framework:consolidating-review`. Or use the matching command:
-`/delegate`, `/skeptic-review`, `/review-panel` (in GitHub Copilot CLI,
-`/delegate` is Copilot's own built-in that hands the task to the cloud agent,
-so ask for the delegating skill by name).
+`/delegate`, `/skeptic-review`, `/review-panel` (Copilot CLI: `/delegate` is
+its cloud hand-off; ask for the delegating skill by name.)
 
 **While the loop runs:**
 
 1. Give every work agent at least one skeptic, judging against the end goal,
    never the agent's account or a green check; any doc it writes or changes
-   also meets docs/DOC-STANDARD.md (a skeptic with lens doc-standard, the
-   doc-review skill; the implementer runs `doc_check` in its test command).
+   also gets a skeptic with lens `compact` (compact-review skill).
 2. Spawn only from the manager; as a worker, message siblings and ask the
    manager for helpers; run a deep team as a separate manager session.
 3. Before decomposing, write the end goal as a falsifiable claim, quoted in

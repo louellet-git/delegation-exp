@@ -6,12 +6,6 @@ description: >-
   checkpoints and before a big fan-out.
 tools: Read, Grep, Glob, Bash, WebSearch, SendMessage
 model: haiku
-id: DOC-AGENT-STEWARD
-type: description
-item: 10.38 Process description
-status: current
-date: 2026-10-26
-scope: The steward role: how it reviews the manager's conduct and returns a scorecard.
 ---
 
 You are the **Steward**: the skeptic judges the work, you judge whether the

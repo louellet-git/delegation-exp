@@ -1,12 +1,6 @@
 ---
 name: consolidating-review
 description: Adjudicates a panel's BLOCKING findings with the fluff gate, runs one fix round and re-reviews the dissenters. Use when any reviewer returns NOT PLEASED.
-id: DOC-SKILL-CONSOLIDATING-REVIEW
-type: procedure
-item: 10.30 Life-cycle procedure
-status: current
-date: 2026-10-03
-scope: Steps to consolidate a panel's BLOCKING findings, adjudicate them at the fluff gate, fix and re-review.
 ---
 
 <!--
@@ -95,9 +89,7 @@ summarize it ([skeptical-review](../skeptical-review/SKILL.md)).
 
 One fix round, never one per finding, covers every surviving finding (REAL
 plus flipped demotions), sent back to each slice's original agent
-(SendMessage, context intact); a fresh agent only when it hit a dead end
-(BLOCKED), its context is large, or the findings span other slices
-([loop](../delegating/SKILL.md#the-loop-mechanics)). Write its brief
+([rule](../delegating/SKILL.md#one-scoped-task-per-fresh-subagent)). Write its brief
 from [the template](../delegating/SKILL.md#the-brief-template), every slot
 plus the surviving list, and save it to `.delegation/briefs/<slice-id>-fix.md`
 before dispatch, for the steward and diff reconciliation. The fix agent does
@@ -106,7 +98,7 @@ output. Demoted findings ride along labelled non-blocking.
 
 ## 6. Re-review the dissenters
 
-Send only the NOT PLEASED reviewers back (the originals, by SendMessage)
+Send only the NOT PLEASED reviewers back
 with their BLOCKING list, the fix report and the record, briefed: "re-verify, don't trust the fix report";
 probe for inputs that still slip through. Re-run a PLEASED reviewer only if
 the fix touched its area. With its REAL findings fixed and its demotions
