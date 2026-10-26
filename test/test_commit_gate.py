@@ -895,6 +895,7 @@ GIT_ENV = {
     "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.invalid",
     "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.invalid",
     "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull,
+    "XDG_CONFIG_HOME": os.devnull,  # nor the default global excludes, which a --user install fills
     "PATH": os.environ.get("PATH", ""), "HOME": os.environ.get("HOME", "/tmp"),
 }
 

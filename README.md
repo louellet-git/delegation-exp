@@ -5,9 +5,19 @@ implementer → skeptic operating model, packaged as a Claude Code plugin.**
 
 ## Quickstart
 
-```
-/delegate add a CSV export endpoint to the reports service, with tests and a docs update
-```
+1. Install once per machine (Claude Code, Copilot CLI and Cursor; needs `git`
+   and Python 3.7+):
+
+   ```
+   git clone --depth 1 https://github.com/louellet-git/delegation-exp ~/.df-src
+   python3 ~/.df-src/scripts/install-into.py --user
+   ```
+
+   It lists what it wrote and ends with a `verify:` command; run it to see the
+   gate deny.
+2. Start a task. Claude Code: `/delegate add a CSV export endpoint, with tests`.
+   Copilot CLI or Cursor: "Use the delegating skill to add a CSV export
+   endpoint, with tests" (their `/delegate` is not this one).
 
 You become the manager: fresh implementers build scoped slices, a skeptic panel
 reviews the integrated result, fix rounds run to convergence, and only then do
@@ -33,13 +43,14 @@ you commit.
 > for you and every clone. To switch off:
 > [un-arming](#when-not-to-delegate-and-how-to-un-arm-a-repo).
 
-**Check the gate is live:** a broken install fails silently, since a hook that
-cannot run must not block commits. In a repo you do not mind dirtying:
+**Check the gate is live in your tool:** a broken install fails silently,
+since a hook that cannot run must not block commits. Ask the agent to run this
+in a repo you do not mind dirtying:
 
 ```
 mkdir -p .delegation
 grep -qxF '.delegation/' .gitignore 2>/dev/null || echo '.delegation/' >> .gitignore
-git commit --allow-empty -m "gate check"
+git -c user.name=gate -c user.email=gate@local commit --allow-empty -m "gate check"
 ```
 
 A deny printing the artifact schema means armed; silence, the hooks are not
@@ -82,13 +93,7 @@ commit go/no-go stay human (or the manager's).
 
 ### 0. Once per machine, no repo changes (Claude Code and Copilot CLI)
 
-From any clone of this repo:
-
-```
-python3 scripts/install-into.py --user
-```
-
-It installs for every repo on the machine: the framework copy at
+[Quickstart](#quickstart) step 1. It installs for every repo on the machine: the framework copy at
 `~/.claude/delegation-framework/`, the agents, skills, commands and hooks under
 `~/.claude/`, the skills under `~/.agents/skills/` (the shared Agent Skills
 location Copilot CLI and other tools read), the agents and hooks under
@@ -113,8 +118,8 @@ same way. No install, no hooks: discipline only.
 
 - `/delegate` is Copilot's own command ("Send this session to GitHub and
   Copilot will create a PR", `copilot help commands`, 1.0.103): it commits your
-  unstaged changes to a new branch, past the commit gate. Ask for the
-  `delegating` skill by name instead.
+  unstaged changes to a new branch, past the commit gate. Say "Use the
+  delegating skill to ..." instead.
 - Hooks come from [`hooks/copilot-hooks.json`](hooks/copilot-hooks.json)
   (separate `bash` and `powershell` commands). Use one install, not both: a
   trusted repo's `.claude/settings.json` from a
@@ -123,9 +128,10 @@ same way. No install, no hooks: discipline only.
 - On Windows, put `python` on PATH: the PowerShell hooks try only `python`,
   and without it the gate is silent.
 - The model ladder is guidance there: Copilot agent files carry no `model`.
-- `copilot plugin install louellet-git/delegation-exp` loads the same hooks via
-  [`.github/plugin/plugin.json`](.github/plugin/plugin.json) once this lands on
-  `main`.
+- Without the user install: `copilot plugin marketplace add
+  louellet-git/delegation-exp`, then `copilot plugin install
+  delegation-framework@delegation-framework-source`; its hooks
+  ([manifest](.github/plugin/plugin.json)) get `PLUGIN_ROOT` from Copilot.
 
 Verified on Copilot 1.0.103 (Linux, mock model): both installs fire
 SessionStart, PreToolUse and Stop; an un-reviewed `git commit` is denied, an
@@ -135,7 +141,7 @@ tool name, SubagentStop, double-firing with both installs.
 **In Cursor**, the same `--user` install works: Cursor imports `~/.claude`
 hooks, agents and skills (Settings, Agents, Third-Party Imports, on by
 default) and maps the gate's deny and the session context (read from Cursor's
-CLI source, 2026.10.22). Ask for the `delegating` skill by name. The model
+CLI source, 2026.10.22). Start with "Use the delegating skill to ...". The model
 ladder is guidance there: Cursor takes only its own model ids. On Windows,
 Cursor runs hooks through PowerShell, so the installer writes one plain
 `python` call per hook; a [section 3](#3-project-vendored-cloud-sessions)
@@ -145,7 +151,7 @@ session.
 ### 1. Git-installable (the Claude Code plugin path)
 
 ```
-/plugin marketplace add louellet-git/delegation-framework-public
+/plugin marketplace add louellet-git/delegation-exp
 /plugin install delegation-framework@delegation-framework-source
 ```
 

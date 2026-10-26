@@ -220,7 +220,13 @@ def main():
         save(commit)
     except OSError as e:
         fail(f"write failed on {at}: {e}\nfix the cause above, then re-run")
-    print(f"installed delegation-framework for this user into {vendor}, {cl} and {cp}" if user else f"installed delegation-framework into {t}; commit the result")
+    if not user:
+        print(f"installed delegation-framework into {t}; commit the result")
+        return
+    print(f"installed delegation-framework for this user:\n  framework copy: {vendor}\n  Claude Code: {cl}\n"
+          f"  Agent Skills: {t / '.agents' / 'skills'}\n  Copilot CLI: {cp}\n  git excludes: {gi}")
+    payload = '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"},"cwd":"%s"}'  # Claude's shape, a throwaway armed repo
+    print(f"verify: d=$(mktemp -d) && git init -q \"$d\" && mkdir \"$d/.delegation\" && printf '{payload}' \"$d\" | python3 \"{where}/scripts/commit-gate.py\"")
 
 
 if __name__ == "__main__":
