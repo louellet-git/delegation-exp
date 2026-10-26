@@ -1,6 +1,6 @@
 ---
 description: Attach at least one adversarial skeptic to code, a design doc or research
-argument-hint: [files, a diff, a design doc or a research memo]
+argument-hint: "[files, a diff, a design doc or a research memo]"
 ---
 
 Use the **delegation-framework:skeptical-review** skill to review:

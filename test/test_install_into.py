@@ -23,10 +23,11 @@ USER_HOOK = {"matcher": "Edit", "hooks": [{"type": "command", "command": "echo h
 STALE_HOOK = {"hooks": [{"type": "command", "command":
               'python3 "$CLAUDE_PROJECT_DIR/vendor/delegation-framework/scripts/subagent-reminder.py" || exit 0'}]}
 VENDOR = "vendor/delegation-framework"
+GIT_ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1", "XDG_CONFIG_HOME": os.devnull}  # no user git config, nor a --user install's excludes
 
 
 def install(target, script=SCRIPT):
-    return subprocess.run([sys.executable, str(script), str(target)], capture_output=True, text=True)
+    return subprocess.run([sys.executable, str(script), str(target)], capture_output=True, text=True, env=GIT_ENV)
 
 
 def copy_src(dst):
@@ -36,7 +37,7 @@ def copy_src(dst):
 
 def commit_copy(src):
     copy_src(src)
-    git = lambda *a: subprocess.run(["git", "-C", str(src), "-c", "user.name=t", "-c", "user.email=t@t", *a], check=True, capture_output=True)
+    git = lambda *a: subprocess.run(["git", "-C", str(src), "-c", "user.name=t", "-c", "user.email=t@t", *a], check=True, capture_output=True, env=GIT_ENV)
     git("init", "-q")
     git("add", ".")
     git("commit", "-qm", "src")
@@ -476,7 +477,7 @@ class InstallInto(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "posix", "runs the hook through sh")
     def test_installed_gate_denies_a_bare_commit_in_an_armed_repo(self):
-        subprocess.run(["git", "init", "-q", str(self.t)], check=True)
+        subprocess.run(["git", "init", "-q", str(self.t)], check=True, env=GIT_ENV)
         (self.t / ".delegation").mkdir()
         install(self.t)
         out = json.loads(self.gate("git commit -m x").stdout)["hookSpecificOutput"]
@@ -486,7 +487,7 @@ class InstallInto(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "posix", "runs the hook through sh")
     def test_installed_gate_is_silent_on_a_bare_commit_in_an_unarmed_repo(self):
-        subprocess.run(["git", "init", "-q", str(self.t)], check=True)
+        subprocess.run(["git", "init", "-q", str(self.t)], check=True, env=GIT_ENV)
         install(self.t)
         r = self.gate("git commit -m x")
         self.assertEqual((r.returncode, r.stdout), (0, ""))
@@ -644,6 +645,16 @@ class UserInstall(unittest.TestCase):
         before = snapshot(self.tmp)
         self.ok(COPILOT_HOME=str(alt))
         self.assertEqual(snapshot(self.tmp), before)
+
+    @unittest.skipUnless(os.name == "posix", "the verify line is a POSIX shell line")
+    def test_output_lists_each_place_and_a_verify_line_that_shows_the_deny(self):
+        r = self.run_user()
+        lines = r.stdout.splitlines()
+        for place in (self.fw, self.cl, self.ag / "skills", self.cp, self.home / ".config" / "git" / "ignore"):
+            self.assertEqual(sum(line.endswith(str(place.resolve())) for line in lines[1:-1]), 1, place)
+        self.assertTrue(lines[-1].startswith("verify: "), lines[-1])
+        v = subprocess.run(["sh", "-c", lines[-1].removeprefix("verify: ")], capture_output=True, text=True, env=GIT_ENV)
+        self.assertEqual(json.loads(v.stdout)["hookSpecificOutput"]["permissionDecision"], "deny", v.stderr)
 
     def test_global_excludes_gets_the_dir_once(self):
         ign = self.home / ".config" / "git" / "ignore"
