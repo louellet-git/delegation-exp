@@ -1,6 +1,6 @@
 ---
 description: Run a scaled skeptic panel over an integrated deliverable and drive it to convergence
-argument-hint: [the integrated deliverable or slice set to review]
+argument-hint: "[the integrated deliverable or slice set to review]"
 ---
 
 Run a full review panel over:

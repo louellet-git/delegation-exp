@@ -6,15 +6,15 @@ implementer → skeptic operating model, packaged as a Claude Code plugin.**
 ## Quickstart
 
 1. Install once per machine (Claude Code, Copilot CLI and Cursor; needs `git`
-   and Python 3.7+):
+   and Python 3.7+; on Windows use `py -3` for `python3`):
 
    ```
    git clone --depth 1 https://github.com/louellet-git/delegation-exp ~/.df-src
    python3 ~/.df-src/scripts/install-into.py --user
    ```
 
-   It lists what it wrote and ends with a `verify:` command; run it to see the
-   gate deny.
+   It lists what it wrote and ends with a `verify:` command: run it in a
+   terminal to see the gate script deny. The check below proves your tool runs it.
 2. Start a task. Claude Code: `/delegate add a CSV export endpoint, with tests`.
    Copilot CLI or Cursor: "Use the delegating skill to add a CSV export
    endpoint, with tests" (their `/delegate` is not this one).
@@ -38,24 +38,21 @@ you commit.
 > marker, and from then on every commit, typo fixes included, needs an
 > all-PLEASED review artifact
 > ([enforcement](#enforcement-honestly-one-structural-slice-the-rest-is-discipline)).
-> **Add `.delegation/` to `.gitignore` before committing anything:** `git add .`
+> **Keep `.delegation/` out of commits** (the user install ignores it globally; otherwise add it to `.gitignore`): `git add .`
 > would sweep it in, and a marker the HEAD commit carries turns the gate OFF
 > for you and every clone. To switch off:
 > [un-arming](#when-not-to-delegate-and-how-to-un-arm-a-repo).
 
 **Check the gate is live in your tool:** a broken install fails silently,
-since a hook that cannot run must not block commits. Ask the agent to run this
-in a repo you do not mind dirtying:
+since a hook that cannot run must not block commits. Ask the agent (not your
+own terminal, which no hook watches) to run, in a throwaway repo:
 
 ```
-mkdir -p .delegation
-grep -qxF '.delegation/' .gitignore 2>/dev/null || echo '.delegation/' >> .gitignore
-git -c user.name=gate -c user.email=gate@local commit --allow-empty -m "gate check"
+cd "$(mktemp -d)" && git init -q && mkdir .delegation && git -c user.name=gate -c user.email=gate@local commit --allow-empty -m "gate check"
 ```
 
 A deny printing the artifact schema means armed; silence, the hooks are not
-running, whatever the install said; a warning, the marker is no opt-in (HEAD
-carries it, or no git repo). Remove `.delegation/` afterwards.
+running, whatever the install said. A live Cursor session is untested.
 
 **Read before your first `/delegate`:**
 [`docs/example-run.md`](docs/example-run.md), one delegation end to end plus
@@ -91,7 +88,7 @@ commit go/no-go stay human (or the manager's).
 
 ## Install
 
-### 0. Once per machine, no repo changes (Claude Code and Copilot CLI)
+### 0. Once per machine, no repo changes (Claude Code, Copilot CLI, Cursor)
 
 [Quickstart](#quickstart) step 1. It installs for every repo on the machine: the framework copy at
 `~/.claude/delegation-framework/`, the agents, skills, commands and hooks under
@@ -188,7 +185,7 @@ instead updated by re-running the installer from a newer clone.
 
 ### 3. Project-vendored (cloud sessions)
 
-Cloud sessions do not run `/plugin install`; [section 0](#0-once-per-machine-no-repo-changes-claude-code-and-copilot-cli) covers them too.
+Cloud sessions do not run `/plugin install`; [section 0](#0-once-per-machine-no-repo-changes-claude-code-copilot-cli-cursor) covers them too.
 From a clone of this repo, not a vendored copy, run:
 
 ```

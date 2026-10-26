@@ -1,6 +1,6 @@
 ---
 description: Run a multi-part task through the manager, implementer and skeptic loop; not for trivial edits
-argument-hint: [the task to delegate]
+argument-hint: "[the task to delegate]"
 ---
 
 If `$ARGUMENTS` is a trivial edit or single-file fix, do NOT delegate: say so
