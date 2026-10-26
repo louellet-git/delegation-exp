@@ -23,7 +23,8 @@ from pathlib import Path
 SRC = Path(__file__).resolve().parent.parent
 PATHS = ".claude-plugin agents skills commands hooks scripts docs test README.md LICENSE".split()
 VENDOR = "vendor/delegation-framework"
-HOOK_RE = re.compile(r'python3 "[^"]*delegation-framework[/\\]scripts[/\\]((?:commit-gate|session-start|stop-reminder|subagent-reminder)\.py)"')  # shipped scripts only, under any home, or vendored
+WINDOWS = os.name == "nt"
+HOOK_RE = re.compile(r'python3? "[^"]*delegation-framework[/\\]scripts[/\\]((?:commit-gate|session-start|stop-reminder|subagent-reminder)\.py)"')  # shipped scripts only, under any home, or vendored
 LINK_RE = re.compile(r"(\]?\()([^()\s]+)(\))")
 TICK_RE = re.compile(r"`([^`\s]+\.\w+)`")
 
@@ -154,6 +155,9 @@ def main():
         old = json.loads(settings.read_text()) if settings.is_file() else {}
         cfg = json.loads(json.dumps(old))
         ours = json.loads((SRC / "hooks" / "hooks.json").read_text().replace("${CLAUDE_PLUGIN_ROOT}", hookdir))["hooks"]
+        if user and WINDOWS:  # Cursor imports these and runs them in PowerShell, where 5.1 cannot parse `||` and Cursor fails open
+            for h in (h for gs in ours.values() for g in gs for h in g["hooks"]):
+                h["command"] = "python" + h["command"].split(" || ")[0].removeprefix("python3")
         hooks = cfg.setdefault("hooks", {})
         for event in {**hooks, **ours}:
             ship = {}  # framework script -> (shipped matcher, shipped hook)

@@ -132,6 +132,16 @@ SessionStart, PreToolUse and Stop; an un-reviewed `git commit` is denied, an
 all-PLEASED one and ordinary shell calls pass. Untested: Windows, PowerShell's
 tool name, SubagentStop, double-firing with both installs.
 
+**In Cursor**, the same `--user` install works: Cursor imports `~/.claude`
+hooks, agents and skills (Settings, Agents, Third-Party Imports, on by
+default) and maps the gate's deny and the session context (read from Cursor's
+CLI source, 2026.10.22). Ask for the `delegating` skill by name. The model
+ladder is guidance there: Cursor takes only its own model ids. On Windows,
+Cursor runs hooks through PowerShell, so the installer writes one plain
+`python` call per hook; a [section 3](#3-project-vendored-cloud-sessions)
+install keeps its `||` chain and fails open there. Untested: a live Cursor
+session.
+
 ### 1. Git-installable (the Claude Code plugin path)
 
 ```

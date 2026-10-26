@@ -112,7 +112,8 @@ def main() -> int:
     if not isinstance(payload, dict):
         return 0
 
-    cwd = payload.get("cwd")
+    roots = payload.get("workspace_roots")  # Cursor: no top-level cwd
+    cwd = payload.get("cwd") or (roots[0] if isinstance(roots, list) and roots else None)
     start = Path(cwd) if isinstance(cwd, str) and cwd else Path.cwd()
     root = find_repo_root(start)
     if root is None:

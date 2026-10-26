@@ -776,6 +776,38 @@ class TestEndToEnd(GateTestCase):
         self.assertEqual(
             output["hookSpecificOutput"]["permissionDecision"], "deny")
 
+    def cursor_run(self, command, tool_cwd):
+        """Cursor-shaped preToolUse payload: no top-level cwd, process cwd elsewhere."""
+        repo = self.repo()
+        elsewhere = self.tmp / "elsewhere"
+        elsewhere.mkdir()
+        payload = json.dumps({
+            "hook_event_name": "preToolUse",
+            "tool_name": "Shell",
+            "tool_input": {"command": command,
+                           "cwd": str(repo) if tool_cwd else ""},
+            "workspace_roots": [str(repo)],
+        })
+        result = subprocess.run(
+            [sys.executable, str(GATE_PATH)], input=payload, cwd=elsewhere,
+            capture_output=True, text=True, timeout=30,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout) if result.stdout.strip() else None
+
+    def test_cursor_payload_denies_via_tool_input_cwd(self):
+        output = self.cursor_run('git commit -m "x"', True)
+        self.assertEqual(
+            output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_cursor_payload_denies_via_workspace_roots(self):
+        output = self.cursor_run('git commit -m "x"', False)
+        self.assertEqual(
+            output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_cursor_payload_passes_ordinary_commands(self):
+        self.assertIsNone(self.cursor_run("ls", True))
+
     def deny_output(self, *flags):
         payload = json.dumps({
             "tool_name": "Bash",
@@ -821,7 +853,7 @@ class TestEndToEnd(GateTestCase):
 
     def test_tool_name_matches_case_insensitively(self):
         repo = self.repo()
-        for name in ("bash", "powershell", "BASH"):
+        for name in ("bash", "powershell", "BASH", "Shell", "shell"):
             code, output = run_gate('git commit -m "x"', repo, tool_name=name)
             self.assertEqual(
                 output["hookSpecificOutput"]["permissionDecision"], "deny", name)
