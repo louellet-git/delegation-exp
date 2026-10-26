@@ -1268,7 +1268,7 @@ def main() -> int:
 
     if not isinstance(payload, dict):
         return 0
-    if str(payload.get("tool_name")).lower() not in ("bash", "powershell"):
+    if str(payload.get("tool_name")).lower() not in ("bash", "powershell", "shell"):
         return 0
     tool_input = payload.get("tool_input") or {}
     command = tool_input.get("command") if isinstance(tool_input, dict) else None
@@ -1278,7 +1278,10 @@ def main() -> int:
     if match is None:
         return 0  # not a commit-creating git call at a command position
 
-    cwd = payload.get("cwd")
+    roots = payload.get("workspace_roots")  # Cursor: no top-level cwd
+    cwd = (payload.get("cwd")
+           or (tool_input.get("cwd") if isinstance(tool_input, dict) else None)
+           or (roots[0] if isinstance(roots, list) and roots else None))
     hook_dir = Path(cwd) if isinstance(cwd, str) and cwd else Path.cwd()
     hook_root = find_repo_root(hook_dir)
     target = resolve_target_dir(command, match, hook_dir)

@@ -586,6 +586,23 @@ class UserInstall(unittest.TestCase):
         self.ok()
         self.assertEqual(snapshot(self.home), before)
 
+    def test_windows_hooks_are_one_python_call(self):
+        spec = importlib.util.spec_from_file_location("install_into", SCRIPT)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        env = dict(HOME=str(self.home), USERPROFILE=str(self.home), GIT_CONFIG_NOSYSTEM="1",
+                   XDG_CONFIG_HOME=str(self.home / ".config"), COPILOT_HOME=str(self.cp))
+        with mock.patch.object(mod, "WINDOWS", True, create=True), mock.patch.dict(os.environ, env), mock.patch.object(sys, "argv", ["x", "--user"]):
+            mod.main()
+            before = snapshot(self.home)
+            mod.main()
+        self.assertEqual(snapshot(self.home), before)
+        claude = commands(json.loads(self.settings.read_text()))
+        self.assertEqual(len(claude), 4)
+        for c in claude:
+            self.assertRegex(c, rf'^python "{re.escape(self.fwp)}/scripts/[\w-]+\.py"$')
+            self.assertTrue(mod.key({"command": c}), c)  # still the framework's on upgrade
+
     def test_refuses_a_modified_installed_file(self):
         self.ok()
         for f in (self.fw / "docs" / "compact.md", self.ag / "skills" / "delegating" / "SKILL.md"):
