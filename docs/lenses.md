@@ -1,3 +1,12 @@
+---
+id: DOC-LENSES
+type: description
+item: 10.38 Process description
+status: current
+date: 2026-10-26
+scope: The adversarial lenses a manager assigns to skeptics, with what each looks for.
+---
+
 # The lens catalogue
 
 A **lens** is the adversarial angle a skeptic is assigned; a panel diversifies
@@ -35,7 +44,7 @@ with a reason, a deleted failing test.
 ### derived-output / ranking
 
 Anything that scores, ranks, classifies, prioritizes or derives a verdict: does
-it order reality correctly? Run the skeptic's ranking patterns, executing the
+it order reality correctly? Run [the skeptic's ranking patterns](../agents/skeptic.md#attack-patterns-name-the-ones-that-apply), executing the
 deliverable and its own worked example. Smells: a threshold with no stated
 headroom; two promotion rules that can stack.
 
@@ -62,17 +71,25 @@ a dependency stated as hard when nothing declares it.
 Memos and recommendations: is each claim traced to a source that says it, with
 its conditions, and were disconfirming sources sought?
 
+### doc-standard
+
+A created or changed doc: does it meet [`DOC-STANDARD.md`](DOC-STANDARD.md),
+header, content and compactness? Run by a skeptic loading
+[doc-review](../skills/doc-review/SKILL.md); any deliverable that creates or
+changes a doc.
+
 ## Choosing lenses for a panel
 
-- Small change (2-3): correctness, evidence-vs-claim, the dominant-risk lens.
-- Feature batch (5-7): correctness, coupling/boundary-integrity,
+- One skeptic per distinct high-impact risk, no quota; a lens earns its seat by
+  naming a risk no other seat covers. A small change gets one, on the lens for
+  the dominant risk.
+- Candidates for a larger batch: correctness, coupling/boundary-integrity,
   overfit/generalization, evidence-vs-claim, honesty/overclaim, plus
   per-feature skeptics for the riskiest slices.
 - Non-code deliverables: design-review or research/claim-verification as the
   anchor, honesty/overclaim second.
-- Anything that scores, ranks or derives a verdict: **derived-output/ranking**
-  is mandatory, in **deep** mode: inversion and fail-open defects are only
-  reachable by executing the thing.
+- Anything that scores, ranks or derives a verdict: **derived-output/ranking**,
+  mandatory ([modes](../skills/skeptical-review/SKILL.md#the-three-modes)).
 
 Mode (swarm / deep / hybrid) is chosen separately: see
 [`../skills/skeptical-review/SKILL.md`](../skills/skeptical-review/SKILL.md).

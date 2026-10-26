@@ -212,19 +212,15 @@ def deny(reason: str) -> None:
     pass strips every control character EXCEPT the newline. Interpolated
     values were already scrubbed in `deny_message`, so nothing off disk can
     inject structure into this channel."""
-    print(
-        json.dumps(
-            {
-                "hookSpecificOutput": {
-                    "hookEventName": "PreToolUse",
-                    "permissionDecision": "deny",
-                    "permissionDecisionReason": _CONTROL_KEEP_NEWLINE_RE.sub(
-                        " ", reason
-                    ),
-                }
-            }
-        )
-    )
+    decision = {
+        "permissionDecision": "deny",
+        "permissionDecisionReason": _CONTROL_KEEP_NEWLINE_RE.sub(" ", reason),
+    }
+    if "--copilot" not in sys.argv:  # Copilot CLI reads the top-level shape
+        decision = {
+            "hookSpecificOutput": {"hookEventName": "PreToolUse", **decision}
+        }
+    print(json.dumps(decision))
 
 
 def warn(message: str) -> None:
@@ -1266,13 +1262,13 @@ def deny_message(problem: str, scope: str = "", note: str = "",
 
 def main() -> int:
     try:
-        payload = json.load(sys.stdin)
+        payload = json.loads(sys.stdin.buffer.read().decode("utf-8"))
     except (json.JSONDecodeError, OSError, UnicodeDecodeError):
         return 0  # fail-open: infrastructure problem, not a gate decision
 
     if not isinstance(payload, dict):
         return 0
-    if payload.get("tool_name") not in ("Bash", "PowerShell"):
+    if str(payload.get("tool_name")).lower() not in ("bash", "powershell"):
         return 0
     tool_input = payload.get("tool_input") or {}
     command = tool_input.get("command") if isinstance(tool_input, dict) else None

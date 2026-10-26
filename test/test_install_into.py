@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Tests for scripts/install-into.py (project-vendored install). Stdlib only."""
+"""Tests for scripts/install-into.py (project-vendored and --user installs). Stdlib only."""
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -20,7 +21,7 @@ BARE_RE = re.compile(r"(?<!\])\(([^()\s`]+\.md)\)")
 TICK_RE = re.compile(r"`([^`\s]+)`")
 USER_HOOK = {"matcher": "Edit", "hooks": [{"type": "command", "command": "echo hi"}]}
 STALE_HOOK = {"hooks": [{"type": "command", "command":
-              'python3 "$CLAUDE_PROJECT_DIR/vendor/delegation-framework/scripts/old.py" || exit 0'}]}
+              'python3 "$CLAUDE_PROJECT_DIR/vendor/delegation-framework/scripts/subagent-reminder.py" || exit 0'}]}
 VENDOR = "vendor/delegation-framework"
 
 
@@ -40,6 +41,10 @@ def commit_copy(src):
     git("add", ".")
     git("commit", "-qm", "src")
     return git
+
+
+def commands(cfg):
+    return [h["command"] for groups in cfg["hooks"].values() for g in groups for h in g["hooks"]]
 
 
 def snapshot(target):
@@ -68,6 +73,7 @@ class InstallInto(unittest.TestCase):
         cmd = cfg["hooks"]["PreToolUse"][1]["hooks"][0]["command"]
         self.assertIn('"$CLAUDE_PROJECT_DIR/vendor/delegation-framework/scripts/commit-gate.py"', cmd)
         self.assertNotIn("CLAUDE_PLUGIN_ROOT", json.dumps(cfg))
+        self.assertFalse([c for c in commands(cfg) if "\\" in c])
 
     def test_installs_agents_skills_commands(self):
         install(self.t)
@@ -337,6 +343,15 @@ class InstallInto(unittest.TestCase):
         self.assertIn(own, groups)
         self.assertNotIn(STALE_HOOK, groups)
 
+    def test_a_first_save_failure_names_the_manifest(self):
+        spec = importlib.util.spec_from_file_location("install_into", SCRIPT)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with mock.patch.object(Path, "write_text", side_effect=OSError(28, "No space left on device")), mock.patch.object(sys, "argv", ["x", str(self.t)]):
+            with self.assertRaises(SystemExit) as cm:
+                mod.main()
+        self.assertIn("write failed on " + str(self.v / "INSTALL.json"), cm.exception.code)
+
     def test_write_failure_exits_cleanly_and_names_the_retry(self):
         (self.t / ".claude" / "agents").write_text("a file where a directory belongs")
         r = install(self.t)
@@ -395,6 +410,15 @@ class InstallInto(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("NEWER", (self.t / ".claude" / "agents" / "steward.md").read_text())
 
+    def test_a_failed_first_install_is_retryable(self):
+        blocker = self.t / ".claude" / "agents"
+        blocker.write_text("a file where a directory belongs")
+        self.assertEqual(install(self.t).returncode, 1)
+        blocker.unlink()
+        r = install(self.t)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue((blocker / "skeptic.md").is_file())
+
     def test_noop_rerun_does_not_rewrite_settings(self):
         install(self.t)
         self.settings.write_text(json.dumps(json.loads(self.settings.read_text()), indent=4) + "\n")
@@ -415,7 +439,7 @@ class InstallInto(unittest.TestCase):
         install(self.t)
         groups = json.loads(self.settings.read_text())["hooks"]["Stop"]
         self.assertEqual(groups[0], {"hooks": [USER_HOOK["hooks"][0]]})
-        self.assertNotIn("old.py", json.dumps(groups))
+        self.assertNotIn("subagent-reminder.py", json.dumps(groups))
 
     def test_corrupt_manifest_fails_cleanly(self):
         install(self.t)
@@ -444,12 +468,13 @@ class InstallInto(unittest.TestCase):
                 else:
                     self.assertFalse((self.v / span).exists(), f"{md.name}: bare {span}")
 
-    def gate(self, command):
+    def gate(self, command):  # sh-based
         cmd = json.loads(self.settings.read_text())["hooks"]["PreToolUse"][1]["hooks"][0]["command"]
         payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(self.t)})
         return subprocess.run(["sh", "-c", cmd], input=payload, capture_output=True, text=True,
                               cwd=self.t, env={**os.environ, "CLAUDE_PROJECT_DIR": str(self.t)})
 
+    @unittest.skipUnless(os.name == "posix", "runs the hook through sh")
     def test_installed_gate_denies_a_bare_commit_in_an_armed_repo(self):
         subprocess.run(["git", "init", "-q", str(self.t)], check=True)
         (self.t / ".delegation").mkdir()
@@ -459,12 +484,234 @@ class InstallInto(unittest.TestCase):
         self.assertIn("review-artifact.json", out["permissionDecisionReason"])
         self.assertIn("PLEASED", out["permissionDecisionReason"])
 
+    @unittest.skipUnless(os.name == "posix", "runs the hook through sh")
     def test_installed_gate_is_silent_on_a_bare_commit_in_an_unarmed_repo(self):
         subprocess.run(["git", "init", "-q", str(self.t)], check=True)
         install(self.t)
         r = self.gate("git commit -m x")
         self.assertEqual((r.returncode, r.stdout), (0, ""))
         self.assertFalse((self.t / ".delegation").exists())
+
+
+class UserInstall(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.tmp = Path(tmp.name)
+        self.home = self.tmp / "home"
+        self.cl = self.home / ".claude"
+        self.cp = self.home / ".copilot"
+        self.ag = self.home / ".agents"
+        self.fw = self.cl / "delegation-framework"
+        self.fwp = self.fw.resolve().as_posix()  # what the installer writes into commands and docs
+        self.settings = self.cl / "settings.json"
+        self.cl.mkdir(parents=True)
+
+    def run_user(self, script=SCRIPT, **env):
+        e = {k: v for k, v in os.environ.items() if k not in ("XDG_CONFIG_HOME", "COPILOT_HOME")}
+        e.update(HOME=str(self.home), USERPROFILE=str(self.home), GIT_CONFIG_NOSYSTEM="1", **env)
+        return subprocess.run([sys.executable, str(script), "--user"], capture_output=True, text=True, env=e, cwd=self.tmp)
+
+    def ok(self, **env):
+        r = self.run_user(**env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_fresh_install_writes_every_target_with_absolute_paths(self):
+        self.ok()
+        self.assertEqual((self.fw / "docs" / "compact.md").read_bytes(), (ROOT / "docs" / "compact.md").read_bytes())
+        self.assertIn("source_commit", json.loads((self.fw / "INSTALL.json").read_text()))
+        for f in ("agents/skeptic.md", "agents/steward.md", "skills/delegating/SKILL.md", "commands/delegate.md"):
+            self.assertTrue((self.cl / f).is_file(), f)
+        self.assertFalse((self.cl / "agents" / "manager.md").exists())
+        cfg = json.loads(self.settings.read_text())
+        self.assertEqual(set(cfg["hooks"]), {"SessionStart", "SubagentStop", "Stop", "PreToolUse"})
+        cmd = cfg["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
+        self.assertIn(f'python3 "{self.fwp}/scripts/commit-gate.py"', cmd)
+        self.assertFalse([c for c in commands(cfg) if "\\" in c])
+        for bad in ("CLAUDE_PROJECT_DIR", "CLAUDE_PLUGIN_ROOT"):
+            self.assertNotIn(bad, json.dumps(cfg))
+        for name in ("delegating", "skeptical-review", "consolidating-review"):
+            self.assertTrue((self.ag / "skills" / name / "SKILL.md").is_file(), name)
+        self.assertFalse((self.cp / "skills").exists())
+        self.assertNotIn("delegation-framework:", (self.ag / "skills" / "delegating" / "SKILL.md").read_text())
+        for name in ("skeptic", "steward"):
+            text = (self.cp / "agents" / f"{name}.agent.md").read_text()
+            fm = text.split("---\n")[1]
+            self.assertEqual(re.findall(r"^(\w+):", fm, re.M), ["name", "description"])
+            self.assertIn(f"name: {name}\n", fm)
+        hooks = json.loads((self.cp / "hooks" / "delegation-framework.json").read_text())
+        shipped = json.loads((ROOT / "hooks" / "copilot-hooks.json").read_text())
+        n = 0
+        for groups in shipped["hooks"].values():
+            for g in groups:
+                for h in g["hooks"]:
+                    h["env"] = {"PLUGIN_ROOT": self.fwp}
+                    n += 1
+        self.assertGreaterEqual(n, 4)
+        self.assertEqual(hooks, shipped)
+
+    def test_installed_links_and_paths_resolve(self):
+        self.ok()
+        for md in (*self.cl.glob("*/*.md"), *self.cl.glob("skills/*/SKILL.md"), *self.cp.rglob("*.md"), *self.ag.rglob("*.md")):
+            if self.fw in md.parents:
+                continue
+            text = md.read_text()
+            for link in LINK_RE.findall(text) + BARE_RE.findall(text):
+                path = link.split("#")[0]
+                if path and not link.startswith(("http", "#", "mailto:")):
+                    self.assertTrue((md.parent / path).exists(), f"{md}: {link}")
+            for span in TICK_RE.findall(text):
+                if span.startswith(self.fwp):
+                    self.assertTrue(Path(span).exists(), f"{md}: {span}")
+
+    def test_a_user_hook_survives(self):
+        self.settings.write_text(json.dumps({"permissions": {"allow": ["X"]}, "hooks": {"PreToolUse": [USER_HOOK]}}))
+        self.ok()
+        cfg = json.loads(self.settings.read_text())
+        self.assertEqual(cfg["permissions"], {"allow": ["X"]})
+        self.assertEqual(cfg["hooks"]["PreToolUse"][0], USER_HOOK)
+        self.assertEqual(len(cfg["hooks"]["PreToolUse"]), 2)
+        self.ok()
+        self.assertEqual(json.loads(self.settings.read_text()), cfg)
+
+    def test_a_user_hook_in_a_framework_looking_path_survives(self):
+        mine = {"hooks": [{"type": "command", "command": 'python3 "/home/me/code/delegation-framework/scripts/my-check.py"'}]}
+        self.settings.write_text(json.dumps({"hooks": {"PreToolUse": [mine]}}))
+        self.ok()
+        self.assertIn(mine, json.loads(self.settings.read_text())["hooks"]["PreToolUse"])
+
+    def test_rerun_changes_nothing(self):
+        self.ok()
+        before = snapshot(self.home)
+        self.ok()
+        self.assertEqual(snapshot(self.home), before)
+
+    def test_refuses_a_modified_installed_file(self):
+        self.ok()
+        for f in (self.fw / "docs" / "compact.md", self.ag / "skills" / "delegating" / "SKILL.md"):
+            f.write_text("my edit")
+            before = snapshot(self.home)
+            r = self.run_user()
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn(f.name, r.stderr)
+            self.assertIn("modified since install", r.stderr)
+            self.assertEqual(snapshot(self.home), before)
+            f.unlink()
+            self.ok()
+
+    def test_refuses_a_foreign_agent(self):
+        mine = self.cl / "agents" / "skeptic.md"
+        mine.parent.mkdir()
+        mine.write_text("mine")
+        before = snapshot(self.home)
+        r = self.run_user()
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("move or rename it, then re-run", r.stderr)
+        self.assertEqual(snapshot(self.home), before)
+
+    def test_refuses_to_install_over_its_own_copy(self):
+        self.ok()
+        before = snapshot(self.home)
+        r = self.run_user(self.fw / "scripts" / "install-into.py")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertEqual(snapshot(self.home), before)
+
+    def test_copilot_home_is_honoured(self):
+        alt = self.tmp / "alt"
+        self.ok(COPILOT_HOME=str(alt))
+        self.assertFalse(self.cp.exists())
+        self.assertFalse((alt / "skills").exists())
+        self.assertTrue((self.ag / "skills" / "delegating" / "SKILL.md").is_file())
+        self.assertTrue((alt / "agents" / "skeptic.agent.md").is_file())
+        self.assertTrue((alt / "hooks" / "delegation-framework.json").is_file())
+        before = snapshot(self.tmp)
+        self.ok(COPILOT_HOME=str(alt))
+        self.assertEqual(snapshot(self.tmp), before)
+
+    def test_global_excludes_gets_the_dir_once(self):
+        ign = self.home / ".config" / "git" / "ignore"
+        ign.parent.mkdir(parents=True)
+        ign.write_text("*.swp")
+        self.ok()
+        self.ok()
+        self.assertEqual(ign.read_text().splitlines(), ["*.swp", ".delegation/"])
+
+    def test_global_excludes_follows_xdg_then_git_config(self):
+        self.ok(XDG_CONFIG_HOME=str(self.tmp / "xdg"))
+        self.assertEqual((self.tmp / "xdg" / "git" / "ignore").read_text(), ".delegation/\n")
+        self.assertFalse((self.home / ".config").exists())
+        (self.home / ".gitconfig").write_text("[core]\n\texcludesFile = ~/my-ignore\n")
+        self.ok(XDG_CONFIG_HOME=str(self.tmp / "xdg"))
+        self.assertEqual((self.home / "my-ignore").read_text(), ".delegation/\n")
+
+    def test_a_failed_first_install_is_retryable(self):
+        (self.cl / "agents").write_text("a file where a directory belongs")
+        r = self.run_user()
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("fix the cause above, then re-run", r.stderr)
+        (self.cl / "agents").unlink()
+        self.ok()
+        self.assertTrue((self.cl / "agents" / "skeptic.md").is_file())
+
+    def test_hooks_rehomed_to_another_home_are_still_the_framework_s(self):
+        self.settings.write_text(json.dumps({"hooks": {"PreToolUse": [USER_HOOK]}}))
+        self.ok()
+        other = self.tmp / "other" / ".claude" / "delegation-framework"
+        text = self.settings.read_text().replace(self.fwp, other.as_posix())
+        self.settings.write_text(text)
+        self.ok()
+        cfg = json.loads(self.settings.read_text())
+        self.assertNotIn(other.as_posix(), json.dumps(cfg))
+        for event, groups in cfg["hooks"].items():
+            ours = [h for g in groups for h in g["hooks"] if "delegation-framework/scripts/" in h["command"]]
+            self.assertEqual(len(ours), 1, event)
+        self.assertEqual(cfg["hooks"]["PreToolUse"][0], USER_HOOK)
+
+    def test_upgrade_deletes_files_removed_upstream_from_every_copy(self):
+        src = copy_src(self.tmp / "src")
+        script = src / "scripts" / "install-into.py"
+        self.assertEqual(self.run_user(script).returncode, 0)
+        gone = (self.cl / "skills" / "skeptical-review" / "SKILL.md", self.ag / "skills" / "skeptical-review" / "SKILL.md",
+                self.cl / "commands" / "review-panel.md")
+        for f in gone:
+            self.assertTrue(f.is_file(), f)
+        shutil.rmtree(src / "skills" / "skeptical-review")
+        (src / "commands" / "review-panel.md").unlink()
+        with open(src / "agents" / "skeptic.md", "a") as f:
+            f.write("\nNEWER\n")
+        r = self.run_user(script)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        for f in gone:
+            self.assertFalse(f.exists(), f)
+        self.assertIn("NEWER", (self.cp / "agents" / "skeptic.agent.md").read_text())
+
+    def test_copilot_home_expands_a_tilde(self):
+        self.ok(COPILOT_HOME="~/alt")
+        self.assertTrue((self.home / "alt" / "agents" / "skeptic.agent.md").is_file())
+        self.assertFalse((self.tmp / "~").exists())
+
+    def test_refuses_a_foreign_agents_skill(self):
+        mine = self.ag / "skills" / "delegating" / "SKILL.md"
+        mine.parent.mkdir(parents=True)
+        mine.write_text("mine")
+        before = snapshot(self.home)
+        r = self.run_user()
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("move or rename it, then re-run", r.stderr)
+        self.assertEqual(snapshot(self.home), before)
+
+    def test_upgrade_from_the_copilot_skills_layout_moves_the_skills(self):
+        self.ok()
+        old = self.cp / "skills" / "delegating" / "SKILL.md"
+        old.parent.mkdir(parents=True)
+        old.write_bytes((self.ag / "skills" / "delegating" / "SKILL.md").read_bytes())
+        man = self.fw / "INSTALL.json"
+        m = json.loads(man.read_text())
+        m["files"][".copilot/skills/delegating/SKILL.md"] = hashlib.sha256(old.read_bytes()).hexdigest()
+        man.write_text(json.dumps(m))
+        self.ok()
+        self.assertFalse(old.exists())
+        self.assertTrue((self.ag / "skills" / "delegating" / "SKILL.md").is_file())
 
 
 if __name__ == "__main__":

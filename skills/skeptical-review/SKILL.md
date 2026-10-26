@@ -1,6 +1,12 @@
 ---
 name: skeptical-review
 description: Runs a skeptic panel on a deliverable and writes the review artifact the commit gate reads. Use before trusting any code, design or research.
+id: DOC-SKILL-SKEPTICAL-REVIEW
+type: procedure
+item: 10.30 Life-cycle procedure
+status: current
+date: 2026-10-26
+scope: Steps to run a skeptic panel on a deliverable and write the review artifact the commit gate reads.
 ---
 
 # Skeptical Review
@@ -8,14 +14,22 @@ description: Runs a skeptic panel on a deliverable and writes the review artifac
 Every deliverable gets at least one skeptic, no exceptions. Spawn
 [skeptic](../../agents/skeptic.md) as `subagent_type: "skeptic"`, one per
 [lens](../../docs/lenses.md), reporting in [rubric](../../docs/rubric.md)
-format.
+format. Where that type is not installed (Copilot CLI, a session without the
+install), spawn a general-purpose worker told to read `agents/skeptic.md`
+first and act as it; the same holds for the [steward](../../agents/steward.md).
+Claude Code enforces `haiku` through the spawn tool's `model`; under Copilot
+CLI the model is guidance unless its spawn takes one (unverified).
 
 ## Panel setup
 
-Size to risk: 2–3 for a small change, 5–7 for a feature batch, no ceiling.
+One reviewer per distinct high-impact risk, no quota: a small change gets one
+skeptic, and a reviewer earns its seat by naming a risk no other seat covers.
 Diversify lenses. State the end goal in each dispatch, or get line-coverage
 noise. Once every slice is DONE, review the integrated tree, all reviewers in
-parallel (they are read-only).
+parallel (they are read-only). A deliverable that creates or changes a doc also
+seats a skeptic with lens `doc-standard`, which loads the
+[doc-review](../doc-review/SKILL.md) skill; it may rerun
+`scripts/doc_check.py`. Its verdict goes in the artifact.
 
 ## The three modes
 
@@ -24,10 +38,9 @@ DEEP, one or a few specialists who understand (read, trace, reproduce) before
 attacking and report that work, for subtlety or a claim to reproduce; HYBRID,
 a swarm plus one deep reviewer on the riskiest slice, for both. Run
 `derived-output/ranking`, mandatory and deep-only, on anything that scores,
-ranks, classifies, prioritizes or derives a verdict, since its defects show
-only when run (breadth plus ranking: hybrid). A swarm reviewer may emit
-`ESCALATE`, a first-class output: review that thread deep before trusting the
-swarm on it.
+ranks, classifies, prioritizes or derives a verdict: its defects show only
+when run. A swarm reviewer may emit `ESCALATE`: review that thread deep
+before trusting the swarm on it.
 
 ## The review artifact (feeds the commit gate)
 
@@ -56,16 +69,15 @@ Only when every final-round reviewer is PLEASED, write
 }
 ```
 
-Fill `head_sha` last, and rewrite the artifact if a fix lands after: it binds
-one commit. Without it the artifact fails closed: re-run the panel, never
-patch the SHA in. Record escalations and demotions
+Fill `head_sha` last, once the tree stops changing, and rewrite it if a fix
+lands after: it binds one commit, and a stale or missing SHA fails closed:
+re-run the panel, never patch it in. Record escalations and demotions
 ([the record](../consolidating-review/SKILL.md#4-the-adjudication-record-a-required-artifact))
 in the optional `escalations` and `adjudications`, which the gate ignores,
 as it ignores any key it does not define: invent no field expecting meaning.
 Gate scope, five honest limits:
 [README](../../README.md#enforcement-honestly-one-structural-slice-the-rest-is-discipline).
-Before the commit the
-[manager still inspects](../delegating/SKILL.md#manager-inspects-the-procedure),
-since unanimity is necessary, not sufficient; after it, archive the artifact
-to `.delegation/history/`. Any NOT PLEASED goes to
+Then
+[the manager inspects](../delegating/SKILL.md#manager-inspects-the-procedure).
+Any NOT PLEASED goes to
 [consolidating-review](../consolidating-review/SKILL.md).

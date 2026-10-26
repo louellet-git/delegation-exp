@@ -1,9 +1,19 @@
+---
+id: DOC-CONFLICT-AVOIDANCE-CHECKLIST
+type: procedure
+item: 10.10 Configuration management procedure
+status: current
+date: 2026-10-26
+scope: The checklist a manager fills before dispatch so parallel implementers' write sets are checked for overlap.
+---
+
 # Conflict-avoidance checklist: fill BEFORE you fan out
 
-The manager copies the template into `.delegation/conflict-checklist.md` (a
-fresh copy per fan-out), fills every line, then dispatches in parallel; an
-unfilled or partial checklist means serialize. Write sets, not task
-independence, decide:
+1. Copy the template into `.delegation/conflict-checklist.md`, a fresh copy per fan-out.
+2. Fill every line.
+3. Dispatch in parallel; an unfilled or partial checklist means serialize.
+
+Write sets, not task independence, decide:
 [delegating](../skills/delegating/SKILL.md#fan-out-disjoint-parallel-shared-sequential).
 
 ```markdown

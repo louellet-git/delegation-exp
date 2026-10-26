@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "bash": "python3 \"$PLUGIN_ROOT/scripts/session-start.py\" --copilot || python \"$PLUGIN_ROOT/scripts/session-start.py\" --copilot || exit 0",
+            "powershell": "python \"$env:PLUGIN_ROOT\\scripts\\session-start.py\" --copilot; exit 0",
+            "timeoutSec": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "bash": "python3 \"$PLUGIN_ROOT/scripts/subagent-reminder.py\" --copilot || python \"$PLUGIN_ROOT/scripts/subagent-reminder.py\" --copilot || exit 0",
+            "powershell": "python \"$env:PLUGIN_ROOT\\scripts\\subagent-reminder.py\" --copilot; exit 0",
+            "timeoutSec": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "bash": "python3 \"$PLUGIN_ROOT/scripts/stop-reminder.py\" --copilot || python \"$PLUGIN_ROOT/scripts/stop-reminder.py\" --copilot || exit 0",
+            "powershell": "python \"$env:PLUGIN_ROOT\\scripts\\stop-reminder.py\" --copilot; exit 0",
+            "timeoutSec": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "bash": "python3 \"$PLUGIN_ROOT/scripts/commit-gate.py\" --copilot || python \"$PLUGIN_ROOT/scripts/commit-gate.py\" --copilot || exit 0",
+            "powershell": "python \"$env:PLUGIN_ROOT\\scripts\\commit-gate.py\" --copilot; exit 0",
+            "timeoutSec": 10
+          }
+        ]
+      }
+    ]
+  }
+}

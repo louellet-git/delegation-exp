@@ -1,15 +1,27 @@
+---
+id: DOC-SESSION-START-CONTEXT
+type: procedure
+item: 10.30 Life-cycle procedure
+status: current
+date: 2026-10-26
+scope: The rules injected at session start: when to invoke the delegation skills and the loop's standing practices.
+---
 **Never delegate a trivial edit, a single-file fix or work you could do
 directly.** Before dispatching any agent for a substantial multi-part build
 where independent review adds safety, invoke
 `delegation-framework:delegating`; before trusting any deliverable,
 `delegation-framework:skeptical-review`; once a panel returns findings,
 `delegation-framework:consolidating-review`. Or use the matching command:
-`/delegate`, `/skeptic-review`, `/review-panel`.
+`/delegate`, `/skeptic-review`, `/review-panel` (in GitHub Copilot CLI,
+`/delegate` is Copilot's own built-in that hands the task to the cloud agent,
+so ask for the delegating skill by name).
 
 **While the loop runs:**
 
 1. Give every work agent at least one skeptic, judging against the end goal,
-   never the agent's account or a green check.
+   never the agent's account or a green check; any doc it writes or changes
+   also meets docs/DOC-STANDARD.md (a skeptic with lens doc-standard, the
+   doc-review skill; the implementer runs `doc_check` in its test command).
 2. Spawn only from the manager; as a worker, message siblings and ask the
    manager for helpers; run a deep team as a separate manager session.
 3. Before decomposing, write the end goal as a falsifiable claim, quoted in
@@ -26,14 +38,15 @@ where independent review adds safety, invoke
    to the manager.
 8. Scout before cutting slices, as a delegated read-only slice citing each
    fact's source file.
-9. Run the manager on Opus, others on any tier (Fable seat-only) recorded in
-   the brief's MODEL TIER slot; as work grows, add slices, not a bigger agent.
+9. Manager on the latest Opus, implementers and scouts `sonnet`, reviewers and
+   the watchdog `haiku`; reviewer specialties are skills, not agents; deviate only on an owner
+   mention, quoted in MODEL TIER; as work grows, add slices, not a bigger agent.
 10. If a planner session created this one, never decide its plan's questions:
     send it a content-free wake pointing at the written question file.
 
-**In a seam seat, on a compact or startup event,** before anything else
-re-align from the durable records, never a summary, in five lines: seat;
-project; phase/status; counterpart session id and channel; next action. Log
-one line; open your next owner message with "manager compacted, re-aligned",
-no separate ping. If the records cannot answer, escalate (respawn, notify the
+**If a planner session created this one, or you are the manager, on a compact
+or startup event,** before anything else re-align from the durable records,
+never a summary, in five lines: seat; project; phase/status; counterpart
+session id and channel; next action. Open your next owner message with
+"manager compacted, re-aligned", no separate ping. If the records cannot answer, escalate (respawn, notify the
 owner); never guess.

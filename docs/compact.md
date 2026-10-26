@@ -1,19 +1,27 @@
+---
+id: DOC-COMPACT
+type: policy
+item: 10.45 Quality management policy
+status: current
+date: 2026-10-26
+scope: The standard for compact code, docs, agent instructions and tests, applied to everything agents write.
+---
+
 # Compact work
 
-The framework's standard for compact code, docs, agent instructions and tests: the fewest elements that do the job and still read cold.
-It governs the form of what agents write, not how many agents, skeptics or panels a task uses. Citations are tag plus source number: E empirical (arXiv conference papers: E7 ESEM 20, E33 AITest 26, E37 ICLR 26, E39 ICLR 26, E44 NeurIPS 25), G official guidance (vendor docs, style guides), B book, P practitioner (blogs and engineering write-ups).
+It governs the form of what agents write, not how many agents, skeptics or panels a task uses. Enforced by the skeptic panel (docs: the doc-standard lens) and the implementer's `doc_check.py check` run before DONE. Citations are tag plus source number: E empirical (arXiv conference papers: E7 ESEM 20, E33 AITest 26, E37 ICLR 26, E39 ICLR 26, E44 NeurIPS 25), G official guidance (vendor docs, style guides), B book, P practitioner (blogs and engineering write-ups).
 
 ## Code
 - Build only what the current task needs: no speculative features, parameters, hooks or generality; YAGNI does not cover refactoring or tests, which keep code cheap to change. [P1 G2]
 - Treat these as YAGNI smells and remove them unless they are a deliberate seam: a base class with one subclass, a flag or parameter that always has one value, a public member that could be private, code only tests run. [P3]
 - Prefer duplication to the wrong abstraction [P4]; merge copies that encode the same knowledge [P5]; inline back a helper that has grown parameters and conditionals for its callers [P4].
 - Prefer deep modules, a simple interface over real work; do not split code into helpers as complex as their bodies, and re-merge functions that must be read together (a contested design heuristic). [P6]
-- Keep functions flat: nesting-weighted complexity tracks comprehension time, mixed for correctness [E7]; trust a complexity metric only once shown to beat plain size, since class-level OO metrics lost their link to faults once size was controlled [E8].
+- Keep functions flat: nesting-weighted complexity tracks comprehension time, mixed for correctness [E7]; adopt a complexity metric only if it predicts faults better than line count, as class-level OO metrics stopped doing once class size was controlled [E8].
 - Use a core language construct, then the standard library, before a new dependency, framework or wrapper layer. [G9]
 - Delete unused code, parameters and flags in the same change, after searching for callers. [E10 B11]
 - Use the plain form of constructs shown to be misread (increment inside an expression, logic used as control flow, type-conversion tricks), and meaningful names beyond tiny scopes, where `i`, `j`, `k` are fine. [E12 G13]
 - Comment the why, the constraint and the non-obvious; never narrate the code; give public, nontrivial or non-obvious functions a docstring. [G13 G14]
-- When agents write code, state the contract plainly with its exceptions: no unrequested features, files, docs or refactors, no handling for states that cannot occur, no one-use helpers; tendencies are model-specific, so check on the model in use. [G15 G16]
+- When agents write code, state the contract plainly with its exceptions; tendencies are model-specific, so check on the model in use. [G15 G16]
 
 ## Docs
 - Omit needless words and sentences: make every word tell. [B17]
@@ -23,8 +31,8 @@ It governs the form of what agents write, not how many agents, skeptics or panel
 ## Agent-read instructions
 - Include only what the agent cannot infer from the repo or already knows; omit overviews the docs already give, file-by-file tours, self-evident advice and LLM-generated context files. [E20 G21 G19]
 - Test each line with "would removing this cause a mistake?", judged by the weakest model that reads it. [G21 G19]
-- Split loading by purpose: general reference knowledge in a compressed index that is always loaded; triggered action workflows on demand, one level deep, behind an explicit when-to-read trigger. In one vendor eval on Next.js 16 APIs absent from training (n=1), the index passed 100%, skills 79% with explicit instructions and 53% without (never invoked in 56% of cases). [G19 P22]
-- Keep a SKILL.md body under 500 lines (a vendor heuristic) and rules that must survive auto-compaction in its first ~5,000 tokens, all Claude Code re-attaches. [G19 G23]
+- Split loading by purpose: general reference knowledge in a compressed index that is always loaded; triggered action workflows on demand, one level deep, behind an explicit when-to-read trigger. In one vendor eval (n=1), the index beat on-demand skills. [G19 P22]
+- Keep a SKILL.md body under 500 lines (a vendor heuristic) and rules that must survive auto-compaction in its first ~5,000 tokens, the part Claude Code re-attaches. [G19 G23]
 - Remove contradicting and outdated rules: of two that contradict, Claude may pick one arbitrarily. [G25]
 - Write rules concrete enough to verify, in plain tone, one term per concept; give a non-obvious rule a one-clause reason, and a format one canonical example. [G25 G15 G19]
 - Prune regularly: delete a rule the agent already follows, or turn it into a hook, script or validator with a specific error message; keep prose for judgment and for what to do when a check fails. [G21 G25 G19 E26]
@@ -32,7 +40,7 @@ It governs the form of what agents write, not how many agents, skeptics or panel
 - Write agent and skill descriptions as what it does and when to use it, key use first, no feature lists; test them with should-trigger and should-not-trigger prompts. [G19 G23 E27]
 
 ## Tests
-- Test behaviour through the public interface with real objects, then fakes, before mocks; a test that fails on a pure refactor is a smell to rewrite; keep implementation-level tests only for a named contract (call count, cache use, byte format). [B28 B29]
+- Test behaviour through the public interface with real objects, then fakes, before mocks; keep implementation-level tests only for a named contract (call count, cache use, byte format). [B28 B29]
 - Delete or rewrite change-detector tests, which restate the code (copied logic, call-order mocks); by extension, assert the fragments a reader acts on (path, command, field), not whole messages. [P30]
 - Test one behaviour per test, named for it (action and expected outcome), not for a method or a fix ID. [B28]
 - Write bodies straight-line by default, with literal inputs and expected outputs rather than loops, branches or computed expectations; never shorten a test by moving cause and effect into shared fixtures, external files or opaque helpers. [B28]
@@ -48,7 +56,7 @@ It governs the form of what agents write, not how many agents, skeptics or panel
 - Add a rule or doc line for an observed failure or a non-standard practice the agent cannot infer, then check that behaviour changed. [G19 E20]
 - Test a doctrine cut as old-versus-new runs on the weakest model that reads it: 20-50 scenarios from real failures, several trials, grading what was produced; that size catches only large regressions. [P38 G19]
 - Cut in one reviewed diff, category by category, and restore whatever a failing scenario proves needed: brevity bias drops domain insight and repeated LLM rewriting erodes detail. [E39 E27]
-- Review agent diffs for deletable code and for guards wrapped around code that should be gone; where a change removes behaviour, add a check that fails if it remains. Prompts cut initial verbosity and erosion, not the degradation rate. [E40 E41]
+- Review agent diffs for code to delete and for guards around code that should be gone; where a change removes behaviour, add a test that fails if it returns. Prompting cuts initial verbosity, not the quality decay over repeated edits. [E40 E41]
 - Have reviewers flag gaps against correctness and stated requirements, not style; chasing every finding adds layers, defensive code and tests for impossible cases. [G21]
 
 ## Where compact goes wrong
@@ -60,13 +68,13 @@ Compact, never cryptic. These limits win over every rule above.
 
 ## Conflicts
 - DRY vs DAMP: split by purpose; code merges same-knowledge copies, tests keep duplication that shows cause and effect. [P5 B28]
-- Scope vs form: posture 5 MINIMAL bounds scope, posture 6 COMPACT bounds form; the merge, inline and delete rules above apply only to lines the change touches or orphans.
-- Length vs adherence is open for agent config files. Realistic topical content around one single-line rule (25 to 500 lines, Claude Code headless) showed no detectable effect, BF10 0.05-0.10 [E26]; compressing skills (non-essential content moved on demand) raised quality 2.8% on generated, part LLM-judged tasks, more on long skills [E27]; at 500 keyword-inclusion constraints the best model scored 68%, though top models stayed near-perfect through 150+, on a task its authors say may not generalize [E45]; vendor guidance says length costs adherence but publishes no measurement [G21 G25].
-- Contradicting rules: stacking up to 20 random constraints in one prompt cut following from ~96% to as low as 20% through pairwise conflicts, and one LLM rewrite (merge, precedence note, checklist) won back 11 points on the weakest model, none on the strongest [E24]; a contradicting adjacent config file showed no measured effect [E26].
-- Rationale: E27 moves explanations and rationale out of the always-loaded body; G15 says the why helps Claude and G19 wants each constant justified. Keep one clause of why where a rule or value is non-obvious.
+- Scope vs form: posture 5 MINIMAL bounds scope, [posture 6 COMPACT](../skills/delegating/SKILL.md#the-brief-template) bounds form; the merge, inline and delete rules above apply only to lines the change touches or orphans.
+- Length vs adherence is open for agent config files: padding around one rule showed no effect [E26]; compressing skills raised quality slightly [E27]; only at hundreds of constraints did the best model fall off [E45]; vendor guidance says length costs adherence but publishes no measurement [G21 G25].
+- Contradicting rules: stacked conflicting constraints cut following sharply, and one LLM rewrite won back some on the weakest model only [E24]; a contradicting adjacent config file showed no effect [E26].
+- Rationale: E27 moves rationale out of the always-loaded body; G15 and G19 want the why. Keep one clause of why on a non-obvious rule or value.
 
 ## Where the rule landed
-Posture 6 of the brief template in [delegating](../skills/delegating/SKILL.md) and the closing reminder in [skeptic](../agents/skeptic.md); this memo holds no second copy.
+Posture 6 of the brief template in [delegating](../skills/delegating/SKILL.md) and the closing reminder in [skeptic](../agents/skeptic.md).
 
 ## Sources
 1. Fowler, Yagni: https://martinfowler.com/bliki/Yagni.html

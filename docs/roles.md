@@ -1,3 +1,12 @@
+---
+id: DOC-ROLES
+type: description
+item: 10.38 Process description
+status: current
+date: 2026-10-26
+scope: The five roles, their authority and their spawn limits.
+---
+
 # Roles: owner, manager, steward, implementation agent, skeptical reviewer
 
 ## Owner
@@ -31,5 +40,5 @@ Builds exactly one scoped slice; reports what it did plus test evidence
 
 [Definition](../agents/skeptic.md): adversarial, finds problems, never blesses.
 Read-only, spawned by the manager (`subagent_type: "skeptic"`, or a
-general-purpose agent told to adopt it). Rates each finding by usefulness toward
-the end goal, not line coverage; verdict per [rubric](rubric.md).
+general-purpose agent told to adopt it). Rates findings by usefulness, not line
+coverage ([rubric](rubric.md)).

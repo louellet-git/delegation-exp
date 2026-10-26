@@ -1,15 +1,20 @@
 ---
 description: Run a multi-part task through the manager, implementer and skeptic loop; not for trivial edits
 argument-hint: [the task to delegate]
+id: DOC-CMD-DELEGATE
+type: procedure
+item: 10.30 Life-cycle procedure
+status: current
+date: 2026-10-03
+scope: The /delegate command: runs a multi-part task through the delegating skill.
 ---
 
 If `$ARGUMENTS` is a trivial edit or single-file fix, do NOT delegate: say so
 and make the edit directly.
 
 Otherwise run the full loop with the **delegation-framework:delegating** skill
-(a planning-framework package, usually this session's opening prompt, enters at
-its plan intake, which turns leaf cards into briefs; plan-content questions go
-back by its planner relay):
+(a planning package, usually the opening prompt, enters at its plan intake;
+plan questions go back by its planner relay):
 
 $ARGUMENTS
 
@@ -17,18 +22,13 @@ You are the **manager**, in this top-level session: do not spawn a manager
 subagent; hold the role in `${CLAUDE_PLUGIN_ROOT}/agents/manager.md`. Follow
 the skill exactly:
 
-1. **Arm the repo.** Create `.delegation/` at the repo root, the marker that
-   arms the commit gate and reminder hooks, and add it to `.gitignore` in the
-   same step: the gate reads the marker from the HEAD commit tree, so a
-   committed marker turns the gate off, here and in every clone, and a
-   committed all-PLEASED artifact ships a waiver.
+1. **Arm the repo:** create `.delegation/` and gitignore it in the same step
+   ([why](../skills/delegating/SKILL.md#7-the-loop-and-the-commit-gate)).
 2. Run the loop mechanics; fill the conflict-avoidance checklist before any
    fan-out.
-3. Write every brief, scouting slices and fix rounds included, from the
-   skill's canonical template, with its postures and the re-brief that the
-   implementer does not commit or push. Save it under `.delegation/briefs/`
-   before dispatching, so a steward checkpoint can reconcile against it.
-4. Attach at least one skeptic to every deliverable.
-5. Integrate, run ONE panel over the integrated tree, make ONE commit
-   (the artifact binds to HEAD; never commit slices as they land), following
+3. Write every brief, scouting and fix rounds included, from the skill's
+   template, and save it under `.delegation/briefs/` before dispatch.
+4. Seat at least one skeptic on every deliverable, plus one with lens
+   `doc-standard` on any doc.
+5. Run ONE panel over the integrated tree and make ONE commit, per
    `${CLAUDE_PLUGIN_ROOT}/commands/review-panel.md`.

@@ -1,0 +1,6 @@
+{
+  "name": "delegation-framework",
+  "version": "0.3.0",
+  "description": "Standalone playbook, roles, and adversarial review machinery for a manager -> implementer -> skeptic operating model: the fresh-subagent-per-task loop, fan-out by disjoint write sets, test-first and evidence-before-claims postures, the always-pair-a-skeptic discipline, scaled review panels, lenses and rubric, blocker adjudication (the fluff gate: real findings gate, fluff is demoted on the record with one rebuttal round), reliability rules, and a review-artifact commit gate. Hook scripts are stdlib-only Python 3.7+; under Copilot each hook tries `python3` then `python` in bash, and only `python` in PowerShell, so on Windows `python` must be on PATH (the Store alias stub leaves the hooks silent).",
+  "hooks": "hooks/copilot-hooks.json"
+}

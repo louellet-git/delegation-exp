@@ -1,3 +1,12 @@
+---
+id: DOC-RUBRIC
+type: description
+item: 10.38 Process description
+status: current
+date: 2026-10-26
+scope: The skeptic verdict format and how the manager reads a panel.
+---
+
 # The verdict rubric: PLEASED | NOT PLEASED
 
 Every skeptic reports in this format, so a manager can
@@ -52,8 +61,7 @@ Evidence (STAND only, and it must be NEW): <the command run, the line cited,
 
 STAND requires new evidence: restating the old is a concession. After this one
 round the demotion is a recorded limit: re-listing it on the same evidence
-gates nothing, new evidence is a new finding, adjudicated fresh. A skeptic
-that stands on everything has no signal.
+gates nothing, new evidence is a new finding, adjudicated fresh.
 
 ## How the manager reads a panel
 

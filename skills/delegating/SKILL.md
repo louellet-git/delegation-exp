@@ -1,6 +1,12 @@
 ---
 name: delegating
 description: Runs a substantial multi-part build as a manager who briefs one fresh subagent per slice, runs disjoint slices in parallel, gates each batch on a skeptic panel and commits once. Use when a build is too big for one agent and independent review adds real safety; not for a trivial edit.
+id: DOC-SKILL-DELEGATING
+type: procedure
+item: 10.30 Life-cycle procedure
+status: current
+date: 2026-10-26
+scope: Steps for a manager to brief slices, run them in parallel, gate on a panel and commit once.
 ---
 
 <!--
@@ -14,8 +20,8 @@ description: Runs a substantial multi-part build as a manager who briefs one fre
   and so forth, like, just like a back and forth. [...] I want there to be a
   firm, like, delegation is Opus. Planner is Opus or Fable, preference for
   Fable five, not five point one. And anything below the delegation manager
-  should be, like, Haiku, Sonnet, or Opus. Like, even the reviewers.
-  Reviewers do not need to be Opus. [...] I want the planning framework and
+  should be, like, Haiku, Sonnet, or Opus. Like, even the reviewers. [superseded
+  for tier 2026-10-26] Reviewers do not need to be Opus. [...] I want the planning framework and
   the delegation framework to have, like, incentive to parallelize work when
   that's needed." (owner, 2026-09-02)
 
@@ -36,10 +42,10 @@ description: Runs a substantial multi-part build as a manager who briefs one fre
   sonnet just use the right tool for the job. One thing I DONT take back is
   to use more than one agent or more than 2-3 even when the job gets bigger
   and having the delegation manager break it down himself or by using
-  scouts to get a sense of the total amount of work." The earlier tier
-  ruling above stands as written — append, never remove — and is superseded
-  by this one for tier; the standing order on decomposing before adding
-  headcount is unaffected and stays retained, strengthened.
+  scouts to get a sense of the total amount of work." [superseded for tier
+  2026-10-26] Quotes stay — append, never remove; the
+  standing order on decomposing before adding headcount is unaffected and
+  stays retained, strengthened.
 
   And the MINIMAL rule, same owner, 2026-09-29, verbatim: "implementers should
   try and implement using as little words/code as possible. MINIMAL is better
@@ -56,72 +62,59 @@ description: Runs a substantial multi-part build as a manager who briefs one fre
   "Tighten compact rules. Should be a report that is also compact as can be located in the repo."
   And dropping the dispatch deadline wake (the hourly watchdog covers a mute manager), 2026-10-03, verbatim:
   "Drop"
+
+  And the model rule, same owner, 2026-10-26, verbatim: "DM uses most recent
+  version of Opus unless otherwise mentioned; implementers use most recent
+  Sonnet; critics/reviewers are most recent Haiku." It supersedes the tier
+  rulings above for tier; the standing order on decomposing stays.
+
+  And the rulings of the same day (verbatim, from the owner's later answers):
+  "Scouts on Sonnet is fine." "the doc critic, that should honestly be a skill
+  for the critic agent itself. Like, we don't need a million fucking agents.
+  Make skills, not agents." "Okay, watchdog goes to Haiku." Panels: "we don't
+  want huge skeptic bloat. [...] make sure we're not being unnecessary in our
+  number of reviewers. Make sure it's high impact and not just a number we're
+  trying to hit." Fix rounds: "wouldn't it make more sense to use the original
+  agent? What do you think?", then "For the original agent, yeah, use the
+  original agent." The doc check: "I'm okay with the doc check script. Just
+  make sure it's like useful." Landing: "I don't want the manager asking me
+  every fucking time. I guess like I have a preference for minimizing number
+  of branches, especially when it's possible to merge back to main, like so
+  long as we have that version control. So this is like if we have GitHub
+  available, then we do that."
 -->
 
 # Delegating
 
-**Must hold, even after compaction** (one line each; the link holds the full
-rule):
-- **Every brief** comes from [the template](#the-brief-template), is saved to
-  `.delegation/briefs/<slice-id>.md` before dispatch, and carries all six
-  postures: test-first, evidence before claims, no commit or push, no spawn,
-  MINIMAL, COMPACT.
-- **Status contract:** a worker reports exactly one of DONE, BLOCKED,
-  NEEDS_CONTEXT with its evidence, then stops; each task gets a fresh agent
-  ([contract](#one-scoped-task-per-fresh-subagent)).
-- **BLOCKED is a decision request:** classify it, act by class, re-brief a
-  fresh agent; never take the task over ([procedure](#blocked-the-procedure)).
-- **Parallel is the default** for slices the filled conflict checklist clears;
-  serializing disjoint slices is a steward finding (`serialized-the-disjoint`)
+**Must hold, even after compaction** (trigger and link; each rule lives in
+its section):
+- **Every brief** comes from [the template](#the-brief-template), saved to
+  `.delegation/briefs/<slice-id>.md` before dispatch, with all seven postures.
+- **A worker reports** DONE, BLOCKED or NEEDS_CONTEXT with evidence, then
+  stops ([contract](#one-scoped-task-per-fresh-subagent)); a BLOCKED is a
+  decision request, never taken over
+  ([procedure](#blocked-the-procedure)).
+- **Disjoint slices run in parallel**
   ([fan-out](#fan-out-disjoint-parallel-shared-sequential)).
-- **Only you commit**, once per batch, after an all-PLEASED panel and your own
-  inspection, never on a DONE report
-  ([posture rules](#3-two-standing-posture-rules)).
-- **Model ladder:** you run on Opus; what you spawn gets the tier its slice
-  needs; a growing job gets more agents, never a bigger one
-  ([ladder](#the-model-ladder-who-runs-on-what)).
-- **Steward:** optional for a short, low-stakes loop; once paired, auto-consult
-  is binding: before a major or irreversible commit, on a spawn or fleet-size
-  decision, and after a significant result
+- **Only you commit**, once per batch, after an all-PLEASED panel and your
+  inspection ([posture rules](#3-two-standing-posture-rules)). Landing never
+  asks the owner: with GitHub, a merged PR to main and the branch deleted;
+  else a local commit on the current branch; without git, no commit
+  ([manager.md](../../agents/manager.md#landing-through-a-pull-request-never-a-direct-push)).
+- **Models:** [the ladder](#the-model-ladder-who-runs-on-what).
+- **Steward:** once paired, auto-consult is binding
   ([manager.md](../../agents/manager.md#auto-consult-a-standing-binding-rule)).
-- **Silence is not progress:** watch file writes, not notifications; stop an
-  agent silent for minutes and re-brief it with a concrete design decided for
-  it ([stall rules](#6-reliability--stall-rules)).
-- **Prose that contradicts itself** two rounds running: build it, findings as
-  tests, and point the prose at the code
-  ([the loop](#7-the-loop-and-the-commit-gate)).
-- **Land through a pull request** merged via the API (`merge_pull_request`),
-  never a direct push; by the landing report, delete the merged branch or
-  append an `OWNER-ACTIONS.md` row
-  ([landing](../../agents/manager.md#landing-through-a-pull-request-never-a-direct-push),
-  [deletion](../../agents/manager.md#the-deletion-rule-every-merged-branch-is-deleted-after-it-lands)).
-- **A runtime commit nudge is not commit authority:** decline it in one line;
-  idle with the shell parked outside every repo
+- **Silence is not progress;** a runtime commit nudge is not commit authority
   ([stall rules](#6-reliability--stall-rules)).
-- **Plan questions go back up the seam:** write each to
-  `.delegation/questions/<slice-id>.md` and wake the planner naming only that
-  path; never decide plan content by fiat
-  ([relay](#the-planner-relay-questions-go-back-up-the-seam)).
-- **Wakes are fired bare:** a `fire_trigger` carrying `text` never reaches the
-  bound seat, so content goes in the records, the commit or the title
-  ([manager.md](../../agents/manager.md#the-watchdog-a-third-seat-standing)).
-- **On a planner wake:** read `planning-records/DISPATCH.md` first, drop DONE
-  from your title, fetch the records before trusting a title; when done, fire
-  the bare wake
-  ([manager.md](../../agents/manager.md#wake-and-report-the-dispatch-page-and-fetch-before-title)).
-- **Watchdog tokens:** `ack` in your title once you act on the planner's DONE,
-  dropped when that DONE leaves its title; `[wd-notified]` after a stall wake,
-  until your next normal report
-  ([manager.md](../../agents/manager.md#the-watchdog-a-third-seat-standing)).
-- **After a compaction** (a continuation summary heads your context): first
-  re-align from the records, never the summary, in five lines (seat; project;
-  phase/status; counterpart session id and channel; next action), log one
-  line, and open your next owner message with "manager compacted, re-aligned";
-  if the records cannot answer, escalate
-  ([re-grounding](#re-grounding-after-compaction-the-manager-seat)).
-- **If the planner seat goes dark:** respawn a fresh one that re-orients in
-  writing from the records, and notify the owner; your own session persists
-  for the whole project
+- **Prose contradicting itself** two rounds running: build it
+  ([the loop](#7-the-loop-and-the-commit-gate)).
+- **Plan questions** go back up the seam
+  ([relay](#the-planner-relay-questions-go-back-up-the-seam)); wakes are
+  fired bare, and the planner-wake and watchdog-token rules are in
+  [manager.md](../../agents/manager.md#the-watchdog-a-third-seat-standing).
+- **After a compaction,** re-align from the records
+  ([re-grounding](#re-grounding-after-compaction-the-manager-seat)); if the
+  planner seat goes dark, respawn it
   ([manager.md](../../agents/manager.md#the-seat-above-you-and-the-seat-beside-you)).
 
 You are the manager; this skill is standalone but for one soft planner seam
@@ -160,12 +153,12 @@ multi-part build where independent review adds real safety.
 3. **Or, on a small or familiar repo, scout yourself, structure only:**
    `git ls-files`, `ls`, `rg --files`, the manifest, the test-runner config.
    **You do not do the reading:** module bodies are the implementer's, and
-   reading them, the failure mode under time pressure, spends the context the
-   loop protects; the framework ships no context management of its own. Your
-   only exceptions are the reserved files and the integrated tree. Pulled into
-   source, dispatch a scouting slice.
-4. **Cut slices by write set, not topic:** one outcome, owner and test command
-   each; two tasks writing one file are one slice or two sequential ones.
+   reading them spends the context the loop protects. Exceptions: the reserved
+   files and the integrated tree; pulled into source, dispatch a scouting
+   slice.
+4. **Cut slices by [write set](#fan-out-disjoint-parallel-shared-sequential),
+   not topic:** one outcome, owner and test command each; two tasks writing one file are one slice
+   or two sequential ones.
 5. **Reserve the shared files** (indexes, front-door routing docs, capability
    maps) and pre-assign ADR or doc numbers in each brief's PRE-ASSIGNED
    NUMBERS slot, or parallel agents pick their own and collide on `000N`.
@@ -179,32 +172,37 @@ multi-part build where independent review adds real safety.
 ### One scoped task per fresh subagent
 
 There is no implementer agent definition, by design: spawn the
-general-purpose worker (`subagent_type: "general-purpose"` in Claude Code)
+general-purpose worker (`subagent_type: "general-purpose"` in Claude Code,
+`model: "sonnet"` named, since an omitted model can inherit your Opus)
 with the whole brief as its prompt and no spawn tool, since one-level-deep
 spawning is the load-bearing invariant. Team size is yours, not the plan's:
 more implementers means more slices, never co-writers on one write set;
-reviewer count follows [panel setup](../skeptical-review/SKILL.md#panel-setup)
-(guidance, no ceiling). Agents spawn by bare frontmatter `name:` (`"skeptic"`,
+reviewer count follows [panel setup](../skeptical-review/SKILL.md#panel-setup). Agents spawn by bare frontmatter `name:` (`"skeptic"`,
 `"steward"`), skills and commands by plugin namespace
 (`delegation-framework:delegating`, `/delegate`), or by whatever id your
 runtime lists. Answer NEEDS_CONTEXT by extending the brief, never by taking
-over; relay first if the gap is plan content.
+over; relay first if the gap is plan content. **Fix rounds and re-reviews go
+back to the original agent** (SendMessage, context intact); a fresh agent only
+when it hit a dead end (BLOCKED), its context is large, or the findings span
+other slices.
 
 ### The model ladder: who runs on what
 
-- **Seats, owner-set:** manager on Opus, planner on Fable 5 or Opus. No
-  frontmatter enforces your seat: the planner spawns you pinned to
-  `claude-opus-5`; never accept or hold it below Opus.
-- **Tier is judgment, Haiku through Opus,** workers and reviewers alike, and
-  Fable stays seat-only: Haiku for a mechanical, narrow job (a rename, a
-  regeneration, a reformat, a shape-reading scout), Sonnet for the common
-  case, Opus for a genuinely hard slice (subtle concurrency, a load-bearing
-  algorithm). Reviewers are not capped below workers. MODEL TIER records the
-  tier and why, for the steward to judge; it is not a gate and owes no case
-  against decomposition.
-- **Agent count is mandated:** break a growing job down yourself or send
-  scouts to size it, then cut as many slices and seat as many reviewers as the
-  write sets allow. Panel sizes (2–3, 5–7) are guidance, not a ceiling.
+- **Seats, owner-set:** manager on the latest Opus, planner on Fable 5 or
+  Opus, watchdog on Haiku. No frontmatter enforces your seat: hold it on the
+  latest Opus unless the owner mentions otherwise, quoted in MODEL TIER.
+- **Defaults by role,** named by alias (`opus`, `sonnet`, `haiku` = the newest
+  of each) and passed as the spawn tool's `model` parameter: implementers and
+  scouts `sonnet`; skeptics, steward and any other critic or reviewer
+  `haiku`. Claude Code enforces this through the spawn tool's `model`; under
+  Copilot CLI it is guidance unless its spawn takes one (unverified). A new
+  reviewer specialty is a skill the skeptic loads, never a new agent file.
+  Fable stays seat-only. A deviation only when the owner mentions it,
+  quoted in MODEL TIER; you may ask the owner for one, never pick it. A
+  growing job gets more agents, never a bigger one.
+- **Break a growing job down** yourself or send scouts to size it, then cut
+  as many slices as the write sets allow; seat one reviewer per distinct
+  high-impact risk, no quota.
 
 ### The brief template
 
@@ -233,9 +231,9 @@ RESERVED, DO NOT TOUCH (the manager wires these at integration):
 PRE-ASSIGNED NUMBERS (use exactly these; never pick your own):
   <ADR / doc numbers, or "none this run">
 
-MODEL TIER (judgment, not a gate):
-  <the tier and why it fits; a growing job means another slice, not a bigger
-   model>
+MODEL TIER (role default; a deviation only on an owner mention, quoted):
+  <opus|sonnet|haiku, passed as the spawn `model`; a growing job means
+   another slice, not a bigger model>
 
 WHAT THE PREDECESSOR CHANGED (serialized slices only):
   <the prior slice's changes to your files, or "nothing">
@@ -244,7 +242,8 @@ PARTIAL WORK ALREADY IN THE TREE:
   <half-written paths left behind, each to keep, finish or replace; or "none">
 
 EXACT TEST COMMAND (copy-pasteable; run it yourself):
-  <command>
+  <command; for changed docs add `python3 <framework>/scripts/doc_check.py
+   check <changed docs>`>
 
 ACCEPTANCE CONDITION (checkable):
   <condition>
@@ -266,12 +265,14 @@ POSTURES (requirements, not preferences):
      This binds every fix a reviewer sends back just as hard. MINIMAL bounds
      scope; COMPACT bounds form. Tests straight-line by default; never trade
      cause and effect for brevity. Standard: the plugin's docs/compact.md.
+  7. DOC STANDARD: every doc you write or change meets the plugin's
+     docs/DOC-STANDARD.md: header and compactness.
 
 REPORT BACK exactly one status, with the evidence behind it:
   DONE          <what you built, the test command and its actual output>
   BLOCKED       <what stopped you, what you ran, the decision you need>
   NEEDS_CONTEXT <the specific missing fact>
-Then stop. The next task gets a fresh agent.
+Then stop. A fix round comes back to you.
 ```
 
 ### BLOCKED: the procedure
@@ -315,7 +316,7 @@ returned-question gate (`QUESTIONS.md`, re-plan rules) holds that end.
   confirm the plan is silent, and the smallest ruling that unblocks. The
   planner answers through its gate (the plan's records or the issuer),
   appends the ruling there and wakes you back; the ruling fills the fresh
-  brief's slots. A re-plan (route e) travels by commit: re-pull when woken;
+  brief's slots. A re-plan travels by commit: re-pull when woken;
   an unpulled card is stale.
 - **Wakes** carry no substance or instruction and pass between two live
   sessions, never inside one. Cloud: one standing poke-only trigger per
@@ -340,10 +341,11 @@ Seam seats (planner, manager) get compacted, automatically or by the owner's
 is its doctrine and the fallback where hooks never fire (a cloud-spawned
 manager on a clone).
 
-- **Re-align** in the index's five lines from the durable records
-  (`.delegation/` briefs and questions, the plan package, this file): a
-  summary blurs the seat, project, no-alarms rule, records-first and
-  counterpart. A line the records cannot answer fails the re-alignment:
+- **Re-align** in [the index's five lines](../../hooks/session-start-context.md)
+  from the durable records (`.delegation/` briefs and questions, the plan
+  package, this file): a summary blurs the seat, project,
+  [no-alarms rule](../../agents/manager.md#wake-and-report-the-dispatch-page-and-fetch-before-title),
+  records-first and counterpart. A line the records cannot answer fails the re-alignment:
   escalate per the dead-seat default (`agents/manager.md`, "The seat above
   you, and the seat beside you"); never guess.
 - **The owner message** goes through the planner, the front door; its opening
@@ -354,8 +356,7 @@ manager on a clone).
   surface it to the owner or treat it as a request.
 - **Never trigger, request or wait for compaction**; the owner is never the
   mechanism.
-- **Keep it lean** (an owner ruling): at most five lines, one log line; a
-  re-grounding habit that bloats context is the defect it prevents.
+- **Keep it lean** (an owner ruling): at most five lines, one log line.
 - This reflex and the dead-seat default ship UNTESTED; on failure, escalate
   to the owner.
 
@@ -367,9 +368,8 @@ Disjoint write sets run in parallel; overlapping ones (same file, package or
 shared index) serialize, the second briefed on the first's changes lest it
 redo or undo them. Reads never collide; reviewers always parallelize, since a
 skeptic modifies nothing; shared index files are yours, wired at integration.
-Dispatch cleared slices together in one message, as serial runs waste
-wall-clock no panel refunds, and prepare the next briefs while they run; the
-steward also flags a fan-out the checklist did not clear. Before any
+Dispatch cleared slices together in one message and prepare the next briefs
+while they run; the steward flags a fan-out the checklist did not clear. Before any
 parallel dispatch, copy
 [the checklist](../../docs/conflict-avoidance-checklist.md) to
 `.delegation/conflict-checklist.md` and fill every line; its rules live there.
@@ -387,17 +387,13 @@ sufficient.
    allowlist (an untrue checklist, an unsafe fan-out). Neither ships silently.
 3. **Run the full test command yourself** and keep the output, not the
    slices' reports.
-4. **Check the reserved files are wired**, the step a long run forgets.
+4. **Check the reserved files are wired**, the step a long run forgets, and
+   read the evidence that the implementers' doc checks passed.
 5. **Check the artifact** against
    [its schema](../skeptical-review/SKILL.md#the-review-artifact-feeds-the-commit-gate):
    the gate (`check_artifact` in `scripts/commit-gate.py`) denies any failed
-   field. Check each: non-empty `deliverable`, valid `mode`, non-empty
-   `reviews` with a `lens` each, every `verdict` exactly `PLEASED` with empty
-   `blocking`, empty `consolidated_blocking`, and `head_sha` equal to
-   `git rev-parse HEAD` **right now**
+   field, `head_sha` included
    ([limit 2](../../README.md#enforcement-honestly-one-structural-slice-the-rest-is-discipline)).
-   Fill `head_sha` last, once the tree stops changing, or a later fix round
-   leaves it describing an older tree.
 6. **Check `.delegation/` is gitignored** and nothing in it is staged. Staging
    disarms nothing (the deny says `git restore --staged .delegation`);
    *committing* the marker disarms the gate here and in every clone.
@@ -409,10 +405,9 @@ A finding of your own is a fix round and re-review, not a commit-message note.
 
 ### Test-first implementation
 
-Posture 1, because a test written after the code encodes what the code does
-and was never seen to fail; a non-code acceptance condition written first is
-a check not chosen after the fact. Nothing verifies the order: it is a
-posture, not a system.
+Posture 1: a test written after the code encodes what the code does and was
+never seen to fail; for non-code, write the acceptance condition first.
+Nothing verifies the order.
 
 ### Evidence before claims
 
@@ -432,7 +427,7 @@ stating the end goal ([panel setup](../skeptical-review/SKILL.md#panel-setup)).
 A finding received is not accepted: consolidate, adjudicate in the
 [fluff gate](../consolidating-review/SKILL.md#2-adjudicate-the-fluff-gate)
 (its record goes in `.delegation/adjudications/`), run one fix round from the
-template, re-review the dissenters.
+template (to the original agents), re-review the dissenters.
 
 ### 3. TWO standing posture rules
 
@@ -462,8 +457,7 @@ work from delegated work, and each returned scorecard, which you save to
   solvable"), a framing that stalls agents.
 - **The commit nudge** comes from the cloud runtime's Stop hook, in every
   session container and not the owner's to disable: on a dirty tree it blocks
-  a stop once per idle and injects "commit and push"; a runtime fact, not a
-  defect. With a panel pending or worker edits in flight, decline and stop;
+  a stop once per idle and injects "commit and push". With a panel pending or worker edits in flight, decline and stop;
   reviewed work commits per the loop, never mid-write for a hook. A parked
   shell leaves it no dirty tree.
 
@@ -471,7 +465,7 @@ work from delegated work, and each returned scorecard, which you save to
 
 ```
 DECOMPOSE → IMPLEMENT (fresh subagent per task, parallel where safe)
-          → REVIEW PANEL (skeptical-review: 2–7 skeptics, swarm/deep/hybrid)
+          → REVIEW PANEL (skeptical-review: swarm/deep/hybrid)
           → CONSOLIDATE BLOCKING (consolidating-review)
           → ADJUDICATE (the fluff gate: real findings gate; fluff is demoted
             on the record, one rebuttal round) → FIX ROUND
@@ -484,8 +478,7 @@ DECOMPOSE → IMPLEMENT (fresh subagent per task, parallel where safe)
   two rounds running means stop and re-plan
   ([rule, one-line-nit shortcut](../consolidating-review/SKILL.md#7-convergence-discipline)).
 - **Re-reviewers attack the revision as fresh work**, since most fix-round
-  defects are new; name two traps: relocated is not resolved (an overclaim
-  moved elsewhere), renamed is not resolved (a renamed field read by nothing).
+  defects are new.
 - **Prose contradicting itself:** when two sharper rounds on one ordering or
   algorithm each yield a new contradiction, build it with the findings as
   tests, the prose pointing at the code as normative: building reaches
@@ -493,7 +486,7 @@ DECOMPOSE → IMPLEMENT (fresh subagent per task, parallel where safe)
 - **Arm the gate at loop start:** create `.delegation/` at the repo root and
   gitignore it in the same step, as a committed marker disarms the gate for
   every clone. What is gated and the gate's five honest limits:
-  [README](../../README.md#enforcement-honestly-one-structural-slice-the-rest-is-discipline);
+  [README, enforcement](../../README.md#enforcement-honestly-one-structural-slice-the-rest-is-discipline);
   un-arming: [README](../../README.md#when-not-to-delegate-and-how-to-un-arm-a-repo).
 
 On demand: [operating-model](../../docs/operating-model.md) (where each rule

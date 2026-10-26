@@ -1,6 +1,15 @@
-# Owner actions — what a seat could not do, and why each line is safe to run
+---
+id: DOC-OWNER-ACTIONS
+type: record
+item: 9 record
+status: current
+date: 2026-10-26
+scope: Append-only record of branch actions a seat could not perform, with why each is safe for the owner to run.
+---
 
-Append-only. One row per branch. Run a row's command locally; nothing else is needed.
+# Owner actions
+
+One row per branch. Run a row's command locally; nothing else is needed.
 
 | Date (UTC) | Repository | Branch | Why the seat could not | Safe because | Command |
 |---|---|---|---|---|---|
